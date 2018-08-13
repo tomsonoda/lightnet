@@ -1,3 +1,7 @@
 # git ignore
 
+lightnet
+
 *.o
+*.a
+*.so

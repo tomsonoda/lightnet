@@ -37,4 +37,4 @@ $(SLIB): $(OBJECTS)
 .PHONY: clean
 
 clean:
-		rm -f $(OBJECTS) $(TARGET) $(SLIB) $(ALIB)
+		rm -f $(OBJECTS) $(TARGET) $(SLIB) $(ALIB) obj/*
