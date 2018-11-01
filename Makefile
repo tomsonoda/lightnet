@@ -33,7 +33,6 @@ $(SLIB): $(OBJECTS)
 
 # $(warning SOURCES = $(SOURCES))
 
-
 .PHONY: clean
 
 clean:

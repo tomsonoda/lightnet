@@ -1,0 +1,5 @@
+{
+  "train_list" : "dataset/set0/train.txt",
+  "test_dir" : "dataset/set0/test/",
+  "test_results_dir":"dataset/set0/results/"
+}
