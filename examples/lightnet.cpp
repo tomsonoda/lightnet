@@ -1,6 +1,8 @@
-#include "lightnet.h"
+#include <iostream>
 
-extern void do_object_detection(int argc, char **argv);
+using namespace std;
+extern void doObjectDetection(int argc, char **argv);
+
 
 int main(int argc, char **argv)
 {
@@ -11,7 +13,7 @@ int main(int argc, char **argv)
 
   printf("lightnet begins.\n");
   if (strcmp(argv[1], "object_detection")==0){
-      do_object_detection(argc, argv);
+      doObjectDetection(argc, argv);
   }
   printf("lightnet ends.\n");
   // error("lightnet terminated!");

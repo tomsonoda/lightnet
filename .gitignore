@@ -5,3 +5,8 @@ lightnet
 *.o
 *.a
 *.so
+
+/dataset/set0/train/images/*
+/dataset/set0/train/labels/*
+/dataset/set0/test/images/*
+/dataset/set0/test/labels/*
