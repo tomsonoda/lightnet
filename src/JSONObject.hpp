@@ -318,6 +318,7 @@ private:
     FILE *fp = fopen(filename.c_str(), "r");
     if (fp==NULL){
       fprintf(stderr, "Not found: %s\n", filename.c_str());
+      exit(0);
     }
     fseek(fp, 0, SEEK_END);
     size = ftell(fp);

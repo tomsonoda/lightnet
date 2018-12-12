@@ -1,1 +1,1 @@
-./lightnet mnist config/data_config.json config/mnst_model.json model
+./lightnet mnist config/mnist_data.json config/mnist_model.json model

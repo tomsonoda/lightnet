@@ -3,6 +3,7 @@
 #include <vector>
 #include "lightnet.hpp"
 #include "ImageProcessor.hpp"
+#include "cnn.h"
 
 using namespace std;
 
@@ -69,7 +70,7 @@ float train( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& e
   }
   return err * 100;
 }
-/*
+
 vector<case_t> readCases(std::string data_config_path)
 {
   JSONObject *data_json = new JSONObject();
@@ -91,13 +92,10 @@ vector<case_t> readCases(std::string data_config_path)
   vector<case_t> cases;
   return cases;
 }
-*/
 
 void trainObjectDetection(std::string model_config_path, std::string model_path, std::string data_config_path){
-  // Utils *utils = new Utils();
-  // vector<case_t> cases = readCases(data_config_path);
-  // lightnet_t *lightnet_object = new lightnet_t();
-  // vector<layer_t*> layers = lightnet_object->loadModel(model_config_path, cases);
+  vector<case_t> cases = readCases(data_config_path);
+  vector<layer_t*> layers = loadModel(model_config_path, cases);
 
   /*
 	float amse = 0;

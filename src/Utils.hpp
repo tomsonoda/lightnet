@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <sys/types.h>
+
 using namespace std;
 
 struct Utils
@@ -47,7 +48,7 @@ struct Utils
     }
   }
 
-  int listDir (string dir, vector<string> &files, string ext)
+  int listDir(string dir, vector<string> &files, string ext)
   {
       DIR *dp;
       struct dirent *dirp;
