@@ -1,0 +1,27 @@
+{
+  "net" : {
+    "learning_rate":0.001
+  },
+
+  "layers":[
+    {
+      "type":"convolutional",
+      "batch_normalize":1,
+      "filters":8,
+      "size":5,
+      "stride":1,
+      "pad":0
+    },
+    {
+      "type":"relu"
+    },
+    {
+      "type":"maxpool",
+      "size":2,
+      "stride":2
+    },
+    {
+      "type":"fully_connected"
+    }
+  ]
+}

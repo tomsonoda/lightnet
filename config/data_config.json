@@ -1,8 +1,8 @@
 {
-  "train_dir" : "dataset/set0/train/",
-  "checkpoint_dir" : "dataset/set0/checkpoint/",
-  "test_dir" : "dataset/set0/test/",
-  "test_results_dir":"dataset/set0/results/",
+  "train_dir"        : "dataset/set0/train/",
+  "checkpoint_dir"   : "dataset/set0/checkpoint/",
+  "test_dir"         : "dataset/set0/test/",
+  "test_results_dir" : "dataset/set0/results/",
   "augmentation" : {
     "width":416,
     "height":416,

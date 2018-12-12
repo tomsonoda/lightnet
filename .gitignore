@@ -5,8 +5,6 @@ lightnet
 *.o
 *.a
 *.so
+.DS_Store
 
-/dataset/set0/train/images/*
-/dataset/set0/train/labels/*
-/dataset/set0/test/images/*
-/dataset/set0/test/labels/*
+/dataset/*

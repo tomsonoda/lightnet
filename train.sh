@@ -1,1 +1,1 @@
-./lightnet object_detection train config/model_config.json model config/data_config.json cat json_tokens
+./lightnet object_detection train config/data_config.json config/model_config.json model cat json_tokens
