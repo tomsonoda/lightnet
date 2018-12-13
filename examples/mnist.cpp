@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include "lightnet.hpp"
+#include "tensor_t.h"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ uint32_t byteswap_uint32(uint32_t a)
 		(((a >> 0) & 0xff) << 24));
 }
 
-float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& expected){
+float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& expected, bool is_print){
 	// forward
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
@@ -25,7 +26,6 @@ float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<floa
 			activate( layers[i], layers[i-1]->out );
 		}
 	}
-
 	// backward
 	tensor_t<float> grads = layers.back()->out - expected;
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
@@ -35,7 +35,6 @@ float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<floa
 			calc_grads( layers[i], layers[i+1]->grads_in );
 		}
 	}
-
 	// update
 	for ( int i = 0; i < layers.size(); i++ ){
 		fix_weights( layers[i] );
@@ -49,6 +48,19 @@ float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<floa
 		}
 	}
 	return err * 100;
+
+	/*
+	float loss = 0.0;
+	for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
+    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+  }
+	if(is_print){
+		printf("----tensors----\n");
+		print_tensor(layers.back()->out);
+		print_tensor(expected);
+	}
+	return loss;
+	*/
 }
 
 uint8_t* read_file( const char* szFile ){
@@ -67,7 +79,6 @@ uint8_t* read_file( const char* szFile ){
 
 vector<case_t> read_test_cases(string data_json_path)
 {
-	printf("read_test_cases: %s\n", data_json_path.c_str());
 	JSONObject *data_json = new JSONObject();
 	std::vector <json_token_t*> data_tokens = data_json->load(data_json_path);
 	string train_dir = data_json->getChildValueForToken(data_tokens[0], "train_dir");   // data_tokens[0] := json root
@@ -76,7 +87,6 @@ vector<case_t> read_test_cases(string data_json_path)
 	uint8_t* train_image = read_file( (train_dir + "train-images-idx3-ubyte").c_str() );
 	uint8_t* train_labels = read_file( (train_dir + "train-labels-idx1-ubyte").c_str() );
 	uint32_t case_count = byteswap_uint32( *(uint32_t*)(train_image + 4) );
-	printf("case_count=%d\n", case_count);
 
 	for (int i=0; i<case_count; i++){
 		case_t c {tensor_t<float>( 28, 28, 1 ), tensor_t<float>( 10, 1, 1 )};
@@ -107,20 +117,25 @@ void mnist(int argc, char **argv)
 
 	float amse = 0;
 	int ic = 0;
-
-	for ( long ep = 0; ep < 100000; ){
+	printf("Start training data:%lu \n", cases.size());
+	for ( long ep = 0; ep < 500000; ){
 		for ( case_t& t : cases ){
-			float xerr = trainMNIST( layers, t.data, t.out );
+			bool is_print = false;
+			if ( (ep+1) % 1000 == 0 ){
+				is_print = true;
+			}
+			float xerr = trainMNIST( layers, t.data, t.out, is_print );
 			amse += xerr;
-			ep++;
 			ic++;
+			ep++;
 			if ( ep % 1000 == 0 ){
 				cout << "case " << ep << " err=" << amse/ic << endl;
+				// cout << "case " << ep << " err=" << xerr << endl;
 			}
 		}
 	}
-	// end:
 
+	/*
 	while ( true ){
 		uint8_t * data = read_file( "test.ppm" );
 
@@ -169,4 +184,5 @@ void mnist(int argc, char **argv)
 		wait.tv_nsec = 0;
 		nanosleep(&wait, nullptr);
 	}
+	*/
 }

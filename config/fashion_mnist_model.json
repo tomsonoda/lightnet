@@ -1,0 +1,24 @@
+{
+  "net" : {
+    "optimization":"cross_entropy",
+    "learning_rate":0.01
+  },
+
+  "layers":[
+    {
+      "type":"fully_connected",
+      "out_size":128,
+      "activation":"relu"
+    },
+    {
+      "type":"fully_connected",
+      "out_size":64,
+      "activation":"relu"
+    },
+    {
+      "type":"fully_connected",
+      "out_size":10,
+      "activation":"softmax"
+    }
+  ]
+}
