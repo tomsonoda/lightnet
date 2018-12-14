@@ -3,7 +3,7 @@
 #include <vector>
 #include "lightnet.hpp"
 #include "ImageProcessor.hpp"
-#include "cnn.h"
+#include "NeuralNetwork.h"
 
 using namespace std;
 
@@ -38,7 +38,7 @@ void getDataList(std::string dir_string, std::vector<string> &image_paths, std::
   delete utils;
 }
 
-float train( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& expected)
+float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected)
 {
   for (int i=0; i<layers.size(); i++){
     if (i== 0){
@@ -47,7 +47,7 @@ float train( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& e
       activate(layers[i], layers[i-1]->out);
     }
   }
-  tensor_t<float> grads = layers.back()->out - expected;
+  TensorObject<float> grads = layers.back()->out - expected;
 
   for (int i=layers.size()-1; i>=0; i--){
     if (i==layers.size()-1){
@@ -72,7 +72,7 @@ float train( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& e
   return err * 100;
 }
 
-vector<case_t> readCases(std::string data_config_path)
+vector<CaseObject> readCases(std::string data_config_path)
 {
   JSONObject *data_json = new JSONObject();
   std::vector <json_token_t*> data_tokens = data_json->load(data_config_path);
@@ -90,22 +90,22 @@ vector<case_t> readCases(std::string data_config_path)
     printf("Read image: %s %d %d\n", train_image_paths[i].c_str(), image.width, image.height);
     // image_processor->writeImageFilePNG(utils->stringReplace(train_image_paths[i], "jpg", "png"), image);
   }
-  vector<case_t> cases;
+  vector<CaseObject> cases;
   return cases;
 }
 
 void trainObjectDetection(std::string model_json_path, std::string model_path, std::string data_json_path){
-  vector<case_t> cases = readCases(data_json_path);
+  vector<CaseObject> cases = readCases(data_json_path);
 	JSONObject *model_json = new JSONObject();
 	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
-	vector<layer_t*> layers = loadModel(model_json, model_tokens, cases);
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases);
 
   /*
 	float amse = 0;
 	int ic = 0;
 
 	for(long ep=0; ep <100000;){
-		for (case_t& t : cases){
+		for (CaseObject& t : cases){
 			float xerr = train( layers, t.data, t.out );
 			amse += xerr;
 
@@ -135,7 +135,7 @@ void trainObjectDetection(std::string model_json_path, std::string model_path, s
 #pragma pack(pop)
 
 			RGB * rgb = (RGB*)usable;
-			tensor_t<float> image(28, 28, 1);
+			TensorObject<float> image(28, 28, 1);
 			for ( int i = 0; i < 28; i++ ){
 				for ( int j = 0; j < 28; j++ ){
 					RGB rgb_ij = rgb[i * 28 + j];
@@ -147,7 +147,7 @@ void trainObjectDetection(std::string model_json_path, std::string model_path, s
 			}
 
 			forward( layers, image );
-			tensor_t<float>& out = layers.back()->out;
+			TensorObject<float>& out = layers.back()->out;
 			for ( int i = 0; i < 10; i++ ){
 				printf( "[%i] %f\n", i, out( i, 0, 0 )*100.0f );
 			}
@@ -178,8 +178,8 @@ void objectDetection(int argc, char **argv)
   string model_path = argv[5];
 
   ArgumentProcessor *argument_processor = new ArgumentProcessor();
-  string classes_path = argument_processor->get_chars_parameter(argc, argv, "-classes_path", "classes.txt");
-  float threshold = argument_processor->get_float_parameter(argc, argv, "-threshold", .3);
+  string classes_path = argument_processor->getCharsParameter(argc, argv, "-classes_path", "classes.txt");
+  float threshold = argument_processor->getFloatParameter(argc, argv, "-threshold", .3);
   delete argument_processor;
 
   if(strcmp(argv[2], "train")==0){

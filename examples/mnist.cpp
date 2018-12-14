@@ -5,7 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include "lightnet.hpp"
-#include "tensor_t.h"
+#include "TensorObject.h"
 
 using namespace std;
 
@@ -17,7 +17,7 @@ uint32_t byteswap_uint32(uint32_t a)
 		(((a >> 0) & 0xff) << 24));
 }
 
-float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& expected, bool is_print, float learning_rate, string opt){
+float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, bool is_print, float learning_rate, string opt){
 	// forward
 	for( int i = 0; i < layers.size(); i++ ){
 		// printf("----layer %d----\n", i);
@@ -28,7 +28,7 @@ float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<floa
 		}
 	}
 	// backward
-	tensor_t<float> grads = layers.back()->out - expected;
+	TensorObject<float> grads = layers.back()->out - expected;
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
 			calc_grads( layers[i], grads );
@@ -83,19 +83,19 @@ uint8_t* read_file( const char* szFile ){
 	return buffer;
 }
 
-vector<case_t> read_test_cases(string data_json_path)
+vector<CaseObject> read_test_cases(string data_json_path)
 {
 	JSONObject *data_json = new JSONObject();
 	std::vector <json_token_t*> data_tokens = data_json->load(data_json_path);
 	string train_dir = data_json->getChildValueForToken(data_tokens[0], "train_dir");   // data_tokens[0] := json root
 
-	vector<case_t> cases;
+	vector<CaseObject> cases;
 	uint8_t* train_image = read_file( (train_dir + "train-images-idx3-ubyte").c_str() );
 	uint8_t* train_labels = read_file( (train_dir + "train-labels-idx1-ubyte").c_str() );
 	uint32_t case_count = byteswap_uint32( *(uint32_t*)(train_image + 4) );
 
 	for (int i=0; i<case_count; i++){
-		case_t c {tensor_t<float>( 28, 28, 1 ), tensor_t<float>( 10, 1, 1 )};
+		CaseObject c {TensorObject<float>( 28, 28, 1 ), TensorObject<float>( 10, 1, 1 )};
 		uint8_t* img = train_image + 16 + i * (28 * 28);
 		uint8_t* label = train_labels + 8 + i;
 		for ( int x = 0; x < 28; x++ ){
@@ -118,10 +118,10 @@ void mnist(int argc, char **argv)
 	string data_json_path = argv[2];
 	string model_json_path = argv[3];
 
-	vector<case_t> cases = read_test_cases(data_json_path);
+	vector<CaseObject> cases = read_test_cases(data_json_path);
 	JSONObject *model_json = new JSONObject();
 	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
-	vector<layer_t*> layers = loadModel(model_json, model_tokens, cases);
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases);
 
 	// neural network
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
@@ -135,7 +135,7 @@ void mnist(int argc, char **argv)
 	for ( long ep = 0; ep < 1000000; ){
 		int randindx = rand() % (cases.size()-BATCH_SIZE);
 		for (unsigned j = randindx; j < (randindx+BATCH_SIZE); ++j){
-			case_t t = cases[j];
+			CaseObject t = cases[j];
 
 			bool is_print = false;
 			if ( (ep+1) % 1000 == 0 ){

@@ -8,7 +8,7 @@ using namespace std;
 
 struct ArgumentProcessor
 {
-  float get_float_parameter(int argc, char **argv, string name, float default_value)
+  float getFloatParameter(int argc, char **argv, string name, float default_value)
   {
     int i;
     float value = default_value;
@@ -20,7 +20,7 @@ struct ArgumentProcessor
     }
     return value;
   }
-  string get_chars_parameter(int argc, char **argv, string name, string default_value)
+  string getCharsParameter(int argc, char **argv, string name, string default_value)
   {
     int i;
     string value = default_value;

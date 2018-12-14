@@ -2,4 +2,4 @@
 #include "ArgumentProcessor.hpp"
 #include "JSONObject.hpp"
 #include "Utils.hpp"
-#include "cnn.h"
+#include "NeuralNetwork.h"
