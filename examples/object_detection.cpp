@@ -62,6 +62,7 @@ float train( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& e
   }
 
   float err = 0;
+  print_tensor(grads);
   for( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
     float f = expected.data[i];
     if ( f > 0.5 ){
@@ -93,9 +94,11 @@ vector<case_t> readCases(std::string data_config_path)
   return cases;
 }
 
-void trainObjectDetection(std::string model_config_path, std::string model_path, std::string data_config_path){
-  vector<case_t> cases = readCases(data_config_path);
-  vector<layer_t*> layers = loadModel(model_config_path, cases);
+void trainObjectDetection(std::string model_json_path, std::string model_path, std::string data_json_path){
+  vector<case_t> cases = readCases(data_json_path);
+	JSONObject *model_json = new JSONObject();
+	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
+	vector<layer_t*> layers = loadModel(model_json, model_tokens, cases);
 
   /*
 	float amse = 0;

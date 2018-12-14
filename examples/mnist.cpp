@@ -17,9 +17,10 @@ uint32_t byteswap_uint32(uint32_t a)
 		(((a >> 0) & 0xff) << 24));
 }
 
-float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& expected, bool is_print){
+float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<float>& expected, bool is_print, float learning_rate, string opt){
 	// forward
 	for( int i = 0; i < layers.size(); i++ ){
+		// printf("----layer %d----\n", i);
 		if( i == 0 ){
 			activate( layers[i], data );
 		}else{
@@ -40,27 +41,32 @@ float trainMNIST( vector<layer_t*>& layers, tensor_t<float>& data, tensor_t<floa
 		fix_weights( layers[i] );
 	}
 
-	float err = 0;
-	for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
-		float f = expected.data[i];
-		if ( f > 0.5 ){
-			err += abs(grads.data[i]);
+	if(opt=="mse"){
+		float err = 0;
+		for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
 		}
+		return err * 100;
+	}else{
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
+	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+	  }
+		if(is_print){
+			printf("----GT----\n");
+			print_tensor(expected);
+			printf("----output----\n");
+			print_tensor(layers.back()->out);
+			for(int i = layers.size() - 1; i >= 1; i-- ){
+				printf(" ----layer %d ----\n",i);
+				print_tensor(layers[i]->grads_in);
+			}
+		}
+		return loss;
 	}
-	return err * 100;
-
-	/*
-	float loss = 0.0;
-	for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
-    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
-  }
-	if(is_print){
-		printf("----tensors----\n");
-		print_tensor(layers.back()->out);
-		print_tensor(expected);
-	}
-	return loss;
-	*/
 }
 
 uint8_t* read_file( const char* szFile ){
@@ -113,76 +119,39 @@ void mnist(int argc, char **argv)
 	string model_json_path = argv[3];
 
 	vector<case_t> cases = read_test_cases(data_json_path);
-	vector<layer_t*> layers = loadModel(model_json_path, cases);
+	JSONObject *model_json = new JSONObject();
+	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
+	vector<layer_t*> layers = loadModel(model_json, model_tokens, cases);
+
+	// neural network
+	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
+	float learning_rate = std::stof( model_json->getChildValueForToken(nueral_network, "learning_rate") );
+	string opt = model_json->getChildValueForToken(nueral_network, "optimization");
 
 	float amse = 0;
 	int ic = 0;
+	int BATCH_SIZE = 64;
 	printf("Start training data:%lu \n", cases.size());
-	for ( long ep = 0; ep < 500000; ){
-		for ( case_t& t : cases ){
+	for ( long ep = 0; ep < 1000000; ){
+		int randindx = rand() % (cases.size()-BATCH_SIZE);
+		for (unsigned j = randindx; j < (randindx+BATCH_SIZE); ++j){
+			case_t t = cases[j];
+
 			bool is_print = false;
 			if ( (ep+1) % 1000 == 0 ){
 				is_print = true;
 			}
-			float xerr = trainMNIST( layers, t.data, t.out, is_print );
-			amse += xerr;
+			float xerr = trainMNIST( layers, t.data, t.out, is_print, learning_rate, opt);
+			if(-1<xerr && xerr<10000){
+				amse += xerr;
+			}
 			ic++;
 			ep++;
+
 			if ( ep % 1000 == 0 ){
 				cout << "case " << ep << " err=" << amse/ic << endl;
-				// cout << "case " << ep << " err=" << xerr << endl;
 			}
 		}
 	}
 
-	/*
-	while ( true ){
-		uint8_t * data = read_file( "test.ppm" );
-
-		if ( data ){
-			uint8_t * usable = data;
-			while ( *(uint32_t*)usable != 0x0A353532 ){
-				usable++;
-			}
-
-#pragma pack(push, 1)
-			struct RGB
-			{
-				uint8_t r, g, b;
-			};
-#pragma pack(pop)
-
-			RGB * rgb = (RGB*)usable;
-			tensor_t<float> image(28, 28, 1);
-			for ( int i = 0; i < 28; i++ ){
-				for ( int j = 0; j < 28; j++ ){
-					RGB rgb_ij = rgb[i * 28 + j];
-					image( j, i, 0 ) = (((float)rgb_ij.r
-							     + rgb_ij.g
-							     + rgb_ij.b)
-							    / (3.0f*255.f));
-				}
-			}
-
-			for (int i=0; i<layers.size(); i++){
-				if (i== 0){
-					activate(layers[i], image);
-				}else{
-					activate(layers[i], layers[i-1]->out);
-				}
-			}
-
-			tensor_t<float>& out = layers.back()->out;
-			for ( int i = 0; i < 10; i++ ){
-				printf( "[%i] %f\n", i, out( i, 0, 0 )*100.0f );
-			}
-			delete[] data;
-		}
-
-		struct timespec wait;
-		wait.tv_sec = 1;
-		wait.tv_nsec = 0;
-		nanosleep(&wait, nullptr);
-	}
-	*/
 }
