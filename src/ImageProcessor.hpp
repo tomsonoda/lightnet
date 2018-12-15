@@ -6,12 +6,14 @@
 
 using namespace std;
 
+#pragma pack(push, 1)
 typedef struct {
   int width;
   int height;
   int channels;
   float *data;
 } image_st;
+#pragma pack(pop)
 
 struct ImageProcessor
 {
@@ -44,7 +46,7 @@ struct ImageProcessor
     free(data);
     return image;
   }
-  
+
   void writeImageFilePNG(std::string image_filename, image_st image)
   {
     unsigned char *data = (unsigned char *)calloc(image.width * image.height * image.channels, sizeof(char));
