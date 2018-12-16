@@ -128,7 +128,7 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
       }
 
 			int out_size = (in_size.x - size + 2*padding)/stride + 1;
-      printf("%d: convolutional stride=%d  extend_filter=%d filters=%d pad=%d (%d x %d x %d) -> ( %d x %d x %d)\n",
+      printf("%d: convolutional stride=%d  extend_filter=%d filters=%d pad=%d: (%d x %d x %d) -> ( %d x %d x %d)\n",
 			i, stride, size, filters, padding, in_size.x, in_size.y, in_size.z, out_size, out_size, filters);
 
       LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size);		// 28 * 28 * 1 -> 24 * 24 * 8
@@ -150,7 +150,7 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
 				out_size = std::stoi( model_json->getChildValueForToken(json_layers[i], "out_size") );
 			}
 
-      printf("%d: dense : (%d) -> (%d) \n",i, (in_size.x * in_size.y * in_size.z), out_size);
+      printf("%d: dense: ( %d x %d x %d ) -> ( %d ) \n",i, in_size.x, in_size.y, in_size.z, out_size);
       LayerDense *layer = new LayerDense(in_size, out_size, learning_rate);
       layers.push_back( (LayerObject*)layer );
 
@@ -160,13 +160,13 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
       uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
       tdsize in_size = layers[layers.size()-1]->out.size;
 
-      printf("%d: maxpool stride=%d  extend_filter=%d \n", i, stride, size );
+      printf("%d: maxpool stride=%d  extend_filter=%d: ( %d x %d x %d ) -> ()\n", i, stride, size, in_size.x, in_size.y, in_size.z);
       LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
       layers.push_back( (LayerObject*)layer );
 
     }else if(type=="relu"){
-
-      printf("%d: relu \n", i);
+			tdsize in_size = layers[layers.size()-1]->out.size;
+      printf("%d: relu: ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
       LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
       layers.push_back( (LayerObject*)layer );
 
@@ -182,7 +182,7 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
 		}else if(type=="sigmoid"){
 
 			tdsize in_size = layers[layers.size()-1]->out.size;
-			printf("%d: sigmoid (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			printf("%d: sigmoid: (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerSigmoid *layer = new LayerSigmoid(in_size);
 			layers.push_back( (LayerObject*)layer );
 
@@ -208,7 +208,7 @@ static void print_tensor( TensorObject<float>& data )
 		printf( "[Dim%d]\n", z );
 		for ( int y = 0; y < my; y++ ){
 			for ( int x = 0; x < mx; x++ ){
-				printf( "%.3f \t", (float)data.get( x, y, z ) );
+				printf( "%.3f \t", (float)data.get( 0, x, y, z ) );
 			}
 			printf( "\n" );
 		}

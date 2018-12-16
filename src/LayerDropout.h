@@ -13,10 +13,10 @@ struct LayerDropout
 
 	LayerDropout( tdsize in_size, float p_activation )
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
-		out( in_size.x, in_size.y, in_size.z ),
-		hitmap( in_size.x, in_size.y, in_size.z ),
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		out( in_size.b, in_size.x, in_size.y, in_size.z ),
+		hitmap( in_size.b, in_size.x, in_size.y, in_size.z ),
 		p_activation( p_activation )
 	{
 
@@ -30,7 +30,7 @@ struct LayerDropout
 
 	void activate()
 	{
-		for ( int i = 0; i < in.size.x*in.size.y*in.size.z; i++ )
+		for ( int i = 0; i < in.size.b*in.size.x*in.size.y*in.size.z; i++ )
 		{
 			bool active = (rand() % RAND_MAX) / float( RAND_MAX ) <= p_activation;
 			hitmap.data[i] = active;
@@ -46,7 +46,7 @@ struct LayerDropout
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-		for ( int i = 0; i < in.size.x*in.size.y*in.size.z; i++ )
+		for ( int i = 0; i < in.size.b*in.size.x*in.size.y*in.size.z; i++ )
 			grads_in.data[i] = hitmap.data[i] ? grad_next_layer.data[i] : 0.0f;
 	}
 };

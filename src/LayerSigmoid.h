@@ -11,9 +11,9 @@ struct LayerSigmoid
 
 	LayerSigmoid( tdsize in_size )
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
-		out( in_size.x, in_size.y, in_size.z )
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
 	}
 
@@ -28,7 +28,7 @@ struct LayerSigmoid
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					out( i, j, z ) = 1.0f / (1.0f + exp( - in( i, j, z ) ));
+					out( 0, i, j, z ) = 1.0f / (1.0f + exp( - in( 0, i, j, z ) ));
 				}
 			}
 		}
@@ -43,8 +43,8 @@ struct LayerSigmoid
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					float sig = 1.0f / (1.0f + exp( - in( i, j, z ) ));
-					grads_in( i, j, z ) =  (sig * (1-sig)) * grad_next_layer( i, j, z );
+					float sig = 1.0f / (1.0f + exp( - in( 0, i, j, z ) ));
+					grads_in( 0, i, j, z ) =  (sig * (1-sig)) * grad_next_layer( 0, i, j, z );
 				}
 			}
 		}

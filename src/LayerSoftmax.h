@@ -11,9 +11,9 @@ struct LayerSoftmax
 
 	LayerSoftmax( tdsize in_size )
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
-		out( in_size.x, in_size.y, in_size.z )
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
 	}
 
@@ -27,7 +27,7 @@ struct LayerSoftmax
 	{
 		float max_v = 0.0;
 		for ( int i = 0; i < in.size.x; i++ ){
-			float v = in( i, 0, 0 );
+			float v = in( 0, i, 0, 0 );
 			if(v>max_v){
 				max_v = v;
 			}
@@ -35,13 +35,13 @@ struct LayerSoftmax
 
 		float sum_of_elems = 0.0;
 		for ( int i = 0; i < in.size.x; i++ ){
-			float v = in( i, 0, 0 );
-			out( i, 0, 0 ) = exp(v - max_v);
-			sum_of_elems += out( i, 0, 0 );
+			float v = in( 0, i, 0, 0 );
+			out( 0, i, 0, 0 ) = exp(v - max_v);
+			sum_of_elems += out( 0, i, 0, 0 );
 		}
 
 		for ( int i = 0; i < in.size.x; i++ ){
-			out( i, 0, 0 ) = out( i, 0, 0 ) / sum_of_elems;
+			out( 0, i, 0, 0 ) = out( 0, i, 0, 0 ) / sum_of_elems;
 		}
 	}
 
@@ -54,7 +54,7 @@ struct LayerSoftmax
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					grads_in( i, j, z ) = grad_next_layer( i, j, z );
+					grads_in( 0, i, j, z ) = grad_next_layer( 0, i, j, z );
 				}
 			}
 		}

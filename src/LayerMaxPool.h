@@ -13,10 +13,11 @@ struct LayerPool
 
 	LayerPool( uint16_t stride, uint16_t extend_filter, tdsize in_size )
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
-		(in_size.x - extend_filter) / stride + 1,
+			in_size.b,
+			(in_size.x - extend_filter) / stride + 1,
 			(in_size.y - extend_filter) / stride + 1,
 			in_size.z
 		)
@@ -90,16 +91,16 @@ struct LayerPool
 			{
 				for ( int z = 0; z < out.size.z; z++ )
 				{
-					PointObject mapped = map_to_input( { (uint16_t)x, (uint16_t)y, 0 }, 0 );
+					PointObject mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 					float mval = -FLT_MAX;
 					for ( int i = 0; i < extend_filter; i++ )
 						for ( int j = 0; j < extend_filter; j++ )
 						{
-							float v = in( mapped.x + i, mapped.y + j, z );
+							float v = in( 0, mapped.x + i, mapped.y + j, z );
 							if ( v > mval )
 								mval = v;
 						}
-					out( x, y, z ) = mval;
+					out( 0, x, y, z ) = mval;
 				}
 			}
 		}
@@ -126,11 +127,11 @@ struct LayerPool
 						for ( int j = rn.min_y; j <= rn.max_y; j++ )
 						{
 							// int miny = j * stride;
-							int is_max = in( x, y, z ) == out( i, j, z ) ? 1 : 0;
-							sum_error += is_max * grad_next_layer( i, j, z );
+							int is_max = in( 0, x, y, z ) == out( 0, i, j, z ) ? 1 : 0;
+							sum_error += is_max * grad_next_layer( 0, i, j, z );
 						}
 					}
-					grads_in( x, y, z ) = sum_error;
+					grads_in( 0, x, y, z ) = sum_error;
 				}
 			}
 		}

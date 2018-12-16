@@ -17,17 +17,17 @@ struct LayerDense
 
 	LayerDense( tdsize in_size, int out_size, float learning_rate)
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
-		out( out_size, 1, 1 ),
-		weights( in_size.x*in_size.y*in_size.z, out_size, 1 ),
-		dW( in_size.x*in_size.y*in_size.z, out_size, 1 )
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		out( in_size.b, out_size, 1, 1 ),
+		weights( in_size.b, in_size.x*in_size.y*in_size.z, out_size, 1 ),
+		dW( in_size.b, in_size.x*in_size.y*in_size.z, out_size, 1 )
 	{
 		lr = learning_rate;
 		for(int i=0; i<out_size; i++){
-			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
-				weights(h,i,0) = 0.05 * rand() / float( RAND_MAX );
-				dW(h,i,0) = 0;
+			for(int h=0; h<in_size.b*in_size.x*in_size.y*in_size.z; h++){
+				weights(0,h,i,0) = 0.05 * rand() / float( RAND_MAX );
+				dW(0,h,i,0) = 0;
 			}
 		}
 	}
@@ -40,7 +40,7 @@ struct LayerDense
 
 	int map( PointObject d )
 	{
-		return (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
+		return (d.b * (in.size.z * in.size.x * in.size.y)) + (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
 	}
 
 	void activate()
@@ -50,12 +50,12 @@ struct LayerDense
 			for (int i=0; i<in.size.x; i++ ){
 				for (int j=0; j<in.size.y; j++ ){
 					for (int z=0; z<in.size.z; z++ ){
-						int m = map( {i, j, z} );;
-						inputv += weights(m, n, 0) * in(i,j,z);
+						int m = map( {0, i, j, z} );;
+						inputv += weights(0, m, n, 0) * in(0, i,j,z);
 					}
 				}
 			}
-			out(n, 0, 0) = inputv;
+			out(0, n, 0, 0) = inputv;
 		}
 	}
 
@@ -65,8 +65,8 @@ struct LayerDense
 			for (int i=0; i<in.size.x; i++ ){
 				for (int j=0; j<in.size.y; j++ ){
 					for (int z=0; z<in.size.z; z++ ){
-						int m = map( { i, j, z } );
-						weights(m, n, 0) = weights(m, n, 0) - lr * dW(m, n, 0); // lr=0.001
+						int m = map( {0, i, j, z } );
+						weights(0, m, n, 0) = weights(0, m, n, 0) - lr * dW(0, m, n, 0); // lr=0.001
 					}
 				}
 			}
@@ -79,11 +79,11 @@ struct LayerDense
 			for (int i=0; i<in.size.x; i++ ){
 				for (int j=0; j<in.size.y; j++ ){
 					for (int z=0; z<in.size.z; z++ ){
-						int m = map( { i, j, z } );
+						int m = map( {0, i, j, z } );
 						// dW (m, n, 0) = in(i, j, z) * grad_next_layer(n, 0, 0);
 						// grads_in(i, 0, 0) += weights(m, n, 0) * grad_next_layer(n, 0, 0) * activator_derivative(z_[n]);
-						dW (m, n, 0) = in(i, j, z) * grad_next_layer(n, 0, 0);
-						grads_in(i, 0, 0) += weights(m, n, 0) * grad_next_layer(n, 0, 0);
+						dW (0, m, n, 0) = in(0, i, j, z) * grad_next_layer(0, n, 0, 0);
+						grads_in(0, i, 0, 0) += weights(0, m, n, 0) * grad_next_layer(0, n, 0, 0);
 					}
 				}
 			}

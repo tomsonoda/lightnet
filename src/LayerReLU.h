@@ -11,9 +11,9 @@ struct LayerReLU
 
 	LayerReLU( tdsize in_size )
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
-		out( in_size.x, in_size.y, in_size.z )
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
 	}
 
@@ -29,11 +29,11 @@ struct LayerReLU
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					float v = in( i, j, z );
+					float v = in( 0, i, j, z );
 					if ( v < 0 ){
 						v = 0;
 					}
-					out( i, j, z ) = v;
+					out( 0, i, j, z ) = v;
 				}
 			}
 		}
@@ -48,7 +48,7 @@ struct LayerReLU
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					grads_in( i, j, z ) = (in( i, j, z ) < 0) ? (0) : (1 * grad_next_layer( i, j, z ));
+					grads_in( 0, i, j, z ) = (in( 0, i, j, z ) < 0) ? (0) : (1 * grad_next_layer( 0, i, j, z ));
 				}
 			}
 		}

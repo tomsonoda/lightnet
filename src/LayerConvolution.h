@@ -16,10 +16,11 @@ struct LayerConvolution
 
 	LayerConvolution( uint16_t stride, uint16_t extend_filter, uint16_t number_filters, uint16_t padding, tdsize in_size )
 		:
-		grads_in( in_size.x, in_size.y, in_size.z ),
-		in( in_size.x, in_size.y, in_size.z ),
+		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
-		(in_size.x - extend_filter) / stride + 1,
+			in_size.b,
+			(in_size.x - extend_filter) / stride + 1,
 			(in_size.y - extend_filter) / stride + 1,
 			number_filters
 		)
@@ -37,19 +38,19 @@ struct LayerConvolution
 
 		for ( int a = 0; a < number_filters; a++ )
 		{
-			TensorObject<float> t( extend_filter, extend_filter, in_size.z );
+			TensorObject<float> t( 1, extend_filter, extend_filter, in_size.z );
 
 			int maxval = extend_filter * extend_filter * in_size.z;
 
 			for ( int i = 0; i < extend_filter; i++ )
 				for ( int j = 0; j < extend_filter; j++ )
 					for ( int z = 0; z < in_size.z; z++ )
-						t( i, j, z ) = 1.0f / maxval * rand() / float( RAND_MAX );
+						t( 0, i, j, z ) = 1.0f / maxval * rand() / float( RAND_MAX );
 			filters.push_back( t );
 		}
 		for ( int i = 0; i < number_filters; i++ )
 		{
-			TensorObject<GradientObject> t( extend_filter, extend_filter, in_size.z );
+			TensorObject<GradientObject> t( 1, extend_filter, extend_filter, in_size.z );
 			filter_grads.push_back( t );
 		}
 
@@ -113,17 +114,17 @@ struct LayerConvolution
 			{
 				for ( int y = 0; y < out.size.y; y++ )
 				{
-					PointObject mapped = map_to_input( { (uint16_t)x, (uint16_t)y, 0 }, 0 );
+					PointObject mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 					float sum = 0;
 					for ( int i = 0; i < extend_filter; i++ )
 						for ( int j = 0; j < extend_filter; j++ )
 							for ( int z = 0; z < in.size.z; z++ )
 							{
-								float f = filter_data( i, j, z );
-								float v = in( mapped.x + i, mapped.y + j, z );
+								float f = filter_data( 0, i, j, z );
+								float v = in( 0, mapped.x + i, mapped.y + j, z );
 								sum += f*v;
 							}
-					out( x, y, filter ) = sum;
+					out( 0, x, y, filter ) = sum;
 				}
 			}
 		}
@@ -136,8 +137,8 @@ struct LayerConvolution
 				for ( int j = 0; j < extend_filter; j++ )
 					for ( int z = 0; z < in.size.z; z++ )
 					{
-						float& w = filters[a].get( i, j, z );
-						GradientObject& grad = filter_grads[a].get( i, j, z );
+						float& w = filters[a].get( 0, i, j, z );
+						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
 						w = update_weight( w, grad );
 						update_gradient( grad );
 					}
@@ -151,7 +152,7 @@ struct LayerConvolution
 			for ( int i = 0; i < extend_filter; i++ )
 				for ( int j = 0; j < extend_filter; j++ )
 					for ( int z = 0; z < in.size.z; z++ )
-						filter_grads[k].get( i, j, z ).grad = 0;
+						filter_grads[k].get( 0, i, j, z ).grad = 0;
 		}
 
 		for ( int x = 0; x < in.size.x; x++ )
@@ -170,13 +171,13 @@ struct LayerConvolution
 							int miny = j * stride;
 							for ( int k = rn.min_z; k <= rn.max_z; k++ )
 							{
-								int w_applied = filters[k].get( x - minx, y - miny, z );
-								sum_error += w_applied * grad_next_layer( i, j, k );
-								filter_grads[k].get( x - minx, y - miny, z ).grad += in( x, y, z ) * grad_next_layer( i, j, k );
+								int w_applied = filters[k].get( 0, x - minx, y - miny, z );
+								sum_error += w_applied * grad_next_layer( 0, i, j, k );
+								filter_grads[k].get( 0, x - minx, y - miny, z ).grad += in( 0, x, y, z ) * grad_next_layer( 0, i, j, k );
 							}
 						}
 					}
-					grads_in( x, y, z ) = sum_error;
+					grads_in( 0, x, y, z ) = sum_error;
 				}
 			}
 		}

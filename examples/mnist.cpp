@@ -95,16 +95,16 @@ vector<CaseObject> read_test_cases(string data_json_path)
 	uint32_t case_count = byteswap_uint32( *(uint32_t*)(train_image + 4) );
 
 	for (int i=0; i<case_count; i++){
-		CaseObject c {TensorObject<float>( 28, 28, 1 ), TensorObject<float>( 10, 1, 1 )};
+		CaseObject c {TensorObject<float>( 1, 28, 28, 1 ), TensorObject<float>( 1, 10, 1, 1 )};
 		uint8_t* img = train_image + 16 + i * (28 * 28);
 		uint8_t* label = train_labels + 8 + i;
 		for ( int x = 0; x < 28; x++ ){
 			for ( int y = 0; y < 28; y++ ){
-				c.data( x, y, 0 ) = img[x + y * 28] / 255.f;
+				c.data( 0, x, y, 0 ) = img[x + y * 28] / 255.f;
 			}
 		}
 		for ( int b = 0; b < 10; b++ ){
-			c.out( b, 0, 0 ) = *label == b ? 1.0f : 0.0f;
+			c.out( 0, b, 0, 0 ) = *label == b ? 1.0f : 0.0f;
 		}
 		cases.push_back( c );
 	}
@@ -133,7 +133,7 @@ void mnist(int argc, char **argv)
 
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases, learning_rate);
 
-	printf("Start training data:%lu \n", cases.size());
+	printf("Start training :%lu learning_rate=%f optimizer=%s\n", cases.size(), learning_rate, opt.c_str());
 	for ( long ep = 0; ep < 1000000; ){
 		int randindx = rand() % (cases.size()-BATCH_SIZE);
 		for (unsigned j = randindx; j < (randindx+BATCH_SIZE); ++j){
