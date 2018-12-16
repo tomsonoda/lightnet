@@ -13,7 +13,7 @@ SRCDIR   = ./src
 SOURCES  = $(wildcard src/*.cpp)
 OBJECTS  = $(addprefix $(OBJDIR)/,$(notdir $(SOURCES:.cpp=.o)))
 VPATH    = ./src:./examples
-DEPS     = $(wildcard src/*.hpp) Makefile include/lightnet.hpp
+DEPS     = $(wildcard src/*.h) Makefile include/lightnet.h
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
 
 # all: $(TARGET) $(SLIB) $(ALIB)

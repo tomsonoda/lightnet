@@ -11,12 +11,11 @@ struct LayerDense
 	TensorObject<float> grads_in;
 	TensorObject<float> in;
 	TensorObject<float> out;
-	std::vector<float> input;
-	std::vector<float> z_;
 	TensorObject<float> weights;
 	TensorObject<float> dW;
+	float lr;
 
-	LayerDense( tdsize in_size, int out_size)
+	LayerDense( tdsize in_size, int out_size, float learning_rate)
 		:
 		grads_in( in_size.x, in_size.y, in_size.z ),
 		in( in_size.x, in_size.y, in_size.z ),
@@ -24,9 +23,7 @@ struct LayerDense
 		weights( in_size.x*in_size.y*in_size.z, out_size, 1 ),
 		dW( in_size.x*in_size.y*in_size.z, out_size, 1 )
 	{
-		input = std::vector<float>( out_size );
-		z_ =  std::vector<float>( out_size );
-
+		lr = learning_rate;
 		for(int i=0; i<out_size; i++){
 			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
 				weights(h,i,0) = 0.05 * rand() / float( RAND_MAX );
@@ -58,7 +55,6 @@ struct LayerDense
 					}
 				}
 			}
-			z_[n] = inputv;
 			out(n, 0, 0) = inputv;
 		}
 	}
@@ -70,7 +66,7 @@ struct LayerDense
 				for (int j=0; j<in.size.y; j++ ){
 					for (int z=0; z<in.size.z; z++ ){
 						int m = map( { i, j, z } );
-						weights(m, n, 0) = weights(m, n, 0) - 0.001 * dW(m, n, 0);
+						weights(m, n, 0) = weights(m, n, 0) - lr * dW(m, n, 0); // lr=0.001
 					}
 				}
 			}

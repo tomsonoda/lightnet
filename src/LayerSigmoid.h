@@ -2,14 +2,14 @@
 #include "LayerObject.h"
 
 #pragma pack(push, 1)
-struct LayerReLU
+struct LayerSigmoid
 {
 	LayerType type = LayerType::relu;
 	TensorObject<float> grads_in;
 	TensorObject<float> in;
 	TensorObject<float> out;
 
-	LayerReLU( tdsize in_size )
+	LayerSigmoid( tdsize in_size )
 		:
 		grads_in( in_size.x, in_size.y, in_size.z ),
 		in( in_size.x, in_size.y, in_size.z ),
@@ -44,7 +44,7 @@ struct LayerReLU
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
 					float sig = 1.0f / (1.0f + exp( - in( i, j, z ) ));
-					grads_in( i, j, z ) =  (sig * (1-sig)) * grad_next_layer( i, j, z ));
+					grads_in( i, j, z ) =  (sig * (1-sig)) * grad_next_layer( i, j, z );
 				}
 			}
 		}

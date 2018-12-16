@@ -4,7 +4,7 @@
 #pragma pack(push, 1)
 struct LayerPool
 {
-	LayerType type = LayerType::pool;
+	LayerType type = LayerType::max_pool;
 	TensorObject<float> grads_in;
 	TensorObject<float> in;
 	TensorObject<float> out;

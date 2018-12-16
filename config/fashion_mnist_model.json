@@ -1,7 +1,7 @@
 {
   "net" : {
     "optimization":"cross_entropy",
-    "learning_rate":0.01
+    "learning_rate":0.001
   },
 
   "layers":[

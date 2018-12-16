@@ -4,7 +4,7 @@
 #pragma pack(push, 1)
 struct LayerDropout
 {
-	LayerType type = LayerType::dropout_layer;
+	LayerType type = LayerType::dropout;
 	TensorObject<float> grads_in;
 	TensorObject<float> in;
 	TensorObject<float> out;

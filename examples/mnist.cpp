@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include "lightnet.hpp"
+#include "lightnet.h"
 #include "TensorObject.h"
 
 using namespace std;
@@ -121,7 +121,6 @@ void mnist(int argc, char **argv)
 	vector<CaseObject> cases = read_test_cases(data_json_path);
 	JSONObject *model_json = new JSONObject();
 	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases);
 
 	// neural network
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
@@ -131,6 +130,9 @@ void mnist(int argc, char **argv)
 	float amse = 0;
 	int ic = 0;
 	int BATCH_SIZE = 64;
+
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases, learning_rate);
+
 	printf("Start training data:%lu \n", cases.size());
 	for ( long ep = 0; ep < 1000000; ){
 		int randindx = rand() % (cases.size()-BATCH_SIZE);

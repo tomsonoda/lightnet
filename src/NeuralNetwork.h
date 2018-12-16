@@ -1,12 +1,13 @@
 #pragma once
-#include "CaseObject.hpp"
+#include "CaseObject.h"
 #include "TensorObject.h"
 #include "OptimizationMethods.h"
 #include "LayerDense.h"
-#include "LayerPool.h"
+#include "LayerMaxPool.h"
 #include "LayerReLU.h"
 #include "LayerConvolution.h"
 #include "LayerDropout.h"
+#include "LayerSigmoid.h"
 #include "LayerSoftmax.h"
 #include "Types.h"
 
@@ -17,17 +18,20 @@ static void calc_grads( LayerObject* layer, TensorObject<float>& grad_next_layer
 		case LayerType::conv:
 			((LayerConvolution*)layer)->calc_grads( grad_next_layer );
 			return;
-		case LayerType::relu:
-			((LayerReLU*)layer)->calc_grads( grad_next_layer );
-			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->calc_grads( grad_next_layer );
 			return;
-		case LayerType::pool:
+		case LayerType::dropout:
+			((LayerDropout*)layer)->calc_grads( grad_next_layer );
+			return;
+		case LayerType::relu:
+			((LayerReLU*)layer)->calc_grads( grad_next_layer );
+			return;
+		case LayerType::max_pool:
 			((LayerPool*)layer)->calc_grads( grad_next_layer );
 			return;
-		case LayerType::dropout_layer:
-			((LayerDropout*)layer)->calc_grads( grad_next_layer );
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->calc_grads( grad_next_layer );
 			return;
 		case LayerType::softmax:
 			((LayerSoftmax*)layer)->calc_grads( grad_next_layer );
@@ -44,17 +48,20 @@ static void fix_weights( LayerObject* layer )
 		case LayerType::conv:
 			((LayerConvolution*)layer)->fix_weights();
 			return;
-		case LayerType::relu:
-			((LayerReLU*)layer)->fix_weights();
-			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->fix_weights();
 			return;
-		case LayerType::pool:
+		case LayerType::dropout:
+			((LayerDropout*)layer)->fix_weights();
+			return;
+		case LayerType::max_pool:
 			((LayerPool*)layer)->fix_weights();
 			return;
-		case LayerType::dropout_layer:
-			((LayerDropout*)layer)->fix_weights();
+		case LayerType::relu:
+			((LayerReLU*)layer)->fix_weights();
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->fix_weights();
 			return;
 		case LayerType::softmax:
 			((LayerSoftmax*)layer)->fix_weights();
@@ -71,17 +78,20 @@ static void activate( LayerObject* layer, TensorObject<float>& in )
 		case LayerType::conv:
 			((LayerConvolution*)layer)->activate( in );
 			return;
-		case LayerType::relu:
-			((LayerReLU*)layer)->activate( in );
-			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->activate( in );
 			return;
-		case LayerType::pool:
+		case LayerType::dropout:
+			((LayerDropout*)layer)->activate( in );
+			return;
+		case LayerType::max_pool:
 			((LayerPool*)layer)->activate( in );
 			return;
-		case LayerType::dropout_layer:
-			((LayerDropout*)layer)->activate( in );
+		case LayerType::relu:
+			((LayerReLU*)layer)->activate( in );
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->activate( in );
 			return;
 		case LayerType::softmax:
 			((LayerSoftmax*)layer)->activate( in );
@@ -91,7 +101,7 @@ static void activate( LayerObject* layer, TensorObject<float>& in )
 	}
 }
 
-static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_token_t*> model_tokens, vector<CaseObject> cases)
+static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_token_t*> model_tokens, vector<CaseObject> cases, float learning_rate)
 {
   vector<LayerObject*> layers;
   if(cases.size()==0){
@@ -124,23 +134,7 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
       LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size);		// 28 * 28 * 1 -> 24 * 24 * 8
       layers.push_back( (LayerObject*)layer );
 
-    }else if(type=="relu"){
-
-      printf("%d: relu \n", i);
-      LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
-      layers.push_back( (LayerObject*)layer );
-
-    }else if(type=="maxpool"){
-
-      uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
-      uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
-      tdsize in_size = layers[layers.size()-1]->out.size;
-
-      printf("%d: maxpool stride=%d  extend_filter=%d \n", i, stride, size );
-      LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
-      layers.push_back( (LayerObject*)layer );
-
-    }else if(type=="dense"){
+		}else if(type=="dense"){
 
 			tdsize in_size;
 			if(i==0){
@@ -157,17 +151,26 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
 			}
 
       printf("%d: dense : (%d) -> (%d) \n",i, (in_size.x * in_size.y * in_size.z), out_size);
-      LayerDense *layer = new LayerDense(in_size, out_size);
+      LayerDense *layer = new LayerDense(in_size, out_size, learning_rate);
       layers.push_back( (LayerObject*)layer );
 
-		}else if(type=="softmax"){
-			tdsize in_size = layers[layers.size()-1]->out.size;
+		}else if(type=="maxpool"){
 
-			printf("%d: softmax (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
-			LayerSoftmax *layer = new LayerSoftmax(in_size);
-			layers.push_back( (LayerObject*)layer );
+      uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
+      uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
+      tdsize in_size = layers[layers.size()-1]->out.size;
 
-    }else if (type=="route"){
+      printf("%d: maxpool stride=%d  extend_filter=%d \n", i, stride, size );
+      LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
+      layers.push_back( (LayerObject*)layer );
+
+    }else if(type=="relu"){
+
+      printf("%d: relu \n", i);
+      LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
+      layers.push_back( (LayerObject*)layer );
+
+		}else if (type=="route"){
 
       std::vector <json_token_t*> ref_layers = model_json->getArrayForToken(json_layers[i], "layers");
       for(int j=0; j<ref_layers.size(); j++){
@@ -176,7 +179,21 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
       }
       printf("\n");
 
-    }
+		}else if(type=="sigmoid"){
+
+			tdsize in_size = layers[layers.size()-1]->out.size;
+			printf("%d: sigmoid (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			LayerSigmoid *layer = new LayerSigmoid(in_size);
+			layers.push_back( (LayerObject*)layer );
+
+		}else if(type=="softmax"){
+
+			tdsize in_size = layers[layers.size()-1]->out.size;
+			printf("%d: softmax (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			LayerSoftmax *layer = new LayerSoftmax(in_size);
+			layers.push_back( (LayerObject*)layer );
+
+		}
   }
   return layers;
 }
@@ -187,13 +204,10 @@ static void print_tensor( TensorObject<float>& data )
 	int my = data.size.y;
 	int mz = data.size.z;
 
-	for ( int z = 0; z < mz; z++ )
-	{
+	for ( int z = 0; z < mz; z++ ){
 		printf( "[Dim%d]\n", z );
-		for ( int y = 0; y < my; y++ )
-		{
-			for ( int x = 0; x < mx; x++ )
-			{
+		for ( int y = 0; y < my; y++ ){
+			for ( int x = 0; x < mx; x++ ){
 				printf( "%.3f \t", (float)data.get( x, y, z ) );
 			}
 			printf( "\n" );

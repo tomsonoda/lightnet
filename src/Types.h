@@ -4,8 +4,10 @@ enum class LayerType
 {
 	conv,
 	dense,
+	dropout,
+	leaky,
+	max_pool,
 	relu,
-	pool,
-	dropout_layer,
+	sigmoid,
 	softmax
 };

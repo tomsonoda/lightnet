@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "lightnet.hpp"
-#include "ImageProcessor.hpp"
+#include "lightnet.h"
+#include "ImageProcessor.h"
 #include "NeuralNetwork.h"
 
 using namespace std;
@@ -98,7 +98,8 @@ void trainObjectDetection(std::string model_json_path, std::string model_path, s
   vector<CaseObject> cases = readCases(data_json_path);
 	JSONObject *model_json = new JSONObject();
 	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases);
+  float learning_rate = 0.001;
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases, learning_rate);
 
   /*
 	float amse = 0;
