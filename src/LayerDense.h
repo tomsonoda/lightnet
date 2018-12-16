@@ -5,9 +5,9 @@
 #include "LayerObject.h"
 
 #pragma pack(push, 1)
-struct LayerFullyConnected
+struct LayerDense
 {
-	LayerType type = LayerType::fc;
+	LayerType type = LayerType::dense;
 	TensorObject<float> grads_in;
 	TensorObject<float> in;
 	TensorObject<float> out;
@@ -17,7 +17,7 @@ struct LayerFullyConnected
 	TensorObject<float> dW;
 	ActivationType a_type;
 
-	LayerFullyConnected( tdsize in_size, int out_size, ActivationType at)
+	LayerDense( tdsize in_size, int out_size, ActivationType at)
 		:
 		grads_in( in_size.x, in_size.y, in_size.z ),
 		in( in_size.x, in_size.y, in_size.z ),

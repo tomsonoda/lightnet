@@ -3,12 +3,11 @@
 enum class LayerType
 {
 	conv,
-	fc,
+	dense,
 	relu,
 	pool,
 	dropout_layer,
-	softmax,
-	dense
+	softmax
 };
 
 enum class ActivationType

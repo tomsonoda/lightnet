@@ -2,7 +2,7 @@
 #include "CaseObject.hpp"
 #include "TensorObject.h"
 #include "OptimizationMethods.h"
-#include "LayerFullyConnected.h"
+#include "LayerDense.h"
 #include "LayerPool.h"
 #include "LayerReLU.h"
 #include "LayerConvolution.h"
@@ -20,8 +20,8 @@ static void calc_grads( LayerObject* layer, TensorObject<float>& grad_next_layer
 		case LayerType::relu:
 			((LayerReLU*)layer)->calc_grads( grad_next_layer );
 			return;
-		case LayerType::fc:
-			((LayerFullyConnected*)layer)->calc_grads( grad_next_layer );
+		case LayerType::dense:
+			((LayerDense*)layer)->calc_grads( grad_next_layer );
 			return;
 		case LayerType::pool:
 			((LayerPool*)layer)->calc_grads( grad_next_layer );
@@ -47,8 +47,8 @@ static void fix_weights( LayerObject* layer )
 		case LayerType::relu:
 			((LayerReLU*)layer)->fix_weights();
 			return;
-		case LayerType::fc:
-			((LayerFullyConnected*)layer)->fix_weights();
+		case LayerType::dense:
+			((LayerDense*)layer)->fix_weights();
 			return;
 		case LayerType::pool:
 			((LayerPool*)layer)->fix_weights();
@@ -74,8 +74,8 @@ static void activate( LayerObject* layer, TensorObject<float>& in )
 		case LayerType::relu:
 			((LayerReLU*)layer)->activate( in );
 			return;
-		case LayerType::fc:
-			((LayerFullyConnected*)layer)->activate( in );
+		case LayerType::dense:
+			((LayerDense*)layer)->activate( in );
 			return;
 		case LayerType::pool:
 			((LayerPool*)layer)->activate( in );
@@ -157,7 +157,7 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
 				activation_string = "softmax";
 			}
       printf("%d: fully_connected : activation:%s (%d) -> (%d) \n",i, activation_string.c_str(), (in_size.x * in_size.y * in_size.z), out_size);
-      LayerFullyConnected *layer = new LayerFullyConnected(in_size, out_size, activation);					// 4 * 4 * 16 -> 10
+      LayerDense *layer = new LayerDense(in_size, out_size, activation);					// 4 * 4 * 16 -> 10
       layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="softmax"){
