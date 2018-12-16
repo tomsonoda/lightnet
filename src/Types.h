@@ -9,11 +9,3 @@ enum class LayerType
 	dropout_layer,
 	softmax
 };
-
-enum class ActivationType
-{
-	relu,
-	leaky_relu,
-	sigmoid,
-	softmax
-};

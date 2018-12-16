@@ -6,19 +6,25 @@
 
   "layers":[
     {
-      "type":"fully_connected",
-      "out_size":128,
-      "activation":"relu"
+      "type":"dense",
+      "out_size":128
     },
     {
-      "type":"fully_connected",
-      "out_size":64,
-      "activation":"relu"
+      "type":"relu"
     },
     {
-      "type":"fully_connected",
-      "out_size":10,
-      "activation":"softmax"
-    }
+      "type":"dense",
+      "out_size":64
+    },
+    {
+      "type":"relu"
+    },
+    {
+      "type":"dense",
+      "out_size":10
+    },
+    {
+      "type":"softmax"
+    },
   ]
 }

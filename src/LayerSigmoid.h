@@ -17,7 +17,6 @@ struct LayerReLU
 	{
 	}
 
-
 	void activate( TensorObject<float>& in )
 	{
 		this->in = in;
@@ -29,11 +28,7 @@ struct LayerReLU
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					float v = in( i, j, z );
-					if ( v < 0 ){
-						v = 0;
-					}
-					out( i, j, z ) = v;
+					out( i, j, z ) = 1.0f / (1.0f + exp( - in( i, j, z ) ));
 				}
 			}
 		}
@@ -48,7 +43,8 @@ struct LayerReLU
 		for ( int i = 0; i < in.size.x; i++ ){
 			for ( int j = 0; j < in.size.y; j++ ){
 				for ( int z = 0; z < in.size.z; z++ ){
-					grads_in( i, j, z ) = (in( i, j, z ) < 0) ? (0) : (1 * grad_next_layer( i, j, z ));
+					float sig = 1.0f / (1.0f + exp( - in( i, j, z ) ));
+					grads_in( i, j, z ) =  (sig * (1-sig)) * grad_next_layer( i, j, z ));
 				}
 			}
 		}

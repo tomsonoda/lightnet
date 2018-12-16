@@ -33,8 +33,11 @@
       "type":"relu"
     },
     {
-      "type":"fully_connected",
-      "activation":"sigmoid"
+      "type":"dense",
+      "out_size":10
+    },
+    {
+      "type":"sigmoid"
     }
   ]
 }

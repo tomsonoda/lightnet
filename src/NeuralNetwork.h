@@ -104,16 +104,19 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
     std::string type = model_json->getChildValueForToken(json_layers[i], "type");
 
     if(type=="convolutional"){
+
       uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
       uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
       uint16_t filters = std::stoi( model_json->getChildValueForToken(json_layers[i], "filters") );
       uint16_t padding = std::stoi( model_json->getChildValueForToken(json_layers[i], "padding") );
       tdsize in_size;
+
       if(i==0){
         in_size = cases[0].data.size;
       }else{
         in_size = layers[layers.size()-1]->out.size;
       }
+
 			int out_size = (in_size.x - size + 2*padding)/stride + 1;
       printf("%d: convolutional stride=%d  extend_filter=%d filters=%d pad=%d (%d x %d x %d) -> ( %d x %d x %d)\n",
 			i, stride, size, filters, padding, in_size.x, in_size.y, in_size.z, out_size, out_size, filters);
@@ -122,57 +125,57 @@ static vector<LayerObject*> loadModel(JSONObject *model_json, std::vector <json_
       layers.push_back( (LayerObject*)layer );
 
     }else if(type=="relu"){
+
       printf("%d: relu \n", i);
       LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
       layers.push_back( (LayerObject*)layer );
 
     }else if(type=="maxpool"){
+
       uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
       uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
       tdsize in_size = layers[layers.size()-1]->out.size;
+
       printf("%d: maxpool stride=%d  extend_filter=%d \n", i, stride, size );
       LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
       layers.push_back( (LayerObject*)layer );
 
-    }else if(type=="fully_connected"){
+    }else if(type=="dense"){
+
 			tdsize in_size;
 			if(i==0){
 				in_size = cases[0].data.size;
 			}else{
 				in_size = layers[layers.size()-1]->out.size;
 			}
+
 			int out_size=0;
 			if(i==json_layers.size()-1){
 				out_size = cases[0].out.size.x * cases[0].out.size.y * cases[0].out.size.z;
 			}else{
 				out_size = std::stoi( model_json->getChildValueForToken(json_layers[i], "out_size") );
 			}
-			ActivationType activation = ActivationType::sigmoid;
-			string activation_string = "sigmoid";
-			if (model_json->getChildValueForToken(json_layers[i], "activation") == "relu"){
-				activation = ActivationType::relu;
-				activation_string = "relu";
-			}else if (model_json->getChildValueForToken(json_layers[i], "activation") == "softmax"){
-				activation = ActivationType::softmax;
-				activation_string = "softmax";
-			}
-      printf("%d: fully_connected : activation:%s (%d) -> (%d) \n",i, activation_string.c_str(), (in_size.x * in_size.y * in_size.z), out_size);
-      LayerDense *layer = new LayerDense(in_size, out_size, activation);					// 4 * 4 * 16 -> 10
+
+      printf("%d: dense : (%d) -> (%d) \n",i, (in_size.x * in_size.y * in_size.z), out_size);
+      LayerDense *layer = new LayerDense(in_size, out_size);
       layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="softmax"){
 			tdsize in_size = layers[layers.size()-1]->out.size;
+
 			printf("%d: softmax (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerSoftmax *layer = new LayerSoftmax(in_size);
 			layers.push_back( (LayerObject*)layer );
 
     }else if (type=="route"){
+
       std::vector <json_token_t*> ref_layers = model_json->getArrayForToken(json_layers[i], "layers");
       for(int j=0; j<ref_layers.size(); j++){
         std::string value = model_json->getValueForToken(ref_layers[j]);
         printf("%s ", value.c_str());
       }
       printf("\n");
+
     }
   }
   return layers;
