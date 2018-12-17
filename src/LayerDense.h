@@ -27,7 +27,6 @@ struct LayerDense
 		for(int i=0; i<out_size; i++){
 			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
 				weights(0,h,i,0) = 0.05 * rand() / float( RAND_MAX );
-				dW(0,h,i,0) = 0;
 			}
 		}
 	}
@@ -46,8 +45,8 @@ struct LayerDense
 	void activate()
 	{
 		for ( int n = 0; n < out.size.x; n++ ){
-			float inputv = 0;
 			for ( int b = 0; b < in.size.b; b++ ){
+				float inputv = 0;
 				for (int i = 0; i < in.size.x; i++ ){
 					for (int j = 0; j < in.size.y; j++ ){
 						for (int z = 0; z < in.size.z; z++ ){
@@ -80,7 +79,7 @@ struct LayerDense
 	}
 
 	void calc_grads( TensorObject<float>& grad_next_layer ){
-		memset( grads_in.data, 0, grads_in.size.x *grads_in.size.y*grads_in.size.z * sizeof( float ) );
+		memset( grads_in.data, 0, grads_in.size.b *grads_in.size.x *grads_in.size.y*grads_in.size.z * sizeof( float ) );
 		for (int n=0; n<out.size.x; n++){
 			for ( int b = 0; b < in.size.b; b++ ){
 				for (int i=0; i<in.size.x; i++ ){

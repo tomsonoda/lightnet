@@ -49,12 +49,15 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 				err += abs(grads.data[i]);
 			}
 		}
-		return err * 100;
+		return (err * 100)/(float)grads.size.b;
+		
 	}else{
 		float loss = 0.0;
-		for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
 	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
 	  }
+		loss /= (float)grads.size.b;
+
 		if(is_print){
 			printf("----GT----\n");
 			print_tensor(expected);

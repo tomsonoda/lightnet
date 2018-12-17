@@ -1,9 +1,9 @@
 {
   "net" : {
-    "batch_size":1,
+    "batch_size":4,
     "optimization":"cross_entropy",
     "learning_rate":0.001
-  },
+    },
 
   "layers":[
     {

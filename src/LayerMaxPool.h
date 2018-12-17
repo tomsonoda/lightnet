@@ -50,16 +50,19 @@ struct LayerPool
 
 	int normalize_range( float f, int max, bool lim_min )
 	{
-		if ( f <= 0 )
+		if ( f <= 0 ){
 			return 0;
+		}
 		max -= 1;
-		if ( f >= max )
+		if ( f >= max ){
 			return max;
+		}
 
-		if ( lim_min ) // left side of inequality
+		if ( lim_min ){ // left side of inequality
 			return ceil( f );
-		else
+		}else{
 			return floor( f );
+		}
 	}
 
 	range_t map_to_output( int x, int y )
@@ -85,22 +88,22 @@ struct LayerPool
 
 	void activate()
 	{
-		for ( int x = 0; x < out.size.x; x++ )
-		{
-			for ( int y = 0; y < out.size.y; y++ )
-			{
-				for ( int z = 0; z < out.size.z; z++ )
-				{
-					TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
-					float mval = -FLT_MAX;
-					for ( int i = 0; i < extend_filter; i++ )
-						for ( int j = 0; j < extend_filter; j++ )
-						{
-							float v = in( 0, mapped.x + i, mapped.y + j, z );
-							if ( v > mval )
-								mval = v;
+		for ( int b = 0; b < in.size.b; b++ ){
+			for ( int x = 0; x < out.size.x; x++ ){
+				for ( int y = 0; y < out.size.y; y++ ){
+					for ( int z = 0; z < out.size.z; z++ ){
+						TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+						float mval = -FLT_MAX;
+						for ( int i = 0; i < extend_filter; i++ ){
+							for ( int j = 0; j < extend_filter; j++ ){
+								float v = in( b, mapped.x + i, mapped.y + j, z );
+								if ( v > mval ){
+									mval = v;
+								}
+							}
 						}
-					out( 0, x, y, z ) = mval;
+						out( b, x, y, z ) = mval;
+					}
 				}
 			}
 		}
@@ -108,33 +111,31 @@ struct LayerPool
 
 	void fix_weights()
 	{
-
 	}
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-		for ( int x = 0; x < in.size.x; x++ )
-		{
-			for ( int y = 0; y < in.size.y; y++ )
-			{
-				range_t rn = map_to_output( x, y );
-				for ( int z = 0; z < in.size.z; z++ )
-				{
-					float sum_error = 0;
-					for ( int i = rn.min_x; i <= rn.max_x; i++ )
-					{
-						// int minx = i * stride;
-						for ( int j = rn.min_y; j <= rn.max_y; j++ )
-						{
-							// int miny = j * stride;
-							int is_max = in( 0, x, y, z ) == out( 0, i, j, z ) ? 1 : 0;
-							sum_error += is_max * grad_next_layer( 0, i, j, z );
+		for ( int b = 0; b < in.size.b; b++ ){
+
+			for ( int x = 0; x < in.size.x; x++ ){
+				for ( int y = 0; y < in.size.y; y++ ){
+					range_t rn = map_to_output( x, y );
+					for ( int z = 0; z < in.size.z; z++ ){
+						float sum_error = 0;
+						for ( int i = rn.min_x; i <= rn.max_x; i++ ){
+							// int minx = i * stride;
+							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
+								// int miny = j * stride;
+								int is_max = in( b, x, y, z ) == out( b, i, j, z ) ? 1 : 0;
+								sum_error += is_max * grad_next_layer( b, i, j, z );
+							}
 						}
+						grads_in( b, x, y, z ) = sum_error;
 					}
-					grads_in( 0, x, y, z ) = sum_error;
 				}
 			}
 		}
+
 	}
 };
 #pragma pack(pop)
