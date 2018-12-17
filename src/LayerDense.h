@@ -15,7 +15,7 @@ struct LayerDense
 	TensorObject<float> dW;
 	float lr;
 
-	LayerDense( tdsize in_size, int out_size, float learning_rate)
+	LayerDense( TensorSize in_size, int out_size, float learning_rate)
 		:
 		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),

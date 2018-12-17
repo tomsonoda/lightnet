@@ -9,7 +9,7 @@ struct LayerReLU
 	TensorObject<float> in;
 	TensorObject<float> out;
 
-	LayerReLU( tdsize in_size )
+	LayerReLU( TensorSize in_size )
 		:
 		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),

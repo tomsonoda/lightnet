@@ -11,7 +11,7 @@ struct LayerDropout
 	TensorObject<bool> hitmap;
 	float p_activation;
 
-	LayerDropout( tdsize in_size, float p_activation )
+	LayerDropout( TensorSize in_size, float p_activation )
 		:
 		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),

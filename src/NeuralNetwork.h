@@ -120,7 +120,7 @@ static vector<LayerObject*> loadModel(
       uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
       uint16_t filters = std::stoi( model_json->getChildValueForToken(json_layers[i], "filters") );
       uint16_t padding = std::stoi( model_json->getChildValueForToken(json_layers[i], "padding") );
-      tdsize in_size;
+      TensorSize in_size;
       if(i==0){
         in_size = case_object.data.size;
       }else{
@@ -134,12 +134,7 @@ static vector<LayerObject*> loadModel(
 
 		}else if(type=="dense"){
 
-			tdsize in_size;
-			if(i==0){
-				in_size = case_object.data.size;
-			}else{
-				in_size = layers[layers.size()-1]->out.size;
-			}
+			TensorSize in_size = ( i==0 ? (case_object.data.size) : (layers[layers.size()-1]->out.size) );
 			int out_size=0;
 			if(i==json_layers.size()-1){
 				out_size = case_object.out.size.x * case_object.out.size.y * case_object.out.size.z;
@@ -154,14 +149,17 @@ static vector<LayerObject*> loadModel(
 
       uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
       uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
-      tdsize in_size = layers[layers.size()-1]->out.size;
-      printf("%d: maxpool batch (%d) : stride=%d  extend_filter=%d: ( %d x %d x %d ) -> ()\n", i, in_size.b, stride, size, in_size.x, in_size.y, in_size.z);
+      TensorSize in_size = layers[layers.size()-1]->out.size;
+			int out_size_x = (in_size.x - size ) / stride + 1;
+			int out_size_y = (in_size.y - size ) / stride + 1;
+      printf("%d: maxpool batch (%d) : stride=%d  extend_filter=%d: ( %d x %d x %d ) -> (%d x %d x %d)\n",
+			i, in_size.b, stride, size, in_size.x, in_size.y, in_size.z, out_size_x, out_size_y, in_size.z);
       LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
       layers.push_back( (LayerObject*)layer );
 
     }else if(type=="relu"){
 
-			tdsize in_size = layers[layers.size()-1]->out.size;
+			TensorSize in_size = layers[layers.size()-1]->out.size;
       printf("%d: relu batch (%d) : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.b, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
       LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
       layers.push_back( (LayerObject*)layer );
@@ -177,14 +175,14 @@ static vector<LayerObject*> loadModel(
 
 		}else if(type=="sigmoid"){
 
-			tdsize in_size = layers[layers.size()-1]->out.size;
-			printf("%d: sigmoid: (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			TensorSize in_size = layers[layers.size()-1]->out.size;
+			printf("%d: sigmoid batch (%d) : (%d) -> (%d)\n",i, in_size.b, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerSigmoid *layer = new LayerSigmoid(in_size);
 			layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="softmax"){
 
-			tdsize in_size = layers[layers.size()-1]->out.size;
+			TensorSize in_size = layers[layers.size()-1]->out.size;
 			printf("%d: softmax batch (%d) : (%d) -> (%d)\n",i, in_size.b, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerSoftmax *layer = new LayerSoftmax(in_size);
 			layers.push_back( (LayerObject*)layer );
@@ -207,8 +205,8 @@ static void print_tensor( TensorObject<float>& data )
 			printf( "[Dim %d]\n", z );
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
-					// printf( "%.3f \t", (float)data( b, x, y, z ) );
-					printf( "%.3f \t", (float)data( 0, x, y, z ) );
+					printf( "%.3f \t", (float)data( b, x, y, z ) );
+					// printf( "%.3f \t", (float)data( 0, x, y, z ) );
 				}
 				printf( "\n" );
 			}

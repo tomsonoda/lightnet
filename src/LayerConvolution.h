@@ -14,7 +14,7 @@ struct LayerConvolution
 	uint16_t extend_filter;
 	uint16_t padding;
 
-	LayerConvolution( uint16_t stride, uint16_t extend_filter, uint16_t number_filters, uint16_t padding, tdsize in_size )
+	LayerConvolution( uint16_t stride, uint16_t extend_filter, uint16_t number_filters, uint16_t padding, TensorSize in_size )
 		:
 		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),

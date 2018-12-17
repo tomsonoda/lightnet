@@ -8,7 +8,7 @@ template<typename T>
 struct TensorObject
 {
 	T * data;
-	tdsize size;
+	TensorSize size;
 
 	TensorObject( int _b, int _x, int _y, int _z )
 	{

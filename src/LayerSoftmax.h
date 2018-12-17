@@ -9,7 +9,7 @@ struct LayerSoftmax
 	TensorObject<float> in;
 	TensorObject<float> out;
 
-	LayerSoftmax( tdsize in_size )
+	LayerSoftmax( TensorSize in_size )
 		:
 		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
