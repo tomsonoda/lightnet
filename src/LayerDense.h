@@ -14,6 +14,7 @@ struct LayerDense
 	TensorObject<float> weights;
 	TensorObject<float> dW;
 	float lr;
+	unsigned in_size_xy;
 
 	LayerDense( TensorSize in_size, int out_size, float learning_rate)
 		:
@@ -29,6 +30,7 @@ struct LayerDense
 				weights(0,h,i,0) = 0.05 * rand() / float( RAND_MAX );
 			}
 		}
+		in_size_xy = in_size.x*in_size.y;
 	}
 
 	void activate( TensorObject<float>& in )
@@ -36,12 +38,13 @@ struct LayerDense
 		this->in = in;
 		activate();
 	}
-
+/*
 	int map( TensorCoordinate d )
 	{
-		return (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
+		// return (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
+		return (d.z * in_size_xy) + (d.y * (in.size.x)) + d.x;
 	}
-
+*/
 	void activate()
 	{
 		for ( int n = 0; n < out.size.x; n++ ){
@@ -50,7 +53,8 @@ struct LayerDense
 				for (int i = 0; i < in.size.x; i++ ){
 					for (int j = 0; j < in.size.y; j++ ){
 						for (int z = 0; z < in.size.z; z++ ){
-							int m = map( { 0, i, j, z } );;
+							// int m = map( { 0, i, j, z } );
+							int m = (z * in_size_xy) + (j * in.size.x) + i;
 							inputv += weights( 0, m, n, 0 ) * in( b, i, j, z );
 						}
 					}
@@ -67,7 +71,8 @@ struct LayerDense
 				for (int j=0; j<in.size.y; j++ ){
 					for (int z=0; z<in.size.z; z++ ){
 						float dW_sum = 0.0;
-						int m = map( {0, i, j, z } );
+						// int m = map( {0, i, j, z } );
+						int m = (z * in_size_xy) + (j * in.size.x) + i;
 						for ( int b = 0; b < in.size.b; b++ ){
 								dW_sum += dW(b, m, n, 0);
 						}
@@ -85,7 +90,9 @@ struct LayerDense
 				for (int i=0; i<in.size.x; i++ ){
 					for (int j=0; j<in.size.y; j++ ){
 						for (int z=0; z<in.size.z; z++ ){
-							int m = map( {0, i, j, z } );
+							// int m = map( {0, i, j, z } );
+							int m = (z * in_size_xy) + (j * in.size.x) + i;
+
 							// dW (m, n, 0) = in(i, j, z) * grad_next_layer(n, 0, 0);
 							// grads_in(i, 0, 0) += weights(m, n, 0) * grad_next_layer(n, 0, 0) * activator_derivative(z_[n]);
 							dW (b, m, n, 0) = in(b, i, j, z) * grad_next_layer(b, n, 0, 0);

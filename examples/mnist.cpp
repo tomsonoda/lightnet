@@ -4,8 +4,11 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <chrono>
+
 #include "lightnet.h"
 #include "TensorObject.h"
+#include "Utils.h"
 
 using namespace std;
 
@@ -50,7 +53,7 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			}
 		}
 		return (err * 100)/(float)grads.size.b;
-		
+
 	}else{
 		float loss = 0.0;
 		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
@@ -143,6 +146,7 @@ void mnist(int argc, char **argv)
 
 	printf("Start training :%lu learning_rate=%f optimizer=%s\n", cases.size(), learning_rate, opt.c_str());
 
+	auto start = std::chrono::high_resolution_clock::now();
 	for( long ep = 0; ep < 1000000; ){
 		int randi = rand() % (cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
@@ -165,7 +169,11 @@ void mnist(int argc, char **argv)
 		ep++;
 
 		if ( ep % 1000 == 0 ){
-			cout << "case " << ep << " err=" << amse/ic << endl;
+			auto finish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed = finish - start;
+			cout << "case " << ep << " err=" << amse/ic <<endl;
+			std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+			start = finish;
 		}
 	}
 }
