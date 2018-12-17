@@ -38,7 +38,7 @@ struct LayerDense
 		activate();
 	}
 
-	int map( PointObject d )
+	int map( TensorCoordinate d )
 	{
 		return (d.b * (in.size.z * in.size.x * in.size.y)) + (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
 	}

@@ -34,7 +34,7 @@ struct LayerPool
 				((in_size.y - extend_filter) / stride + 1) );
 	}
 
-	PointObject map_to_input( PointObject out, int z )
+	TensorCoordinate map_to_input( TensorCoordinate out, int z )
 	{
 		out.x *= stride;
 		out.y *= stride;
@@ -91,7 +91,7 @@ struct LayerPool
 			{
 				for ( int z = 0; z < out.size.z; z++ )
 				{
-					PointObject mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+					TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 					float mval = -FLT_MAX;
 					for ( int i = 0; i < extend_filter; i++ )
 						for ( int j = 0; j < extend_filter; j++ )

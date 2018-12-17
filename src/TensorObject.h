@@ -1,5 +1,5 @@
 #pragma once
-#include "PointObject.h"
+#include "TensorCoordinate.h"
 #include <cassert>
 #include <vector>
 #include <string.h>

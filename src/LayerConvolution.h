@@ -56,7 +56,7 @@ struct LayerConvolution
 
 	}
 
-	PointObject map_to_input( PointObject out, int z )
+	TensorCoordinate map_to_input( TensorCoordinate out, int z )
 	{
 		out.x *= stride;
 		out.y *= stride;
@@ -114,7 +114,7 @@ struct LayerConvolution
 			{
 				for ( int y = 0; y < out.size.y; y++ )
 				{
-					PointObject mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+					TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 					float sum = 0;
 					for ( int i = 0; i < extend_filter; i++ )
 						for ( int j = 0; j < extend_filter; j++ )
