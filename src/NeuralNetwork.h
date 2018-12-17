@@ -1,7 +1,6 @@
 #pragma once
 #include "CaseObject.h"
 #include "TensorObject.h"
-#include "OptimizationMethods.h"
 #include "LayerDense.h"
 #include "LayerMaxPool.h"
 #include "LayerReLU.h"
@@ -165,14 +164,14 @@ static vector<LayerObject*> loadModel(
       layers.push_back( (LayerObject*)layer );
 
 		}else if (type=="route"){
-
+			/*
       std::vector <json_token_t*> ref_layers = model_json->getArrayForToken(json_layers[i], "layers");
       for(int j=0; j<ref_layers.size(); j++){
         std::string value = model_json->getValueForToken(ref_layers[j]);
         printf("%s ", value.c_str());
       }
       printf("\n");
-
+			*/
 		}else if(type=="sigmoid"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
