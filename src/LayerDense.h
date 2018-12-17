@@ -25,7 +25,7 @@ struct LayerDense
 	{
 		lr = learning_rate;
 		for(int i=0; i<out_size; i++){
-			for(int h=0; h<in_size.b*in_size.x*in_size.y*in_size.z; h++){
+			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
 				weights(0,h,i,0) = 0.05 * rand() / float( RAND_MAX );
 				dW(0,h,i,0) = 0;
 			}

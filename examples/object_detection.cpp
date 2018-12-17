@@ -99,7 +99,7 @@ void trainObjectDetection(std::string model_json_path, std::string model_path, s
 	JSONObject *model_json = new JSONObject();
 	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
   float learning_rate = 0.001;
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases, learning_rate);
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases[0], learning_rate);
 
   /*
 	float amse = 0;

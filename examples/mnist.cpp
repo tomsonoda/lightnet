@@ -59,10 +59,9 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			printf("----GT----\n");
 			print_tensor(expected);
 			printf("----output----\n");
-			print_tensor(layers.back()->out);
 			for(int i = layers.size() - 1; i >= 1; i-- ){
 				printf(" ----layer %d ----\n",i);
-				print_tensor(layers[i]->grads_in);
+				print_tensor(layers[i]->out);
 			}
 		}
 		return loss;
@@ -124,18 +123,23 @@ void mnist(int argc, char **argv)
 
 	// neural network
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
-	int batch_size = std::stoi( model_json->getChildValueForToken(nueral_network, "batch_size") );
+	unsigned batch_size = std::stoi( model_json->getChildValueForToken(nueral_network, "batch_size") );
 	float learning_rate = std::stof( model_json->getChildValueForToken(nueral_network, "learning_rate") );
 	string opt = model_json->getChildValueForToken(nueral_network, "optimization");
 
 	float amse = 0;
 	int ic = 0;
 
-	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
+	if(batch_size<0){
+		fprintf(stderr, "Batch size should be 1>=.");
+		exit(0);
+	}
 
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases, learning_rate);
+	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate);
 
 	printf("Start training :%lu learning_rate=%f optimizer=%s\n", cases.size(), learning_rate, opt.c_str());
+
 	for( long ep = 0; ep < 1000000; ){
 		int randi = rand() % (cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
