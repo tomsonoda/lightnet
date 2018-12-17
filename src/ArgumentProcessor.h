@@ -20,6 +20,7 @@ struct ArgumentProcessor
     }
     return value;
   }
+  
   string getCharsParameter(int argc, char **argv, string name, string default_value)
   {
     int i;

@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct GradientObject
 {
 	float grad;

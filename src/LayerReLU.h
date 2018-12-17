@@ -26,14 +26,16 @@ struct LayerReLU
 
 	void activate()
 	{
-		for ( int i = 0; i < in.size.x; i++ ){
-			for ( int j = 0; j < in.size.y; j++ ){
-				for ( int z = 0; z < in.size.z; z++ ){
-					float v = in( 0, i, j, z );
-					if ( v < 0 ){
-						v = 0;
+		for ( int b = 0; b < in.size.b; b++ ){
+			for ( int i = 0; i < in.size.x; i++ ){
+				for ( int j = 0; j < in.size.y; j++ ){
+					for ( int z = 0; z < in.size.z; z++ ){
+						float v = in( b, i, j, z );
+						if ( v < 0 ){
+							v = 0;
+						}
+						out( b, i, j, z ) = v;
 					}
-					out( 0, i, j, z ) = v;
 				}
 			}
 		}
@@ -45,10 +47,12 @@ struct LayerReLU
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-		for ( int i = 0; i < in.size.x; i++ ){
-			for ( int j = 0; j < in.size.y; j++ ){
-				for ( int z = 0; z < in.size.z; z++ ){
-					grads_in( 0, i, j, z ) = (in( 0, i, j, z ) < 0) ? (0) : (1 * grad_next_layer( 0, i, j, z ));
+		for ( int b = 0; b < in.size.b; b++ ){
+			for ( int i = 0; i < in.size.x; i++ ){
+				for ( int j = 0; j < in.size.y; j++ ){
+					for ( int z = 0; z < in.size.z; z++ ){
+						grads_in( b, i, j, z ) = (in( b, i, j, z ) < 0) ? (0) : (1 * grad_next_layer( b, i, j, z ));
+					}
 				}
 			}
 		}
