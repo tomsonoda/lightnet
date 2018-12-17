@@ -23,7 +23,7 @@ struct LayerDense
 		weights( 1, in_size.x*in_size.y*in_size.z, out_size, 1 ),
 		dW( in_size.b, in_size.x*in_size.y*in_size.z, out_size, 1 )
 	{
-		lr = learning_rate / in_size.b;
+		lr = learning_rate / (float)in_size.b;
 		for(int i=0; i<out_size; i++){
 			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
 				weights(0,h,i,0) = 0.05 * rand() / float( RAND_MAX );
@@ -40,7 +40,7 @@ struct LayerDense
 
 	int map( TensorCoordinate d )
 	{
-		return (d.b * (in.size.z * in.size.x * in.size.y)) + (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
+		return (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
 	}
 
 	void activate()
@@ -67,12 +67,12 @@ struct LayerDense
 			for (int i=0; i<in.size.x; i++ ){
 				for (int j=0; j<in.size.y; j++ ){
 					for (int z=0; z<in.size.z; z++ ){
-						int m = map( {0, i, j, z } );
 						float dW_sum = 0.0;
+						int m = map( {0, i, j, z } );
 						for ( int b = 0; b < in.size.b; b++ ){
 								dW_sum += dW(b, m, n, 0);
 						}
-						weights(0, m, n, 0) = weights(0, m, n, 0) - lr * dW_sum; // lr=0.001
+						weights(0, m, n, 0) = weights(0, m, n, 0) - lr * dW_sum;
 					}
 				}
 			}

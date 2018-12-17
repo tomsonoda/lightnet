@@ -206,7 +206,6 @@ static void print_tensor( TensorObject<float>& data )
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
 					printf( "%.3f \t", (float)data( b, x, y, z ) );
-					// printf( "%.3f \t", (float)data( 0, x, y, z ) );
 				}
 				printf( "\n" );
 			}

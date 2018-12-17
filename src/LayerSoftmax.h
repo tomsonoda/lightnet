@@ -25,23 +25,26 @@ struct LayerSoftmax
 
 	void activate()
 	{
-		float max_v = 0.0;
-		for ( int i = 0; i < in.size.x; i++ ){
-			float v = in( 0, i, 0, 0 );
-			if(v>max_v){
-				max_v = v;
+		for ( int b = 0; b < in.size.b; b++ ){
+
+			float max_v = 0.0;
+			for ( int i = 0; i < in.size.x; i++ ){
+				float v = in( b, i, 0, 0 );
+				if(v>max_v){
+					max_v = v;
+				}
 			}
-		}
 
-		float sum_of_elems = 0.0;
-		for ( int i = 0; i < in.size.x; i++ ){
-			float v = in( 0, i, 0, 0 );
-			out( 0, i, 0, 0 ) = exp(v - max_v);
-			sum_of_elems += out( 0, i, 0, 0 );
-		}
+			float sum_of_elems = 0.0;
+			for ( int i = 0; i < in.size.x; i++ ){
+				float v = in( b, i, 0, 0 );
+				out( b, i, 0, 0 ) = exp(v - max_v);
+				sum_of_elems += out( b, i, 0, 0 );
+			}
 
-		for ( int i = 0; i < in.size.x; i++ ){
-			out( 0, i, 0, 0 ) = out( 0, i, 0, 0 ) / sum_of_elems;
+			for ( int i = 0; i < in.size.x; i++ ){
+				out( b, i, 0, 0 ) = out( b, i, 0, 0 ) / sum_of_elems;
+			}
 		}
 	}
 
@@ -51,10 +54,12 @@ struct LayerSoftmax
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-		for ( int i = 0; i < in.size.x; i++ ){
-			for ( int j = 0; j < in.size.y; j++ ){
-				for ( int z = 0; z < in.size.z; z++ ){
-					grads_in( 0, i, j, z ) = grad_next_layer( 0, i, j, z );
+		for ( int b = 0; b < in.size.b; b++ ){
+			for ( int i = 0; i < in.size.x; i++ ){
+				for ( int j = 0; j < in.size.y; j++ ){
+					for ( int z = 0; z < in.size.z; z++ ){
+						grads_in( b, i, j, z ) = grad_next_layer( b, i, j, z );
+					}
 				}
 			}
 		}

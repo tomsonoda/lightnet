@@ -1,6 +1,6 @@
 {
   "net" : {
-    "batch_size":2,
+    "batch_size":1,
     "optimization":"cross_entropy",
     "learning_rate":0.001
   },

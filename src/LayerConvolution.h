@@ -36,20 +36,21 @@ struct LayerConvolution
 				==
 				((in_size.y - extend_filter) / stride + 1) );
 
-		for ( int a = 0; a < number_filters; a++ )
-		{
+		for ( int a = 0; a < number_filters; a++ ){
 			TensorObject<float> t( 1, extend_filter, extend_filter, in_size.z );
-
 			int maxval = extend_filter * extend_filter * in_size.z;
 
-			for ( int i = 0; i < extend_filter; i++ )
-				for ( int j = 0; j < extend_filter; j++ )
-					for ( int z = 0; z < in_size.z; z++ )
+			for ( int i = 0; i < extend_filter; i++ ){
+				for ( int j = 0; j < extend_filter; j++ ){
+					for ( int z = 0; z < in_size.z; z++ ){
 						t( 0, i, j, z ) = 1.0f / maxval * rand() / float( RAND_MAX );
+					}
+				}
+			}
+
 			filters.push_back( t );
 		}
-		for ( int i = 0; i < number_filters; i++ )
-		{
+		for ( int i = 0; i < number_filters; i++ ){
 			TensorObject<GradientObject> t( 1, extend_filter, extend_filter, in_size.z );
 			filter_grads.push_back( t );
 		}
@@ -107,23 +108,22 @@ struct LayerConvolution
 
 	void activate()
 	{
-		for ( int filter = 0; filter < filters.size(); filter++ )
-		{
+		for ( int filter = 0; filter < filters.size(); filter++ ){
 			TensorObject<float>& filter_data = filters[filter];
-			for ( int x = 0; x < out.size.x; x++ )
-			{
-				for ( int y = 0; y < out.size.y; y++ )
-				{
+			for ( int x = 0; x < out.size.x; x++ ){
+				for ( int y = 0; y < out.size.y; y++ ){
 					TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 					float sum = 0;
-					for ( int i = 0; i < extend_filter; i++ )
-						for ( int j = 0; j < extend_filter; j++ )
-							for ( int z = 0; z < in.size.z; z++ )
-							{
+
+					for ( int i = 0; i < extend_filter; i++ ){
+						for ( int j = 0; j < extend_filter; j++ ){
+							for ( int z = 0; z < in.size.z; z++ ){
 								float f = filter_data( 0, i, j, z );
 								float v = in( 0, mapped.x + i, mapped.y + j, z );
 								sum += f*v;
 							}
+						}
+					}
 					out( 0, x, y, filter ) = sum;
 				}
 			}
@@ -132,45 +132,43 @@ struct LayerConvolution
 
 	void fix_weights()
 	{
-		for ( int a = 0; a < filters.size(); a++ )
-			for ( int i = 0; i < extend_filter; i++ )
-				for ( int j = 0; j < extend_filter; j++ )
-					for ( int z = 0; z < in.size.z; z++ )
-					{
+		for ( int a = 0; a < filters.size(); a++ ){
+			for ( int i = 0; i < extend_filter; i++ ){
+				for ( int j = 0; j < extend_filter; j++ ){
+					for ( int z = 0; z < in.size.z; z++ ){
 						float& w = filters[a].get( 0, i, j, z );
 						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
 						w = update_weight( w, grad );
 						update_gradient( grad );
 					}
+				}
+			}
+		}
 	}
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-
-		for ( int k = 0; k < filter_grads.size(); k++ )
-		{
-			for ( int i = 0; i < extend_filter; i++ )
-				for ( int j = 0; j < extend_filter; j++ )
-					for ( int z = 0; z < in.size.z; z++ )
+		
+		for ( int k = 0; k < filter_grads.size(); k++ ){
+			for ( int i = 0; i < extend_filter; i++ ){
+				for ( int j = 0; j < extend_filter; j++ ){
+					for ( int z = 0; z < in.size.z; z++ ){
 						filter_grads[k].get( 0, i, j, z ).grad = 0;
+					}
+				}
+			}
 		}
 
-		for ( int x = 0; x < in.size.x; x++ )
-		{
-			for ( int y = 0; y < in.size.y; y++ )
-			{
+		for ( int x = 0; x < in.size.x; x++ ){
+			for ( int y = 0; y < in.size.y; y++ ){
 				range_t rn = map_to_output( x, y );
-				for ( int z = 0; z < in.size.z; z++ )
-				{
+				for ( int z = 0; z < in.size.z; z++ ){
 					float sum_error = 0;
-					for ( int i = rn.min_x; i <= rn.max_x; i++ )
-					{
+					for ( int i = rn.min_x; i <= rn.max_x; i++ ){
 						int minx = i * stride;
-						for ( int j = rn.min_y; j <= rn.max_y; j++ )
-						{
+						for ( int j = rn.min_y; j <= rn.max_y; j++ ){
 							int miny = j * stride;
-							for ( int k = rn.min_z; k <= rn.max_z; k++ )
-							{
+							for ( int k = rn.min_z; k <= rn.max_z; k++ ){
 								int w_applied = filters[k].get( 0, x - minx, y - miny, z );
 								sum_error += w_applied * grad_next_layer( 0, i, j, k );
 								filter_grads[k].get( 0, x - minx, y - miny, z ).grad += in( 0, x, y, z ) * grad_next_layer( 0, i, j, k );
