@@ -27,7 +27,7 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			activate( layers[i], layers[i-1]->out );
 		}
 	}
-	// backward
+
 	TensorObject<float> grads = layers.back()->out - expected;
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
@@ -124,36 +124,41 @@ void mnist(int argc, char **argv)
 
 	// neural network
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
+	int batch_size = std::stoi( model_json->getChildValueForToken(nueral_network, "batch_size") );
 	float learning_rate = std::stof( model_json->getChildValueForToken(nueral_network, "learning_rate") );
 	string opt = model_json->getChildValueForToken(nueral_network, "optimization");
 
 	float amse = 0;
 	int ic = 0;
-	int BATCH_SIZE = 64;
+
+	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
 
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases, learning_rate);
 
 	printf("Start training :%lu learning_rate=%f optimizer=%s\n", cases.size(), learning_rate, opt.c_str());
-	for ( long ep = 0; ep < 1000000; ){
-		int randindx = rand() % (cases.size()-BATCH_SIZE);
-		for (unsigned j = randindx; j < (randindx+BATCH_SIZE); ++j){
+	for( long ep = 0; ep < 1000000; ){
+		int randi = rand() % (cases.size()-batch_size);
+		for( unsigned j = randi; j < (randi+batch_size); j++ ){
 			CaseObject t = cases[j];
+			unsigned batch_index_in = (j-randi)*(t.data.size.x * t.data.size.y * t.data.size.z);
+			unsigned batch_index_out = (j-randi)*(t.out.size.x * t.out.size.y * t.out.size.z);
+			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, (t.data.size.x * t.data.size.y * t.data.size.z) * sizeof(float) );
+			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
+		}
 
-			bool is_print = false;
-			if ( (ep+1) % 1000 == 0 ){
-				is_print = true;
-			}
-			float xerr = trainMNIST( layers, t.data, t.out, is_print, learning_rate, opt);
-			if(-1<xerr && xerr<10000){
-				amse += xerr;
-			}
-			ic++;
-			ep++;
+		bool is_print = false;
+		if ( (ep+1) % 1000 == 0 ){
+			is_print = true;
+		}
+		float xerr = trainMNIST( layers, batch_cases.data, batch_cases.out, is_print, learning_rate, opt);
+		if(-1<xerr && xerr<10000){
+			amse += xerr;
+		}
+		ic++;
+		ep++;
 
-			if ( ep % 1000 == 0 ){
-				cout << "case " << ep << " err=" << amse/ic << endl;
-			}
+		if ( ep % 1000 == 0 ){
+			cout << "case " << ep << " err=" << amse/ic << endl;
 		}
 	}
-
 }

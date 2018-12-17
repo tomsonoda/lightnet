@@ -1,5 +1,6 @@
 {
   "net" : {
+    "batch_size":4,
     "optimization":"mse",
     "learning_rate":0.01
   },

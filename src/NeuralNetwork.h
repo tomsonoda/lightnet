@@ -203,12 +203,17 @@ static void print_tensor( TensorObject<float>& data )
 	int mx = data.size.x;
 	int my = data.size.y;
 	int mz = data.size.z;
+	int mb = data.size.b;
 
-	for ( int z = 0; z < mz; z++ ){
-		printf( "[Dim%d]\n", z );
-		for ( int y = 0; y < my; y++ ){
-			for ( int x = 0; x < mx; x++ ){
-				printf( "%.3f \t", (float)data.get( 0, x, y, z ) );
+	for ( int b = 0; b < mb; b++ ){
+		printf( "[Batch %d]\n", b );
+		for ( int z = 0; z < mz; z++ ){
+			printf( "[Dim %d]\n", z );
+			for ( int y = 0; y < my; y++ ){
+				for ( int x = 0; x < mx; x++ ){
+					printf( "%.3f \t", (float)data.get( b, x, y, z ) );
+				}
+				printf( "\n" );
 			}
 			printf( "\n" );
 		}
