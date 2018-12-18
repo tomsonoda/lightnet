@@ -346,13 +346,13 @@ private:
   	for (; parser->pos < json_string.length() && json_string[parser->pos] != '\0'; parser->pos++) {
   		switch (json_string[parser->pos]) {
   			case ':':
-  			case '\t' :
-  			case '\r' :
-  			case '\n' :
-  			case ' ' :
-  			case ','  :
+        case ' ' :
+        case ','  :
   			case ']'  :
   			case '}' :
+        case '\r' :
+  			case '\n' :
+        case '\t' :
   				cutout = 1;
   		}
   		if(cutout == 1){
