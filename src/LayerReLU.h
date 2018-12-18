@@ -16,7 +16,6 @@ struct LayerReLU
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
-		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 	}
 
 	void activate( TensorObject<float>& in )
@@ -27,6 +26,7 @@ struct LayerReLU
 
 	void activate()
 	{
+		data_size = in.size.b * in.size.x * in.size.y * in.size.z;
 		/*
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int i = 0; i < in.size.x; i++ ){

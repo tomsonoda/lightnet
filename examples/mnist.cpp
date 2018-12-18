@@ -46,7 +46,7 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 
 	if(opt=="mse"){
 		float err = 0;
-		for ( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
 			float f = expected.data[i];
 			if ( f > 0.5 ){
 				err += abs(grads.data[i]);
