@@ -8,7 +8,7 @@
 #include "LayerDropout.h"
 #include "LayerSigmoid.h"
 #include "LayerSoftmax.h"
-#include "Types.h"
+#include "LayerType.h"
 
 static void calc_grads( LayerObject* layer, TensorObject<float>& grad_next_layer )
 {

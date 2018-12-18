@@ -1,5 +1,5 @@
 #pragma once
-#include "Types.h"
+#include "LayerType.h"
 #include "TensorObject.h"
 
 #pragma pack(push, 1)

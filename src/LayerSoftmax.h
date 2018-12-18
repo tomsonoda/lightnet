@@ -37,8 +37,9 @@ struct LayerSoftmax
 			float sum_of_elems = 0.0;
 			for ( int i = 0; i < in.size.x; i++ ){
 				float v = in( b, i, 0, 0 );
-				out( b, i, 0, 0 ) = exp(v - max_v);
-				sum_of_elems += out( b, i, 0, 0 );
+				v = exp(v - max_v);
+				out( b, i, 0, 0 ) = v;
+				sum_of_elems += v;
 			}
 
 			for ( int i = 0; i < in.size.x; i++ ){
