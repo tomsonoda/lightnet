@@ -2,7 +2,7 @@
 #include "LayerObject.h"
 #include "GradientObject.h"
 
-#define LEARNING_RATE 0.001 // 0.01
+#define LEARNING_RATE 0.01 // 0.01
 #define MOMENTUM 0.6
 #define WEIGHT_DECAY 0.001
 

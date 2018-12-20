@@ -69,7 +69,7 @@ struct LayerReLU
 		}
 		*/
 		for( int i = 0; i < data_size; i++ ){
-			grads_in.data[i] =  (in.data[i] < 0) ? (0) : (grad_next_layer.data[i]);
+			grads_in.data[i] =  (in.data[i] < 0) ? (0) : (1.0 * grad_next_layer.data[i]);
 		}
 	}
 };

@@ -1,14 +1,16 @@
 {
   "net" : {
-    "batch_size":4,
-    "optimization":"mse",
-    "learning_rate":0.01
+    "batch_size":1,
+    "momentum":0.6,
+    "decay":0.001,
+    "learning_rate":0.01,
+    "optimization":"mse"
   },
 
   "layers":[
     {
       "type":"convolutional",
-      "batch_normalize":1,
+      "batch_normalization":1,
       "filters":8,
       "size":5,
       "stride":1,

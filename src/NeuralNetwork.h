@@ -1,6 +1,7 @@
 #pragma once
 #include "CaseObject.h"
 #include "TensorObject.h"
+#include "LayerBatchNormalization.h"
 #include "LayerDense.h"
 #include "LayerMaxPool.h"
 #include "LayerReLU.h"
@@ -14,6 +15,9 @@ static void calc_grads( LayerObject* layer, TensorObject<float>& grad_next_layer
 {
 	switch ( layer->type )
 	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->calc_grads( grad_next_layer );
+			return;
 		case LayerType::conv:
 			((LayerConvolution*)layer)->calc_grads( grad_next_layer );
 			return;
@@ -44,6 +48,9 @@ static void fix_weights( LayerObject* layer )
 {
 	switch ( layer->type )
 	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->fix_weights();
+			return;
 		case LayerType::conv:
 			((LayerConvolution*)layer)->fix_weights();
 			return;
@@ -74,6 +81,9 @@ static void activate( LayerObject* layer, TensorObject<float>& in )
 {
 	switch ( layer->type )
 	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->activate( in );
+			return;
 		case LayerType::conv:
 			((LayerConvolution*)layer)->activate( in );
 			return;
@@ -104,7 +114,10 @@ static vector<LayerObject*> loadModel(
 	JSONObject *model_json,
 	std::vector <json_token_t*> model_tokens,
 	CaseObject case_object,
-	float learning_rate)
+	float learning_rate,
+	float decay,
+	float momentum
+	)
 {
   vector<LayerObject*> layers;
 
@@ -113,7 +126,18 @@ static vector<LayerObject*> loadModel(
   for(int i=0; i<json_layers.size(); i++){
     std::string type = model_json->getChildValueForToken(json_layers[i], "type");
 
-    if(type=="convolutional"){
+		if(type=="batch_normalization"){
+			TensorSize in_size;
+			if(i==0){
+				in_size = case_object.data.size;
+			}else{
+				in_size = layers[layers.size()-1]->out.size;
+			}
+			printf("%d: batch normalization (%d) : ( %d x %d x %d ) -> (  %d x %d x %d ) \n", i, in_size.b, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
+			LayerBatchNormalization *layer = new LayerBatchNormalization(in_size, learning_rate);
+			layers.push_back( (LayerObject*)layer );
+
+    }else if(type=="convolutional"){
 
       uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
       uint16_t size = std::stoi( model_json->getChildValueForToken(json_layers[i], "size") );
@@ -141,7 +165,7 @@ static vector<LayerObject*> loadModel(
 				out_size = std::stoi( model_json->getChildValueForToken(json_layers[i], "out_size") );
 			}
       printf("%d: dense batch (%d) : ( %d x %d x %d ) -> ( %d ) \n",i, in_size.b, in_size.x, in_size.y, in_size.z, out_size);
-      LayerDense *layer = new LayerDense(in_size, out_size, learning_rate);
+      LayerDense *layer = new LayerDense(in_size, out_size, learning_rate, decay, momentum);
       layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="maxpool"){

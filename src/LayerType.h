@@ -2,6 +2,7 @@
 
 enum class LayerType
 {
+	batch_normalization,
 	conv,
 	dense,
 	dropout,
