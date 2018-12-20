@@ -16,8 +16,6 @@ struct LayerDense
 	std::vector<GradientObject> gradients;
 
 	float lr;
-	unsigned grads_in_data_size;
-	unsigned weigts_data_num;
 	unsigned WEIGHT_DECAY;
 	unsigned MOMENTUM;
 	std::vector<float> input;
@@ -42,8 +40,6 @@ struct LayerDense
 				weights( 0, h, i, 0 ) = 2.19722f / maxval * rand() / float( RAND_MAX );
 			}
 		}
-		grads_in_data_size = grads_in.size.b *grads_in.size.x *grads_in.size.y*grads_in.size.z * sizeof( float ) ;
-		weigts_data_num = in_size.x*in_size.y*in_size.z * out_size;
 	}
 
 	int map( TensorCoordinate d )
@@ -92,7 +88,7 @@ struct LayerDense
 	{
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int n = 0; n < out.size.x; n++ ){
-				GradientObject& grad = gradients[n];
+				GradientObject& grad = gradients[ (b*out.size.x) + n ];
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
 						for ( int z = 0; z < in.size.z; z++ ){
@@ -112,7 +108,7 @@ struct LayerDense
 		memset( grads_in.data, 0, grads_in.size.x *grads_in.size.y*grads_in.size.z * sizeof( float ) );
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int n = 0; n < out.size.x; n++ ){
-				GradientObject& grad = gradients[n];
+				GradientObject& grad = gradients[ (b*out.size.x) + n ];
 				// grad.grad = grad_next_layer( b, n, 0, 0 ) * activator_derivative( input[n] );
 				grad.grad = grad_next_layer( b, n, 0, 0 );
 				for ( int i = 0; i < in.size.x; i++ ){

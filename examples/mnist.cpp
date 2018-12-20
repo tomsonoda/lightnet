@@ -156,7 +156,7 @@ void mnist(int argc, char **argv)
 
 	auto start = std::chrono::high_resolution_clock::now();
 	for( long ep = 0; ep < 1000000; ){
-		/*
+		
 		int randi = rand() % (cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
 			CaseObject t = cases[j];
@@ -181,7 +181,8 @@ void mnist(int argc, char **argv)
 			cout << "case " << ep << " err=" << amse/ic << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 		}
-		*/
+
+		/*
 		for ( CaseObject& t : cases ){
 			bool is_print = false;
 			if ( (ep) % 1000 == 0 ){
@@ -199,6 +200,6 @@ void mnist(int argc, char **argv)
 				start = finish;
 			}
 		}
-
+		*/
 	}
 }
