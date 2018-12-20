@@ -70,10 +70,10 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			printf("----GT----\n");
 			print_tensor(expected);
 			printf("----output----\n");
-			for(int i = layers.size() - 1; i >= 1; i-- ){
-				printf(" ----layer %d ----\n",i);
-				print_tensor(layers[i]->out);
-			}
+			print_tensor(layers[layers.size()-1]->out);
+			print_tensor(layers[layers.size()-2]->out);
+			// printf("----input----\n");
+			// print_tensor(data);
 		}
 		return loss;
 	}
