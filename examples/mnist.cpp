@@ -57,7 +57,7 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 				err += abs(grads.data[i]);
 			}
 		}
-		return (err * 100)/(float)grads.size.b;
+		return (err * 100)/(float)expected.size.b;
 
 	}else{
 		float loss = 0.0;
@@ -138,7 +138,6 @@ void mnist(int argc, char **argv)
 	float learning_rate = std::stof( model_json->getChildValueForToken(nueral_network, "learning_rate") );
 	float momentum = std::stof( model_json->getChildValueForToken(nueral_network, "momentum") );
 	float decay = std::stof( model_json->getChildValueForToken(nueral_network, "decay") );
-
 	string opt = model_json->getChildValueForToken(nueral_network, "optimization");
 
 	float amse = 0;
@@ -150,13 +149,13 @@ void mnist(int argc, char **argv)
 	}
 
 	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, momentum, decay);
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, decay, momentum);
 
 	printf("Start training :%lu learning_rate=%f momentum=%f, decay=%f, optimizer=%s\n", cases.size(), learning_rate, momentum, decay, opt.c_str());
 
 	auto start = std::chrono::high_resolution_clock::now();
 	for( long ep = 0; ep < 1000000; ){
-		
+
 		int randi = rand() % (cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
 			CaseObject t = cases[j];
@@ -165,6 +164,9 @@ void mnist(int argc, char **argv)
 			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, (t.data.size.x * t.data.size.y * t.data.size.z) * sizeof(float) );
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 		}
+
+		// print_tensor(batch_cases.data);
+		// print_tensor(batch_cases.out);
 
 		bool is_print = false;
 		if ( (ep+1) % 1000 == 0 ){

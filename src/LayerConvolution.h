@@ -145,6 +145,7 @@ struct LayerConvolution
 
 	float update_weight( float w, GradientObject& grad, float multp = 1 )
 	{
+		grad.grad = grad.grad;
 		float m = (grad.grad + grad.oldgrad * MOMENTUM);
 		w -= learning_rate  * ( (m * multp) + (WEIGHT_DECAY * w));
 		return w;
@@ -173,7 +174,7 @@ struct LayerConvolution
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-		for ( int b = 0; b < in.size.b; b++ ){
+		// for ( int b = 0; b < in.size.b; b++ ){
 
 			for ( int k = 0; k < filter_grads.size(); k++ ){
 				for ( int i = 0; i < extend_filter; i++ ){
@@ -195,16 +196,16 @@ struct LayerConvolution
 								int miny = j * stride;
 								for ( int k = rn.min_z; k <= rn.max_z; k++ ){
 									int w_applied = filters[k].get( 0, x - minx, y - miny, z );
-									sum_error += w_applied * grad_next_layer( b, i, j, k );
-									filter_grads[k].get( 0, x - minx, y - miny, z ).grad += in( b, x, y, z ) * grad_next_layer( b, i, j, k );
+									sum_error += w_applied * grad_next_layer( 0, i, j, k );
+									filter_grads[k].get( 0, x - minx, y - miny, z ).grad += in( 0, x, y, z ) * grad_next_layer( 0, i, j, k );
 								}
 							}
 						}
-						grads_in( b, x, y, z ) = sum_error;
+						grads_in( 0, x, y, z ) = sum_error;
 					}
 				}
 			}
-		}
+		// }
 	}
 };
 #pragma pack(pop)
