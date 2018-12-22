@@ -11,33 +11,33 @@
 #include "LayerSoftmax.h"
 #include "LayerType.h"
 
-static void calc_grads( LayerObject* layer, TensorObject<float>& dz_next_layer )
+static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->calc_grads( dz_next_layer );
+			((LayerBatchNormalization*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->calc_grads( dz_next_layer );
+			((LayerConvolution*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->calc_grads( dz_next_layer );
+			((LayerDense*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->calc_grads( dz_next_layer );
+			((LayerDropout*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->calc_grads( dz_next_layer );
+			((LayerReLU*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->calc_grads( dz_next_layer );
+			((LayerPool*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->calc_grads( dz_next_layer );
+			((LayerSigmoid*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->calc_grads( dz_next_layer );
+			((LayerSoftmax*)layer)->backward( dz_next_layer );
 			return;
 		default:
 			assert( false );
@@ -77,33 +77,33 @@ static void update_weights( LayerObject* layer )
 	}
 }
 
-static void activate( LayerObject* layer, TensorObject<float>& in )
+static void forward( LayerObject* layer, TensorObject<float>& in )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->activate( in );
+			((LayerBatchNormalization*)layer)->forward( in );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->activate( in );
+			((LayerConvolution*)layer)->forward( in );
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->activate( in );
+			((LayerDense*)layer)->forward( in );
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->activate( in );
+			((LayerDropout*)layer)->forward( in );
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->activate( in );
+			((LayerPool*)layer)->forward( in );
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->activate( in );
+			((LayerReLU*)layer)->forward( in );
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->activate( in );
+			((LayerSigmoid*)layer)->forward( in );
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->activate( in );
+			((LayerSoftmax*)layer)->forward( in );
 			return;
 		default:
 			assert( false );
@@ -168,6 +168,10 @@ static vector<LayerObject*> loadModel(
       LayerDense *layer = new LayerDense(in_size, out_size, learning_rate, decay, momentum);
       layers.push_back( (LayerObject*)layer );
 
+		}else if (type=="leaky_relu"){
+
+			// to be implemented
+
 		}else if(type=="maxpool"){
 
       uint16_t stride = std::stoi( model_json->getChildValueForToken(json_layers[i], "stride") );
@@ -188,14 +192,9 @@ static vector<LayerObject*> loadModel(
       layers.push_back( (LayerObject*)layer );
 
 		}else if (type=="route"){
-			/*
-      std::vector <json_token_t*> ref_layers = model_json->getArrayForToken(json_layers[i], "layers");
-      for(int j=0; j<ref_layers.size(); j++){
-        std::string value = model_json->getValueForToken(ref_layers[j]);
-        printf("%s ", value.c_str());
-      }
-      printf("\n");
-			*/
+
+			// to be implemented
+
 		}else if(type=="sigmoid"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;

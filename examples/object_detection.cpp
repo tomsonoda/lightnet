@@ -42,18 +42,18 @@ float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObje
 {
   for (int i=0; i<layers.size(); i++){
     if (i== 0){
-      activate(layers[i], data);
+      forward(layers[i], data);
     }else{
-      activate(layers[i], layers[i-1]->out);
+      forward(layers[i], layers[i-1]->out);
     }
   }
   TensorObject<float> grads = layers.back()->out - expected;
 
   for (int i=layers.size()-1; i>=0; i--){
     if (i==layers.size()-1){
-      calc_grads(layers[i], grads);
+      backward(layers[i], grads);
     }else{
-      calc_grads(layers[i], layers[i+1]->dz);
+      backward(layers[i], layers[i+1]->dz);
     }
   }
 

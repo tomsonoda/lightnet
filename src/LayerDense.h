@@ -57,10 +57,10 @@ struct LayerDense
 		return (d.b * (in.size.z * in.size.x * in.size.y)) + (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
 	}
 
-	void activate( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		activate();
+		forward();
 	}
 
 	void update_gradient( GradientObject& grad )
@@ -68,7 +68,7 @@ struct LayerDense
 		grad.oldgrad = (grad.grad + grad.oldgrad * MOMENTUM);
 	}
 
-	void activate()
+	void forward()
 	{
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int n = 0; n < out.size.x; n++ ){
@@ -98,7 +98,7 @@ struct LayerDense
 		}
 	}
 
-	void calc_grads( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		memset( dz.data, 0, dz_data_size );
 		memset( dW.data, 0, dw_data_size );

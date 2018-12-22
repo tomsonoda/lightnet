@@ -19,13 +19,13 @@ struct LayerReLU
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 	}
 
-	void activate( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		activate();
+		forward();
 	}
 
-	void activate()
+	void forward()
 	{
 		for( int i = 0; i < data_size; i++ ){
 			float v = in.data[i];
@@ -40,7 +40,7 @@ struct LayerReLU
 	{
 	}
 
-	void calc_grads( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for( int i = 0; i < data_size; i++ ){
 			dz.data[i] =  (in.data[i] < 0) ? (0) : (1.0 * dz_next_layer.data[i]);

@@ -43,13 +43,13 @@ struct LayerBatchNormalization
 		}
 	}
 
-	void activate( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		activate();
+		forward();
 	}
 
-	void activate()
+	void forward()
 	{
 		scale = 1.0f / (float)in.size.b;
 
@@ -102,7 +102,7 @@ struct LayerBatchNormalization
 		}
 	}
 
-	void calc_grads( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for( int i=0; i < in.size.b *in.size.x *in.size.y *in.size.z; i++ ){
 			dxhat.data[i] = dz_next_layer.data[i] * gamma.data[i];

@@ -18,10 +18,10 @@ struct LayerSigmoid
 		in_total_size = in_size.b *in_size.x *in_size.y *in_size.z;
 	}
 
-	void activate( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		activate();
+		forward();
 	}
 
 	float activator_function( float x )
@@ -36,7 +36,7 @@ struct LayerSigmoid
 		return sig * (1 - sig);
 	}
 
-	void activate()
+	void forward()
 	{
 		for ( int i = 0; i < in_total_size; i++ ){
 			out.data[i] = activator_function(in.data[i]);
@@ -47,7 +47,7 @@ struct LayerSigmoid
 	{
 	}
 
-	void calc_grads( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for ( int i = 0; i < in_total_size; i++ ){
 			dz.data[i] = activator_derivative( in.data[i] ) * dz_next_layer.data[i];

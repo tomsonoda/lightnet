@@ -110,13 +110,13 @@ struct LayerConvolution
 		};
 	}
 
-	void activate( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		activate();
+		forward();
 	}
 
-	void activate()
+	void forward()
 	{
 		for ( int filter = 0; filter < filters.size(); filter++ ){
 			TensorObject<float>& filter_data = filters[filter];
@@ -172,7 +172,7 @@ struct LayerConvolution
 		}
 	}
 
-	void calc_grads( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		// for ( int b = 0; b < in.size.b; b++ ){
 

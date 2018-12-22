@@ -80,13 +80,13 @@ struct LayerPool
 		};
 	}
 
-	void activate( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		activate();
+		forward();
 	}
 
-	void activate()
+	void forward()
 	{
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int x = 0; x < out.size.x; x++ ){
@@ -113,7 +113,7 @@ struct LayerPool
 	{
 	}
 
-	void calc_grads( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for ( int b = 0; b < in.size.b; b++ ){
 
