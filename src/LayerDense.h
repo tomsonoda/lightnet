@@ -55,7 +55,7 @@ struct LayerDense
 
 	int map( TensorCoordinate d )
 	{
-		return (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
+		return (d.b * (in.size.z * in.size.x * in.size.y)) + (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
 	}
 
 	void activate( TensorObject<float>& in )
@@ -101,6 +101,7 @@ struct LayerDense
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
+		memset( grads_in.data, 0, grads_in.size.x *grads_in.size.y *grads_in.size.z * sizeof( float ) );
 		memset( dW.data, 0, dw_data_size );
 		for ( int n = 0; n < out.size.x; n++ ){
 			// grad.grad = grad_next_layer( b, n, 0, 0 ) * activator_derivative( input[n] );
@@ -112,7 +113,7 @@ struct LayerDense
 						for( int b = 0; b < in.size.b; b++ ){
 							GradientObject& grad = gradients[ n*in.size.b + b ];
 							grad.grad = grad_next_layer( b, n, 0, 0 );
-							grads_in( b, i, j, z ) = grad_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
+							grads_in( b, i, j, z ) += grad_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
 							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.oldgrad * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
 						}
 

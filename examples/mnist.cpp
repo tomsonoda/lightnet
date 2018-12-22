@@ -150,8 +150,8 @@ void mnist(int argc, char **argv)
 	for( long ep = 0; ep < 1000000; ){
 		int randi = rand() % (cases.size()-batch_size);
 
-		amse = 0;
-		ic = 0;
+		// amse = 0;
+		// ic = 0;
 
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
 			CaseObject t = cases[j];
