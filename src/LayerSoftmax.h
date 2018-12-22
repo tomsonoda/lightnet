@@ -5,13 +5,13 @@
 struct LayerSoftmax
 {
 	LayerType type = LayerType::softmax;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 
 	LayerSoftmax( TensorSize in_size )
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
@@ -46,17 +46,20 @@ struct LayerSoftmax
 			for ( int i = 0; i < in.size.x; i++ ){
 				out( b, i, 0, 0 ) = out( b, i, 0, 0 ) / sum;
 			}
-			
+
 		}
 	}
 
-	void fix_weights()
+	void update_weights()
 	{
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
-		grads_in = grad_next_layer;
+		for ( int i = 0; i < in.size.b * in.size.x * in.size.y * in.size.z; i++ ){
+			dz.data[i] = dz_next_layer.data[i];
+		}
+			// dz = dz_next_layer;
 	}
 };
 #pragma pack(pop)

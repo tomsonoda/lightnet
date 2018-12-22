@@ -9,23 +9,22 @@
 struct LayerDense
 {
 	LayerType type = LayerType::dense;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> weights;
 	TensorObject<float> dW;
 	unsigned weigts_data_num;
 	unsigned dw_data_size;
-	unsigned grads_in_data_size;
+	unsigned dz_data_size;
 	std::vector<GradientObject> gradients;
 	float lr;
 	float WEIGHT_DECAY;
 	float MOMENTUM;
-	std::vector<float> input;
 
 	LayerDense( TensorSize in_size, int out_size, float learning_rate, float decay, float momentum)
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, out_size, 1, 1 ),
 		weights( 1, in_size.x*in_size.y*in_size.z, out_size, 1 ),
@@ -36,10 +35,10 @@ struct LayerDense
 		int maxval = in_size.x * in_size.y * in_size.z;
 		WEIGHT_DECAY = decay;
 		MOMENTUM = momentum;
-		input = std::vector<float>( out_size );
+
 		weigts_data_num = in_size.x * in_size.y * in_size.z * out_size;
 		dw_data_size = in_size.x * in_size.y * in_size.z * out_size * sizeof( float );
-		grads_in_data_size = in_size.b * in_size.x * in_size.y * in_size.z * sizeof( float );
+		dz_data_size = in_size.b * in_size.x * in_size.y * in_size.z * sizeof( float );
 
 		for(int i=0; i<out_size; i++){
 			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
@@ -82,13 +81,13 @@ struct LayerDense
 						}
 					}
 				}
-				// out( b, n, 0, 0 ) = activator_function( inputv );
+				// out( b, n, 0, 0 ) = activator_function( sum );
 				out( b, n, 0, 0 ) = sum;
 			}
 		}
 	}
 
-	void fix_weights()
+	void update_weights()
 	{
 		for (int i=0; i<weigts_data_num; i++){
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
@@ -99,12 +98,12 @@ struct LayerDense
 		}
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
-		memset( grads_in.data, 0, grads_in.size.x *grads_in.size.y *grads_in.size.z * sizeof( float ) );
+		memset( dz.data, 0, dz_data_size );
 		memset( dW.data, 0, dw_data_size );
 		for ( int n = 0; n < out.size.x; n++ ){
-			// grad.grad = grad_next_layer( b, n, 0, 0 ) * activator_derivative( input[n] );
+			// grad.grad = dz_next_layer( b, n, 0, 0 ) * activator_derivative( out );
 			for ( int i = 0; i < in.size.x; i++ ){
 				for ( int j = 0; j < in.size.y; j++ ){
 					for ( int z = 0; z < in.size.z; z++ ){
@@ -112,9 +111,9 @@ struct LayerDense
 
 						for( int b = 0; b < in.size.b; b++ ){
 							GradientObject& grad = gradients[ n*in.size.b + b ];
-							grad.grad = grad_next_layer( b, n, 0, 0 );
-							grads_in( b, i, j, z ) += grad_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
+							grad.grad = dz_next_layer( b, n, 0, 0 );
 							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.oldgrad * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
+							dz( b, i, j, z ) += dz_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
 						}
 
 					}

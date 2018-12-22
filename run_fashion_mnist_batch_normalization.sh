@@ -1,1 +1,1 @@
-./lightnet mnist config/fashion_mnist_data.json config/fashion_mnist_model.json model
+./lightnet mnist config/fashion_mnist_bn_data.json config/fashion_mnist_bn_model.json modelmodel

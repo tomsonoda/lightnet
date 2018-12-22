@@ -5,7 +5,7 @@
 struct LayerDropout
 {
 	LayerType type = LayerType::dropout;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<bool> hitmap;
@@ -13,7 +13,7 @@ struct LayerDropout
 
 	LayerDropout( TensorSize in_size, float p_activation )
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z ),
 		hitmap( in_size.b, in_size.x, in_size.y, in_size.z ),
@@ -39,15 +39,15 @@ struct LayerDropout
 	}
 
 
-	void fix_weights()
+	void update_weights()
 	{
 
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
 		for ( int i = 0; i < in.size.b*in.size.x*in.size.y*in.size.z; i++ )
-			grads_in.data[i] = hitmap.data[i] ? grad_next_layer.data[i] : 0.0f;
+			dz.data[i] = hitmap.data[i] ? dz_next_layer.data[i] : 0.0f;
 	}
 };
 #pragma pack(pop)

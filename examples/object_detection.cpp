@@ -53,12 +53,12 @@ float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObje
     if (i==layers.size()-1){
       calc_grads(layers[i], grads);
     }else{
-      calc_grads(layers[i], layers[i+1]->grads_in);
+      calc_grads(layers[i], layers[i+1]->dz);
     }
   }
 
   for(int i=0; i<layers.size(); i++){
-    fix_weights(layers[i]);
+    update_weights(layers[i]);
   }
 
   float err = 0;

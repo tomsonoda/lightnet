@@ -11,66 +11,66 @@
 #include "LayerSoftmax.h"
 #include "LayerType.h"
 
-static void calc_grads( LayerObject* layer, TensorObject<float>& grad_next_layer )
+static void calc_grads( LayerObject* layer, TensorObject<float>& dz_next_layer )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->calc_grads( grad_next_layer );
+			((LayerBatchNormalization*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->calc_grads( grad_next_layer );
+			((LayerConvolution*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->calc_grads( grad_next_layer );
+			((LayerDense*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->calc_grads( grad_next_layer );
+			((LayerDropout*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->calc_grads( grad_next_layer );
+			((LayerReLU*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->calc_grads( grad_next_layer );
+			((LayerPool*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->calc_grads( grad_next_layer );
+			((LayerSigmoid*)layer)->calc_grads( dz_next_layer );
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->calc_grads( grad_next_layer );
+			((LayerSoftmax*)layer)->calc_grads( dz_next_layer );
 			return;
 		default:
 			assert( false );
 	}
 }
 
-static void fix_weights( LayerObject* layer )
+static void update_weights( LayerObject* layer )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->fix_weights();
+			((LayerBatchNormalization*)layer)->update_weights();
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->fix_weights();
+			((LayerConvolution*)layer)->update_weights();
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->fix_weights();
+			((LayerDense*)layer)->update_weights();
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->fix_weights();
+			((LayerDropout*)layer)->update_weights();
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->fix_weights();
+			((LayerPool*)layer)->update_weights();
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->fix_weights();
+			((LayerReLU*)layer)->update_weights();
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->fix_weights();
+			((LayerSigmoid*)layer)->update_weights();
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->fix_weights();
+			((LayerSoftmax*)layer)->update_weights();
 			return;
 		default:
 			assert( false );

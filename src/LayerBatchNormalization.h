@@ -6,7 +6,7 @@
 struct LayerBatchNormalization
 {
 	LayerType type = LayerType::batch_normalization;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> mean;
@@ -23,7 +23,7 @@ struct LayerBatchNormalization
 
 	LayerBatchNormalization( TensorSize in_size, float learning_rate )
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z ),
 		mean( 1, in_size.x, in_size.y, in_size.z ),
@@ -94,7 +94,7 @@ struct LayerBatchNormalization
 		}
 	}
 
-	void fix_weights()
+	void update_weights()
 	{
 		for (int i=0; i<in.size.x *in.size.y *in.size.z; i++){
 			gamma.data[i] -= lr * dgamma.data[i];
@@ -102,10 +102,10 @@ struct LayerBatchNormalization
 		}
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
 		for( int i=0; i < in.size.b *in.size.x *in.size.y *in.size.z; i++ ){
-			dxhat.data[i] = grad_next_layer.data[i] * gamma.data[i];
+			dxhat.data[i] = dz_next_layer.data[i] * gamma.data[i];
 		}
 
 		for ( int i = 0; i < in.size.x; i++ ){
@@ -119,7 +119,7 @@ struct LayerBatchNormalization
 					
 					for ( int b = 0; b < in.size.b; b++ ){
 
-						float g = grad_next_layer( b, i, j, z );
+						float g = dz_next_layer( b, i, j, z );
 						float xh = xhat( b, i, j, z );
 						float dxh = dxhat( b, i, j, z );
 
@@ -131,7 +131,7 @@ struct LayerBatchNormalization
 					}
 
 					for ( int b = 0; b < in.size.b; b++ ){
-						grads_in( b, i, j, z ) = scale * inv_variance(0, i, j, z ) * ( (in.size.b * dxhat( b, i, j, z )) - dxhat_sum - (xhat( b, i, j, z ) * dx_sum));
+						dz( b, i, j, z ) = scale * inv_variance(0, i, j, z ) * ( (in.size.b * dxhat( b, i, j, z )) - dxhat_sum - (xhat( b, i, j, z ) * dx_sum));
 					}
 					dgamma( 0, i, j, z ) = dgamma_sum;
 					dbeta( 0, i, j, z ) = dbeta_sum;

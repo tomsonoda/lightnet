@@ -1,0 +1,6 @@
+{
+  "train_dir"        : "dataset/fashion_mnist/train/",
+  "checkpoint_dir"   : "dataset/fashion_mnist/checkpoint/",
+  "test_dir"         : "dataset/fashion_mnist/test/",
+  "test_results_dir" : "dataset/fashion_mnist/results/",
+}

@@ -5,13 +5,13 @@
 struct LayerSigmoid
 {
 	LayerType type = LayerType::sigmoid;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	unsigned in_total_size;
 	LayerSigmoid( TensorSize in_size )
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
@@ -43,14 +43,14 @@ struct LayerSigmoid
 		}
 	}
 
-	void fix_weights()
+	void update_weights()
 	{
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
 		for ( int i = 0; i < in_total_size; i++ ){
-			grads_in.data[i] = activator_derivative( in.data[i] ) * grad_next_layer.data[i];
+			dz.data[i] = activator_derivative( in.data[i] ) * dz_next_layer.data[i];
 		}
 	}
 };

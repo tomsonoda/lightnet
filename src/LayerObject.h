@@ -6,7 +6,7 @@
 struct LayerObject
 {
 	LayerType type;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 };

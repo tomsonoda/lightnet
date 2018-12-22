@@ -35,17 +35,17 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 		if ( i == layers.size() - 1 ){
 			calc_grads( layers[i], grads );
 		}else{
-			calc_grads( layers[i], layers[i+1]->grads_in );
+			calc_grads( layers[i], layers[i+1]->dz );
 		}
 	}
 
 	for ( int i = 0; i < layers.size(); i++ ){
-		fix_weights( layers[i] );
+		update_weights( layers[i] );
 	}
 
 	if(opt=="mse"){
 		float err = 0;
-		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; i++ ){
 			float f = expected.data[i];
 			if ( f > 0.5 ){
 				err += abs(grads.data[i]);
@@ -58,7 +58,7 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
 	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
 	  }
-		loss /= (float)grads.size.b;
+		loss /= (float)expected.size.b;
 
 		if(is_print){
 			printf("----GT----\n");

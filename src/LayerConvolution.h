@@ -10,7 +10,7 @@
 struct LayerConvolution
 {
 	LayerType type = LayerType::conv;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	std::vector<TensorObject<float>> filters;
@@ -22,7 +22,7 @@ struct LayerConvolution
 
 	LayerConvolution( uint16_t stride, uint16_t extend_filter, uint16_t number_filters, uint16_t padding, TensorSize in_size )
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
 			in_size.b,
@@ -156,7 +156,7 @@ struct LayerConvolution
 		grad.oldgrad = (grad.grad + grad.oldgrad * MOMENTUM);
 	}
 
-	void fix_weights()
+	void update_weights()
 	{
 		for ( int a = 0; a < filters.size(); a++ ){
 			for ( int i = 0; i < extend_filter; i++ ){
@@ -172,7 +172,7 @@ struct LayerConvolution
 		}
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
 		// for ( int b = 0; b < in.size.b; b++ ){
 
@@ -196,12 +196,12 @@ struct LayerConvolution
 								int miny = j * stride;
 								for ( int k = rn.min_z; k <= rn.max_z; k++ ){
 									int w_applied = filters[k].get( 0, x - minx, y - miny, z );
-									sum_error += w_applied * grad_next_layer( 0, i, j, k );
-									filter_grads[k].get( 0, x - minx, y - miny, z ).grad += in( 0, x, y, z ) * grad_next_layer( 0, i, j, k );
+									sum_error += w_applied * dz_next_layer( 0, i, j, k );
+									filter_grads[k].get( 0, x - minx, y - miny, z ).grad += in( 0, x, y, z ) * dz_next_layer( 0, i, j, k );
 								}
 							}
 						}
-						grads_in( 0, x, y, z ) = sum_error;
+						dz( 0, x, y, z ) = sum_error;
 					}
 				}
 			}

@@ -5,7 +5,7 @@
 struct LayerPool
 {
 	LayerType type = LayerType::max_pool;
-	TensorObject<float> grads_in;
+	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	uint16_t stride;
@@ -13,7 +13,7 @@ struct LayerPool
 
 	LayerPool( uint16_t stride, uint16_t extend_filter, TensorSize in_size )
 		:
-		grads_in( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
 			in_size.b,
@@ -109,11 +109,11 @@ struct LayerPool
 		}
 	}
 
-	void fix_weights()
+	void update_weights()
 	{
 	}
 
-	void calc_grads( TensorObject<float>& grad_next_layer )
+	void calc_grads( TensorObject<float>& dz_next_layer )
 	{
 		for ( int b = 0; b < in.size.b; b++ ){
 
@@ -127,10 +127,10 @@ struct LayerPool
 							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
 								// int miny = j * stride;
 								int is_max = in( b, x, y, z ) == out( b, i, j, z ) ? 1 : 0;
-								sum_error += is_max * grad_next_layer( b, i, j, z );
+								sum_error += is_max * dz_next_layer( b, i, j, z );
 							}
 						}
-						grads_in( b, x, y, z ) = sum_error;
+						dz( b, x, y, z ) = sum_error;
 					}
 				}
 			}
