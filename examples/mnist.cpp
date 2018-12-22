@@ -21,7 +21,7 @@ uint32_t byteswap_uint32(uint32_t a)
 }
 
 float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, bool is_print, string opt){
-	// forward
+
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
 			activate( layers[i], data );
@@ -29,12 +29,6 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			activate( layers[i], layers[i-1]->out );
 		}
 	}
-
-	// if(is_print){
-	// 	print_tensor(layers[layers.size()-3]->out);
-	// 	print_tensor(layers[layers.size()-2]->out);
-	// 	print_tensor(layers[layers.size()-1]->out);
-	// }
 
 	TensorObject<float> grads = layers.back()->out - expected;
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
@@ -44,7 +38,7 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			calc_grads( layers[i], layers[i+1]->grads_in );
 		}
 	}
-	// update
+
 	for ( int i = 0; i < layers.size(); i++ ){
 		fix_weights( layers[i] );
 	}
@@ -71,7 +65,6 @@ float trainMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tenso
 			print_tensor(expected);
 			printf("----output----\n");
 			print_tensor(layers[layers.size()-1]->out);
-			print_tensor(layers[layers.size()-2]->out);
 			// printf("----input----\n");
 			// print_tensor(data);
 		}
@@ -149,14 +142,17 @@ void mnist(int argc, char **argv)
 	}
 
 	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, decay, momentum);
 
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, decay, momentum);
 	printf("Start training :%lu learning_rate=%f momentum=%f, decay=%f, optimizer=%s\n", cases.size(), learning_rate, momentum, decay, opt.c_str());
 
 	auto start = std::chrono::high_resolution_clock::now();
 	for( long ep = 0; ep < 1000000; ){
-
 		int randi = rand() % (cases.size()-batch_size);
+
+		amse = 0;
+		ic = 0;
+
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
 			CaseObject t = cases[j];
 			unsigned batch_index_in = (j-randi)*(t.data.size.x * t.data.size.y * t.data.size.z);
@@ -164,9 +160,6 @@ void mnist(int argc, char **argv)
 			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, (t.data.size.x * t.data.size.y * t.data.size.z) * sizeof(float) );
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 		}
-
-		// print_tensor(batch_cases.data);
-		// print_tensor(batch_cases.out);
 
 		bool is_print = false;
 		if ( (ep+1) % 1000 == 0 ){
@@ -176,32 +169,12 @@ void mnist(int argc, char **argv)
 		amse += xerr;
 		ic++;
 		ep++;
-
+		// cout << "xerr= " << xerr << endl;
 		if ( ep % 1000 == 0 ){
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
-			cout << "case " << ep << " err=" << amse/ic << ", Elapsed time: " << elapsed.count() << " s\n";
+			cout << "case " << ep << " err=" << amse/ic << ", amse=" << amse << ", ic=" << ic << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 		}
-
-		/*
-		for ( CaseObject& t : cases ){
-			bool is_print = false;
-			if ( (ep) % 1000 == 0 ){
-				is_print = true;
-			}
-			float xerr = trainMNIST( layers, t.data, t.out, is_print, opt);
-			amse += xerr;
-			ep++;
-			ic++;
-
-			if ( ep % 1000 == 0 ){
-				auto finish = std::chrono::high_resolution_clock::now();
-				std::chrono::duration<double> elapsed = finish - start;
-				cout << "case " << ep << " err=" << amse/ic << ", Elapsed time: " << elapsed.count() << " s\n";
-				start = finish;
-			}
-		}
-		*/
 	}
 }

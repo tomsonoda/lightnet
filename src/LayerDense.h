@@ -16,6 +16,7 @@ struct LayerDense
 	TensorObject<float> dW;
 	unsigned weigts_data_num;
 	unsigned dw_data_size;
+	unsigned grads_in_data_size;
 	std::vector<GradientObject> gradients;
 	float lr;
 	float WEIGHT_DECAY;
@@ -36,14 +37,19 @@ struct LayerDense
 		WEIGHT_DECAY = decay;
 		MOMENTUM = momentum;
 		input = std::vector<float>( out_size );
-		weigts_data_num = in_size.x*in_size.y*in_size.z * out_size;
+		weigts_data_num = in_size.x * in_size.y * in_size.z * out_size;
 		dw_data_size = in_size.x * in_size.y * in_size.z * out_size * sizeof( float );
+		grads_in_data_size = in_size.b * in_size.x * in_size.y * in_size.z * sizeof( float );
 
 		for(int i=0; i<out_size; i++){
 			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
 				// weights( 0, h, i, 0 ) = 0.05 * rand() / float( RAND_MAX );
-				weights( 0, h, i, 0 ) = 2.19722f / maxval * rand() / float( RAND_MAX );
+				weights( 0, h, i, 0 ) = (2.19722f / maxval) * rand() / float( RAND_MAX );
 			}
+		}
+		for(int i=0; i<out_size * in_size.b; i++){
+			gradients[i].grad = 0;
+			gradients[i].oldgrad = 0;
 		}
 	}
 
@@ -56,13 +62,6 @@ struct LayerDense
 	{
 		this->in = in;
 		activate();
-	}
-
-	float update_weight( float w, float grad, float oldgrad, float multp = 1 )
-	{
-		float m = (grad + oldgrad * MOMENTUM);
-		w -= lr  * m * multp + lr * WEIGHT_DECAY * w;
-		return w;
 	}
 
 	void update_gradient( GradientObject& grad )
@@ -91,7 +90,6 @@ struct LayerDense
 
 	void fix_weights()
 	{
-		// printf("learning_rate=%f\n", lr);
 		for (int i=0; i<weigts_data_num; i++){
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
 		}
@@ -103,21 +101,21 @@ struct LayerDense
 
 	void calc_grads( TensorObject<float>& grad_next_layer )
 	{
-		memset( grads_in.data, 0, grads_in.size.x *grads_in.size.y*grads_in.size.z * sizeof( float ) );
 		memset( dW.data, 0, dw_data_size );
 		for ( int n = 0; n < out.size.x; n++ ){
 			// grad.grad = grad_next_layer( b, n, 0, 0 ) * activator_derivative( input[n] );
 			for ( int i = 0; i < in.size.x; i++ ){
 				for ( int j = 0; j < in.size.y; j++ ){
 					for ( int z = 0; z < in.size.z; z++ ){
-
 						int m = map( { 0, i, j, z } );
+
 						for( int b = 0; b < in.size.b; b++ ){
 							GradientObject& grad = gradients[ n*in.size.b + b ];
 							grad.grad = grad_next_layer( b, n, 0, 0 );
-							grads_in( b, i, j, z ) += grad_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
-							dW (0, m, n, 0) += in(b, i, j, z) * (grad.grad + grad.oldgrad * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
+							grads_in( b, i, j, z ) = grad_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
+							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.oldgrad * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
 						}
+
 					}
 				}
 			}
