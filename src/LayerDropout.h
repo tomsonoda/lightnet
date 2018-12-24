@@ -46,8 +46,9 @@ struct LayerDropout
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for ( int i = 0; i < in.size.b*in.size.x*in.size.y*in.size.z; i++ )
-			dz.data[i] = hitmap.data[i] ? dz_next_layer.data[i] : 0.0f;
+		for ( int i = 0; i < in.size.b*in.size.x*in.size.y*in.size.z; i++ ){
+			dz.data[i] = hitmap.data[i] ? dz_next_layer.data[i] : 0.0f;			
+		}
 	}
 };
 #pragma pack(pop)
