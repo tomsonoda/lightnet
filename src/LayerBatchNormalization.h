@@ -10,10 +10,11 @@ struct LayerBatchNormalization
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> mean;
+	TensorObject<float> dmean;
 	TensorObject<float> variance;
+	TensorObject<float> dvariance;
 	TensorObject<float> inv_variance;
 	TensorObject<float> xhat;
-	TensorObject<float> dxhat;
 	TensorObject<float> gamma;
 	TensorObject<float> dgamma;
 	TensorObject<float> beta;
@@ -26,18 +27,19 @@ struct LayerBatchNormalization
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z ),
-		mean( 1, in_size.x, in_size.y, in_size.z ),
-		variance(1, in_size.x, in_size.y, in_size.z ),
-		inv_variance(1, in_size.x, in_size.y, in_size.z ),
+		mean( 1, 1, 1, in_size.z ),
+		dmean( 1, 1, 1, in_size.z ),
+		variance( 1, 1, 1, in_size.z ),
+		dvariance( 1, 1, 1, in_size.z ),
+		inv_variance( 1, 1, 1, in_size.z ),
 		xhat( in_size.b, in_size.x, in_size.y, in_size.z ),
-		dxhat( in_size.b, in_size.x, in_size.y, in_size.z ),
-		gamma( 1, in_size.x, in_size.y, in_size.z  ),
-		dgamma( 1, in_size.x, in_size.y, in_size.z ),
-		beta( 1, in_size.x, in_size.y, in_size.z ),
-		dbeta( 1, in_size.x, in_size.y, in_size.z )
+		gamma( 1, 1, 1, in_size.z  ),
+		dgamma( 1, 1, 1, in_size.z ),
+		beta( 1, 1, 1, in_size.z ),
+		dbeta( 1, 1, 1, in_size.z )
 	{
 		lr = learning_rate / (float)in_size.b;
-		for(int i=0; i<in_size.x*in_size.y*in_size.z; i++){
+		for(int i=0; i<in_size.z; i++){
 			gamma.data[i] = 0.05 * rand() / float( RAND_MAX );
 			beta.data[i]  = 0.05 * rand() / float( RAND_MAX );
 		}
@@ -51,43 +53,45 @@ struct LayerBatchNormalization
 
 	void forward()
 	{
-		scale = 1.0f / (float)in.size.b;
+		int filters = in.size.z;
+		int batch = in.size.b;
 
-		for ( int i = 0; i < in.size.x; i++ ){
-			for ( int j = 0; j < in.size.y; j++ ){
-				for ( int z = 0; z < in.size.z; z++ ){
-					float sum = 0;
+		scale = 1.0f / (batch * in.size.x * in.size.y);
+		memset( mean.data, 0, in.size.z );
+		for ( int z = 0; z < filters; z++ ){
+			float sum = 0;
+			for ( int i = 0; i < in.size.x; i++ ){
+				for ( int j = 0; j < in.size.y; j++ ){
 					for ( int b = 0; b < in.size.b; b++ ){
 							sum += in(b, i, j, z);
 					}
-					mean(0, i, j, z) = sum * scale;
 				}
 			}
+			mean(0, 0, 0, z) = sum * scale;
 		}
 
-		for ( int i = 0; i < in.size.x; i++ ){
-			for ( int j = 0; j < in.size.y; j++ ){
-				for ( int z = 0; z < in.size.z; z++ ){
-					float sum = 0;
+		scale = 1./(batch * in.size.x * in.size.y - 1);
+		memset( mean.data, 0, in.size.z );
+		for ( int z = 0; z < filters; z++ ){
+			float sum = 0;
+			for ( int i = 0; i < in.size.x; i++ ){
+				for ( int j = 0; j < in.size.y; j++ ){
 					for ( int b = 0; b < in.size.b; b++ ){
-						sum += pow( (in(b, i, j, z) - mean(0, i, j, z)), 2);
-					}
-					variance(0, i, j, z) = sum * scale;
-
-					float inv_v = 1.0f / sqrt(variance( 0, i, j, z )+0.00001f);
-					inv_variance(0, i, j, z ) = inv_v;
-					for ( int b = 0; b < in.size.b; b++ ){
-						xhat( b, i, j, z ) = ( in( b, i, j, z ) - mean( 0, i, j, z ) ) * inv_v;
+							sum += pow( (in(b, i, j, z) - mean(0, 0, 0, z)), 2 );
 					}
 				}
 			}
+			variance(0, 0, 0, z) = sum * scale;
+			inv_variance(0, 0, 0, z ) = 1.0f / sqrt(variance( 0, 0, 0, z )+0.00001f);
 		}
 
 		for ( int b = 0; b < in.size.b; b++ ){
 			for (int i = 0; i < in.size.x; i++ ){
 				for (int j = 0; j < in.size.y; j++ ){
 					for (int z = 0; z < in.size.z; z++ ){
-						out( b, i, j, z ) = gamma( 0, i, j, z ) * xhat( b, i, j, z ) + beta( 0, i, j, z );
+						float v = ( in( b, i, j, z ) - mean( 0, 0, 0, z ) ) * inv_variance( 0, 0, 0, z );
+						xhat( b, i, j, z ) = v;
+						out( b, i, j, z ) = gamma( 0, 0, 0, z ) * v + beta( 0, 0, 0, z );
 					}
 				}
 			}
@@ -96,7 +100,7 @@ struct LayerBatchNormalization
 
 	void update_weights()
 	{
-		for (int i=0; i<in.size.x *in.size.y *in.size.z; i++){
+		for (int i=0; i<in.size.z; i++){
 			gamma.data[i] -= lr * dgamma.data[i];
 			beta.data[i] -= lr * dbeta.data[i];
 		}
@@ -104,37 +108,44 @@ struct LayerBatchNormalization
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i=0; i < in.size.b *in.size.x *in.size.y *in.size.z; i++ ){
-			dxhat.data[i] = dz_next_layer.data[i] * gamma.data[i];
+		/*
+		backward_bias(l.bias_updates, l.delta, l.batch, l.out_c, l.out_w*l.out_h);
+		backward_scale_cpu(l.x_norm, l.delta, l.batch, l.out_c, l.out_w*l.out_h, l.scale_updates);
+		scale_bias(l.delta, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
+		mean_delta_cpu(l.delta, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.mean_delta);
+		variance_delta_cpu(l.x, l.delta, l.mean, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.variance_delta);
+		normalize_delta_cpu(l.x, l.mean, l.variance, l.mean_delta, l.variance_delta, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
+		if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, l.delta, 1, net.delta, 1);
+		*/
+
+		for ( int z = 0; z < in.size.z; z++ ){
+			float dbeta_sum = 0.0;
+			float dgamma_sum = 0.0;
+			float dvariance_sum = 0.0;
+			for ( int b = 0; b < in.size.b; b++ ){
+				for ( int i = 0; i < in.size.x; i++ ){
+					for ( int j = 0; j < in.size.y; j++ ){
+						float delta = dz_next_layer( b, i, j, z );
+						float xh = xhat( b, i, j, z ); // norm
+						dbeta_sum += delta;
+						dgamma_sum += (xh * delta);
+						dvariance_sum += delta*(in( b, i, j, z ) - mean(0, 0, 0, z));
+					}
+				}
+			}
+			dbeta( 0, 0, 0, z ) = dbeta_sum;
+			dgamma( 0, 0, 0, z ) = dgamma_sum;
+			dmean( 0, 0, 0, z ) = dbeta_sum * inv_variance( 0, 0, 0, z );
+			dvariance( 0, 0, 0, z ) = dvariance_sum * (-0.5 * pow(variance( 0, 0, 0, z ) + 0.00001f, (float)(-3./2.)));
 		}
 
-		for ( int i = 0; i < in.size.x; i++ ){
-			for ( int j = 0; j < in.size.y; j++ ){
-				for ( int z = 0; z < in.size.z; z++ ){
-
-					float dbeta_sum = 0.0;
-					float dgamma_sum = 0.0;
-					float dx_sum = 0.0;
-					float dxhat_sum = 0.0;
-					
-					for ( int b = 0; b < in.size.b; b++ ){
-
-						float g = dz_next_layer( b, i, j, z );
-						float xh = xhat( b, i, j, z );
-						float dxh = dxhat( b, i, j, z );
-
-						dbeta_sum += g;
-						dgamma_sum += (xh * g);
-						dx_sum += (xh * dxh);
-						dxhat_sum += dxh;
-
+		for ( int z = 0; z < in.size.z; z++ ){
+			for ( int b = 0; b < in.size.b; b++ ){
+				for ( int i = 0; i < in.size.x; i++ ){
+					for ( int j = 0; j < in.size.y; j++ ){
+						float bxy = (float)(in.size.b * in.size.x * in.size.y);
+						dz( b, i, j, z ) = dz_next_layer( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) / bxy + dmean( 0, 0, 0, z )/bxy;
 					}
-
-					for ( int b = 0; b < in.size.b; b++ ){
-						dz( b, i, j, z ) = scale * inv_variance(0, i, j, z ) * ( (in.size.b * dxhat( b, i, j, z )) - dxhat_sum - (xhat( b, i, j, z ) * dx_sum));
-					}
-					dgamma( 0, i, j, z ) = dgamma_sum;
-					dbeta( 0, i, j, z ) = dbeta_sum;
 				}
 			}
 		}
