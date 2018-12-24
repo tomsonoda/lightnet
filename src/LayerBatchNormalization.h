@@ -77,18 +77,16 @@ struct LayerBatchNormalization
 			for ( int i = 0; i < in.size.x; i++ ){
 				for ( int j = 0; j < in.size.y; j++ ){
 					for ( int b = 0; b < in.size.b; b++ ){
-							sum += pow( (in(b, i, j, z) - mean(0, 0, 0, z)), 2 );
+						sum += pow( (in(b, i, j, z) - mean(0, 0, 0, z)), 2 );
 					}
 				}
 			}
 			variance(0, 0, 0, z) = sum * scale;
 			inv_variance(0, 0, 0, z ) = 1.0f / sqrt(variance( 0, 0, 0, z )+0.00001f);
-		}
 
-		for ( int b = 0; b < in.size.b; b++ ){
-			for (int i = 0; i < in.size.x; i++ ){
-				for (int j = 0; j < in.size.y; j++ ){
-					for (int z = 0; z < in.size.z; z++ ){
+			for ( int b = 0; b < in.size.b; b++ ){
+				for (int i = 0; i < in.size.x; i++ ){
+					for (int j = 0; j < in.size.y; j++ ){
 						float v = ( in( b, i, j, z ) - mean( 0, 0, 0, z ) ) * inv_variance( 0, 0, 0, z );
 						xhat( b, i, j, z ) = v;
 						out( b, i, j, z ) = gamma( 0, 0, 0, z ) * v + beta( 0, 0, 0, z );
@@ -108,16 +106,6 @@ struct LayerBatchNormalization
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		/*
-		backward_bias(l.bias_updates, l.delta, l.batch, l.out_c, l.out_w*l.out_h);
-		backward_scale_cpu(l.x_norm, l.delta, l.batch, l.out_c, l.out_w*l.out_h, l.scale_updates);
-		scale_bias(l.delta, l.scales, l.batch, l.out_c, l.out_h*l.out_w);
-		mean_delta_cpu(l.delta, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.mean_delta);
-		variance_delta_cpu(l.x, l.delta, l.mean, l.variance, l.batch, l.out_c, l.out_w*l.out_h, l.variance_delta);
-		normalize_delta_cpu(l.x, l.mean, l.variance, l.mean_delta, l.variance_delta, l.batch, l.out_c, l.out_w*l.out_h, l.delta);
-		if(l.type == BATCHNORM) copy_cpu(l.outputs*l.batch, l.delta, 1, net.delta, 1);
-		*/
-
 		for ( int z = 0; z < in.size.z; z++ ){
 			float dbeta_sum = 0.0;
 			float dgamma_sum = 0.0;
@@ -137,9 +125,7 @@ struct LayerBatchNormalization
 			dgamma( 0, 0, 0, z ) = dgamma_sum;
 			dmean( 0, 0, 0, z ) = dbeta_sum * inv_variance( 0, 0, 0, z );
 			dvariance( 0, 0, 0, z ) = dvariance_sum * (-0.5 * pow(variance( 0, 0, 0, z ) + 0.00001f, (float)(-3./2.)));
-		}
 
-		for ( int z = 0; z < in.size.z; z++ ){
 			for ( int b = 0; b < in.size.b; b++ ){
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
