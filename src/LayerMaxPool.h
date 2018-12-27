@@ -9,29 +9,29 @@ struct LayerPool
 	TensorObject<float> in;
 	TensorObject<float> out;
 	uint16_t stride;
-	uint16_t extend_filter;
+	uint16_t kernel_size;
 
-	LayerPool( uint16_t stride, uint16_t extend_filter, TensorSize in_size )
+	LayerPool( uint16_t stride, uint16_t kernel_size, TensorSize in_size )
 		:
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
 			in_size.b,
-			(in_size.x - extend_filter) / stride + 1,
-			(in_size.y - extend_filter) / stride + 1,
+			(in_size.x - kernel_size) / stride + 1,
+			(in_size.y - kernel_size) / stride + 1,
 			in_size.z
 		)
 
 	{
 		this->stride = stride;
-		this->extend_filter = extend_filter;
-		assert( (float( in_size.x - extend_filter ) / stride + 1)
+		this->kernel_size = kernel_size;
+		assert( (float( in_size.x - kernel_size ) / stride + 1)
 				==
-				((in_size.x - extend_filter) / stride + 1) );
+				((in_size.x - kernel_size) / stride + 1) );
 
-		assert( (float( in_size.y - extend_filter ) / stride + 1)
+		assert( (float( in_size.y - kernel_size ) / stride + 1)
 				==
-				((in_size.y - extend_filter) / stride + 1) );
+				((in_size.y - kernel_size) / stride + 1) );
 	}
 
 	TensorCoordinate map_to_input( TensorCoordinate out, int z )
@@ -71,8 +71,8 @@ struct LayerPool
 		float b = y;
 		return
 		{
-			normalize_range( (a - extend_filter + 1) / stride, out.size.x, true ),
-			normalize_range( (b - extend_filter + 1) / stride, out.size.y, true ),
+			normalize_range( (a - kernel_size + 1) / stride, out.size.x, true ),
+			normalize_range( (b - kernel_size + 1) / stride, out.size.y, true ),
 			0,
 			normalize_range( a / stride, out.size.x, false ),
 			normalize_range( b / stride, out.size.y, false ),
@@ -94,8 +94,8 @@ struct LayerPool
 					for ( int z = 0; z < out.size.z; z++ ){
 						TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 						float mval = -FLT_MAX;
-						for ( int i = 0; i < extend_filter; i++ ){
-							for ( int j = 0; j < extend_filter; j++ ){
+						for ( int i = 0; i < kernel_size; i++ ){
+							for ( int j = 0; j < kernel_size; j++ ){
 								float v = in( b, mapped.x + i, mapped.y + j, z );
 								if ( v > mval ){
 									mval = v;

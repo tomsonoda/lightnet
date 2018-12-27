@@ -55,6 +55,9 @@ struct TensorObject
 
 	T& get( int _b, int _x, int _y, int _z )
 	{
+		// if( !(_b >= 0 && _x >= 0 && _y >= 0 && _z >= 0 && _b < size.b && _x < size.x && _y < size.y && _z < size.z) ){
+		// 	printf("b=%d, x=%d, y=%d, z=%d, size_b=%d, size_x=%d, size_y=%d, size_z=%d\n", _b, _x, _y, _z, size.b, size.x, size.y, size.z);
+		// }
 		assert( _b >= 0 && _x >= 0 && _y >= 0 && _z >= 0 );
 		assert( _b < size.b && _x < size.x && _y < size.y && _z < size.z );
 
