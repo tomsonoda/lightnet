@@ -6,7 +6,7 @@ enum class LayerType
 	conv,
 	dense,
 	dropout,
-	leaky,
+	leaky_relu,
 	max_pool,
 	relu,
 	sigmoid,
