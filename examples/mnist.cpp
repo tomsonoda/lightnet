@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define OUTPUT_TIMING 200
+
 uint32_t revert_uint32(uint32_t a)
 {
 	return ((((a >> 24) & 0xff) << 0) |
@@ -59,7 +61,7 @@ float trainMNIST( int epoch, vector<LayerObject*>& layers, TensorObject<float>& 
 	  }
 		loss /= (float)expected.size.b;
 
-		if ( epoch % 1000 == 0 ){
+		if ( epoch % OUTPUT_TIMING == 0 ){
 			printf("----GT----\n");
 			print_tensor(expected);
 			printf("----output----\n");
@@ -203,7 +205,7 @@ void mnist(int argc, char **argv)
 		ic++;
 		epoch++;
 
-		if ( epoch % 1000 == 0 ){
+		if ( epoch % OUTPUT_TIMING == 0 ){
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
 			cout << "case " << epoch << endl;

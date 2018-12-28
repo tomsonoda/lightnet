@@ -9,6 +9,7 @@ enum class LayerType
 	leaky_relu,
 	max_pool,
 	relu,
+	route,
 	sigmoid,
 	softmax
 };
