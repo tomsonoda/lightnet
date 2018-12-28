@@ -3,10 +3,10 @@
 struct GradientObject
 {
 	float grad;
-	float oldgrad;
+	float grad_prev;
 	GradientObject()
 	{
 		grad = 0;
-		oldgrad = 0;
+		grad_prev = 0;
 	}
 };

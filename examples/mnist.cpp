@@ -184,7 +184,8 @@ void mnist(int argc, char **argv)
 
 	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, decay, momentum);
-	printf("\nStart training :%lu learning_rate=%f momentum=%f, decay=%f, optimizer=%s\n\n", train_cases.size(), learning_rate, momentum, decay, opt.c_str());
+	printf("\n\nbatch_size:%d, learning_rate:%f, momentum:%f, decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, decay, opt.c_str());
+	printf("Start training :%lu \n\n", train_cases.size());
 
 	auto start = std::chrono::high_resolution_clock::now();
 	for( long epoch = 0; epoch < 1000000; ){

@@ -48,7 +48,7 @@ struct LayerDense
 		}
 		for(int i=0; i<out_size * in_size.b; i++){
 			gradients[i].grad = 0;
-			gradients[i].oldgrad = 0;
+			gradients[i].grad_prev = 0;
 		}
 	}
 
@@ -65,7 +65,7 @@ struct LayerDense
 
 	void update_gradient( GradientObject& grad )
 	{
-		grad.oldgrad = (grad.grad + grad.oldgrad * MOMENTUM);
+		grad.grad_prev = (grad.grad + grad.grad_prev * MOMENTUM);
 	}
 
 	void forward()
@@ -112,7 +112,7 @@ struct LayerDense
 						for( int b = 0; b < in.size.b; b++ ){
 							GradientObject& grad = gradients[ n*in.size.b + b ];
 							grad.grad = dz_next_layer( b, n, 0, 0 );
-							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.oldgrad * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
+							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
 							dz( b, i, j, z ) += dz_next_layer( b, n, 0, 0 ) * weights( 0, m, n, 0 );
 						}
 

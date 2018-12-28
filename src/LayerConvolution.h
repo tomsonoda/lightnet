@@ -157,14 +157,14 @@ struct LayerConvolution
 	float update_weight( float w, GradientObject& grad, float multp = 1 )
 	{
 		grad.grad = grad.grad;
-		float m = (grad.grad + grad.oldgrad * MOMENTUM);
+		float m = (grad.grad + grad.grad_prev * MOMENTUM);
 		w -= learning_rate  * ( (m * multp) + (WEIGHT_DECAY * w));
 		return w;
 	}
 
 	void update_gradient( GradientObject& grad )
 	{
-		grad.oldgrad = (grad.grad + grad.oldgrad * MOMENTUM);
+		grad.grad_prev = (grad.grad + grad.grad_prev * MOMENTUM);
 	}
 
 	void update_weights()
@@ -207,10 +207,10 @@ struct LayerConvolution
 							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
 								int miny = j * stride;
 								for ( int k = rn.min_z; k <= rn.max_z; k++ ){
-									int w_applied = filters[k].get( 0, x - minx, y - miny, z );
+									int w_applied = filters[k].get( 0, x-minx, y-miny, z );
 									float d = dz_next_layer( b, i, j, k );
 									sum_error += w_applied * d;
-									filter_grads[k].get( 0, x - minx, y - miny, z ).grad += padded_in( b, x, y, z ) * d;
+									filter_grads[k].get( 0, x-minx, y-miny, z ).grad += padded_in( b, x, y, z ) * d;
 								}
 							}
 						}

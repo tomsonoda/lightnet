@@ -133,7 +133,7 @@ static vector<LayerObject*> loadModel(
 			}else{
 				in_size = layers[layers.size()-1]->out.size;
 			}
-			printf("%d: batch normalization (%d) : ( %d x %d x %d ) -> (  %d x %d x %d ) \n", i, in_size.b, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
+			printf("%d: batch normalization: ( %d x %d x %d ) -> (  %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
 			LayerBatchNormalization *layer = new LayerBatchNormalization(in_size, learning_rate);
 			layers.push_back( (LayerObject*)layer );
 
@@ -150,8 +150,8 @@ static vector<LayerObject*> loadModel(
         in_size = layers[layers.size()-1]->out.size;
       }
 			int out_size = (in_size.x - size + 2*padding)/stride + 1;
-      printf("%d: convolutional batch (%d) : stride=%d  kernel_size=%d filters=%d pad=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
-			i, in_size.b, stride, size, filters, padding, in_size.x, in_size.y, in_size.z, out_size, out_size, filters);
+      printf("%d: convolutional : stride=%d  kernel_size=%d filters=%d pad=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
+			i, stride, size, filters, padding, in_size.x, in_size.y, in_size.z, out_size, out_size, filters);
       LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size);		// 28 * 28 * 1 -> 24 * 24 * 8
       layers.push_back( (LayerObject*)layer );
 
@@ -164,7 +164,7 @@ static vector<LayerObject*> loadModel(
 			}else{
 				out_size = std::stoi( model_json->getChildValueForToken(json_layers[i], "out_size") );
 			}
-      printf("%d: dense batch (%d) : ( %d x %d x %d ) -> ( %d ) \n",i, in_size.b, in_size.x, in_size.y, in_size.z, out_size);
+      printf("%d: dense : ( %d x %d x %d ) -> ( %d ) \n",i, in_size.x, in_size.y, in_size.z, out_size);
       LayerDense *layer = new LayerDense(in_size, out_size, learning_rate, decay, momentum);
       layers.push_back( (LayerObject*)layer );
 
@@ -179,15 +179,15 @@ static vector<LayerObject*> loadModel(
       TensorSize in_size = layers[layers.size()-1]->out.size;
 			int out_size_x = (in_size.x - size ) / stride + 1;
 			int out_size_y = (in_size.y - size ) / stride + 1;
-      printf("%d: maxpool batch (%d) : stride=%d  kernel_size=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
-			i, in_size.b, stride, size, in_size.x, in_size.y, in_size.z, out_size_x, out_size_y, in_size.z);
+      printf("%d: maxpool : stride=%d  kernel_size=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
+			i, stride, size, in_size.x, in_size.y, in_size.z, out_size_x, out_size_y, in_size.z);
       LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
       layers.push_back( (LayerObject*)layer );
 
     }else if(type=="relu"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
-      printf("%d: relu batch (%d) : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.b, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
+      printf("%d: relu : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
       LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
       layers.push_back( (LayerObject*)layer );
 
@@ -198,14 +198,14 @@ static vector<LayerObject*> loadModel(
 		}else if(type=="sigmoid"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
-			printf("%d: sigmoid batch (%d) : (%d) -> (%d)\n",i, in_size.b, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			printf("%d: sigmoid : (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerSigmoid *layer = new LayerSigmoid(in_size);
 			layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="softmax"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
-			printf("%d: softmax batch (%d) : (%d) -> (%d)\n",i, in_size.b, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			printf("%d: softmax : (%d) -> (%d)\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerSoftmax *layer = new LayerSoftmax(in_size);
 			layers.push_back( (LayerObject*)layer );
 
