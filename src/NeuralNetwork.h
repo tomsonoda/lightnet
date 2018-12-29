@@ -3,8 +3,10 @@
 #include "TensorObject.h"
 #include "LayerBatchNormalization.h"
 #include "LayerDense.h"
+#include "LayerLeakyReLU.h"
 #include "LayerMaxPool.h"
 #include "LayerReLU.h"
+#include "LayerRoute.h"
 #include "LayerConvolution.h"
 #include "LayerDropout.h"
 #include "LayerSigmoid.h"
@@ -29,6 +31,9 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer )
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->backward( dz_next_layer );
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::max_pool:
 			((LayerPool*)layer)->backward( dz_next_layer );
@@ -66,6 +71,9 @@ static void update_weights( LayerObject* layer )
 		case LayerType::relu:
 			((LayerReLU*)layer)->update_weights();
 			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->update_weights();
+			return;
 		case LayerType::sigmoid:
 			((LayerSigmoid*)layer)->update_weights();
 			return;
@@ -98,6 +106,9 @@ static void forward( LayerObject* layer, TensorObject<float>& in )
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->forward( in );
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->forward( in );
 			return;
 		case LayerType::sigmoid:
 			((LayerSigmoid*)layer)->forward( in );
@@ -170,7 +181,10 @@ static vector<LayerObject*> loadModel(
 
 		}else if (type=="leaky_relu"){
 
-			// to be implemented
+			TensorSize in_size = layers[layers.size()-1]->out.size;
+      printf("%d: leaky relu : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
+      LayerLeakyReLU *layer = new LayerLeakyReLU( layers[layers.size()-1]->out.size );
+      layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="maxpool"){
 
@@ -188,12 +202,30 @@ static vector<LayerObject*> loadModel(
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
       printf("%d: relu : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
-      LayerReLU * layer = new LayerReLU( layers[layers.size()-1]->out.size );
+      LayerReLU *layer = new LayerReLU( layers[layers.size()-1]->out.size );
       layers.push_back( (LayerObject*)layer );
 
 		}else if (type=="route"){
 
-			// to be implemented
+			vector <json_token_t*> json_ref_layers = model_json->getArrayForToken(json_layers[i], "layers");
+			vector <int> ref_layers;
+			int z_sum = 0;
+
+      for(int j=0; j<json_ref_layers.size(); j++){
+        string value_str = model_json->getValueForToken(json_ref_layers[j]);
+				if(value_str.size()>0){
+					uint16_t ref_index = std::stoi( value_str ) + i;
+					printf("%d ", ref_index);
+					ref_layers.push_back(ref_index);
+
+					z_sum += layers[ref_index]->out.size.z;
+    		}
+      }
+
+      printf("\n");
+			TensorSize in_size = layers[layers.size()-1]->out.size;
+			LayerRoute *layer = new LayerRoute( layers, ref_layers, {in_size.b, in_size.x, in_size.y, z_sum});
+			layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="sigmoid"){
 

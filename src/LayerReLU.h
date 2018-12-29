@@ -43,7 +43,7 @@ struct LayerReLU
 	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for( int i = 0; i < data_size; i++ ){
-			dz.data[i] =  (in.data[i] < 0) ? (0) : (1.0 * dz_next_layer.data[i]);
+			dz.data[i] +=  (in.data[i] < 0) ? (0) : (1.0 * dz_next_layer.data[i]);
 		}
 	}
 };

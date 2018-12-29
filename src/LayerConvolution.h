@@ -31,7 +31,7 @@ struct LayerConvolution
 			(in_size.y - kernel_size + 2*padding) / stride + 1,
 			number_filters
 		),
-		padded_in( in_size.b, in_size.x + 2*padding, in_size.y + 2*padding, in_size.z )		
+		padded_in( in_size.b, in_size.x + 2*padding, in_size.y + 2*padding, in_size.z )
 	{
 		learning_rate = LEARNING_RATE / (float)in_size.b;
 		this->stride = stride;
@@ -215,7 +215,7 @@ struct LayerConvolution
 							}
 						}
 						if(x>=padding && y>=padding && x-padding<in.size.x && y-padding<in.size.y ){
-							dz( b, x-padding, y-padding, z ) = sum_error;
+							dz( b, x-padding, y-padding, z ) += sum_error;
 						}
 						// dz( b, x, y, z ) = sum_error;
 					}

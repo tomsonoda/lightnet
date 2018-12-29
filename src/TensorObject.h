@@ -48,6 +48,11 @@ struct TensorObject
 		return clone;
 	}
 
+	void clear()
+	{
+		memset(data, 0x00, size.b * size.x * size.y * size.z * sizeof( T ));
+	}
+
 	T& operator()( int _b, int _x, int _y, int _z )
 	{
 		return this->get( _b, _x, _y, _z );

@@ -61,6 +61,7 @@ struct LayerDense
 	{
 		this->in = in;
 		forward();
+		this->dz.clear();
 	}
 
 	void update_gradient( GradientObject& grad )
@@ -100,7 +101,6 @@ struct LayerDense
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		memset( dz.data, 0, dz_data_size );
 		memset( dW.data, 0, dw_data_size );
 		for ( int n = 0; n < out.size.x; n++ ){
 			// grad.grad = dz_next_layer( b, n, 0, 0 ) * activator_derivative( out );

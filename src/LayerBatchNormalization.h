@@ -130,7 +130,7 @@ struct LayerBatchNormalization
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
 						float bxy = (float)(in.size.b * in.size.x * in.size.y);
-						dz( b, i, j, z ) = dz_next_layer( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) / bxy + dmean( 0, 0, 0, z )/bxy;
+						dz( b, i, j, z ) += dz_next_layer( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) / bxy + dmean( 0, 0, 0, z )/bxy;
 					}
 				}
 			}

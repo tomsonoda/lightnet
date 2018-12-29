@@ -7,14 +7,13 @@
 #include <chrono>
 
 #include "lightnet.h"
-#include "TensorObject.h"
 #include "Utils.h"
 
 using namespace std;
 
 #define OUTPUT_TIMING 200
 
-uint32_t revert_uint32(uint32_t a)
+uint32_t reverse_uint32(uint32_t a)
 {
 	return ((((a >> 24) & 0xff) << 0) |
 		(((a >> 16) & 0xff) << 8) |
@@ -22,7 +21,8 @@ uint32_t revert_uint32(uint32_t a)
 		(((a >> 0) & 0xff) << 24));
 }
 
-float trainMNIST( int epoch, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+float trainMNIST( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
 			forward( layers[i], data );
@@ -32,6 +32,10 @@ float trainMNIST( int epoch, vector<LayerObject*>& layers, TensorObject<float>& 
 	}
 
 	TensorObject<float> grads = layers.back()->out - expected;
+	for( int i = 0; i < layers.size(); i++ ){
+		layers[i]->dz.clear();
+	}
+
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
 			backward( layers[i], grads );
@@ -61,7 +65,7 @@ float trainMNIST( int epoch, vector<LayerObject*>& layers, TensorObject<float>& 
 	  }
 		loss /= (float)expected.size.b;
 
-		if ( epoch % OUTPUT_TIMING == 0 ){
+		if ( step % OUTPUT_TIMING == 0 ){
 			printf("----GT----\n");
 			print_tensor(expected);
 			printf("----output----\n");
@@ -72,6 +76,7 @@ float trainMNIST( int epoch, vector<LayerObject*>& layers, TensorObject<float>& 
 }
 
 float testMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
 			forward( layers[i], data );
@@ -132,7 +137,7 @@ vector<CaseObject> read_cases(string data_json_path, string mode)
 		images = read_file( (test_dir + "t10k-images-idx3-ubyte").c_str() );
 		labels = read_file( (test_dir + "t10k-labels-idx1-ubyte").c_str() );
 	}
-	uint32_t case_count = revert_uint32( *(uint32_t*)(images + 4) );
+	uint32_t case_count = reverse_uint32( *(uint32_t*)(images + 4) );
 
 	for (int i=0; i<case_count; i++){
 		CaseObject c {TensorObject<float>( 1, 28, 28, 1 ), TensorObject<float>( 1, 10, 1, 1 )};
@@ -190,7 +195,7 @@ void mnist(int argc, char **argv)
 	printf("Start training :%lu \n\n", train_cases.size());
 
 	auto start = std::chrono::high_resolution_clock::now();
-	for( long epoch = 0; epoch < 1000000; ){
+	for( long step = 0; step < 1000000; ){
 		int randi = rand() % (train_cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); j++ ){
 			CaseObject t = train_cases[j];
@@ -200,16 +205,16 @@ void mnist(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 		}
 
-		float xerr = trainMNIST( epoch, layers, batch_cases.data, batch_cases.out, opt );
+		float xerr = trainMNIST( step, layers, batch_cases.data, batch_cases.out, opt );
 		amse += xerr;
 		ic++;
-		epoch++;
+		step++;
 
-		if ( epoch % OUTPUT_TIMING == 0 ){
+		if ( step % OUTPUT_TIMING == 0 ){
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
-			cout << "case " << epoch << endl;
-			cout << "  train_err=" << amse/ic << ", amse=" << amse << ", ic=" << ic << ", Elapsed time: " << elapsed.count() << " s\n";
+			cout << "step " << step << endl;
+			cout << "  train_err=" << amse/ic << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 
 			randi = rand() % (test_cases.size()-batch_size);

@@ -9,14 +9,18 @@ struct LayerRoute
 	TensorObject<float> in;
 	TensorObject<float> out;
 	unsigned data_size;
+	vector<LayerObject*> layers;
+	vector<int> ref_layers;
 
-	LayerRoute( TensorSize in_size )
+	LayerRoute( vector<LayerObject*> layers, vector<int> ref_layers, TensorSize in_size )
 		:
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
-		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		data_size = in_size.b * in_size.x * in_size.y * in_size.z * sizeof(float);
+		this->layers = layers;
+		this->ref_layers = ref_layers;
 	}
 
 	void forward( TensorObject<float>& in )
@@ -27,9 +31,19 @@ struct LayerRoute
 
 	void forward()
 	{
-		for( int i = 0; i < data_size; i++ ){
-			float v = in.data[i];
-			out.data[i] = v;
+		int z_offset = 0;
+		for( int i=0; i<ref_layers.size(); i++ ){
+			TensorObject<float>& layer_in = layers[i]->out;
+			for ( int b = 0; b < layer_in.size.b; b++ ){
+				for ( int z = 0; z < layer_in.size.z; z++ ){
+					for ( int y = 0; y < layer_in.size.y; y++ ){
+						for ( int x = 0; x < layer_in.size.x; x++ ){
+							out( b, x, y, z_offset+z ) = layer_in( b, x, y, z );
+						}
+					}
+				}
+				z_offset = layer_in.size.z;
+			}
 		}
 	}
 
@@ -39,8 +53,19 @@ struct LayerRoute
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i = 0; i < data_size; i++ ){
-			dz.data[i] =  (in.data[i] < 0) ? (0) : (1.0 * dz_next_layer.data[i]);
+		int z_offset = 0;
+		for( int i=0; i<ref_layers.size(); i++ ){
+			TensorObject<float>& layer_dz = layers[i]->dz;
+			for ( int b = 0; b < layer_dz.size.b; b++ ){
+				for ( int z = 0; z < layer_dz.size.z; z++ ){
+					for ( int y = 0; y < layer_dz.size.y; y++ ){
+						for ( int x = 0; x < layer_dz.size.x; x++ ){
+							layer_dz( b, x, y, z ) += dz_next_layer( b, x, y, z_offset+z );
+						}
+					}
+				}
+				z_offset = layer_dz.size.z;
+			}
 		}
 	}
 };

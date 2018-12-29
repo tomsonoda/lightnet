@@ -50,7 +50,7 @@ struct LayerSigmoid
 	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for ( int i = 0; i < in_total_size; i++ ){
-			dz.data[i] = activator_derivative( in.data[i] ) * dz_next_layer.data[i];
+			dz.data[i] += activator_derivative( in.data[i] ) * dz_next_layer.data[i];
 		}
 	}
 };

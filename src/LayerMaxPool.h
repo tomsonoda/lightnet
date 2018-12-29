@@ -130,7 +130,7 @@ struct LayerPool
 								sum_error += is_max * dz_next_layer( b, i, j, z );
 							}
 						}
-						dz( b, x, y, z ) = sum_error;
+						dz( b, x, y, z ) += sum_error;
 					}
 				}
 			}
