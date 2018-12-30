@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#define OUTPUT_TIMING 200
+#define OUTPUT_TIMING 1000
 
 uint32_t reverse_uint32(uint32_t a)
 {

@@ -70,6 +70,8 @@ struct LayerConvolution
 			TensorObject<GradientObject> filter_grad( 1, kernel_size, kernel_size, in_size.z );
 			filter_grads.push_back( filter_grad );
 		}
+
+		memset( padded_in.data, 0, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
 	}
 
 	TensorCoordinate map_to_input( TensorCoordinate out, int z )
@@ -125,7 +127,6 @@ struct LayerConvolution
 
 	void forward()
 	{
-		memset( padded_in.data, 0, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int x = 0; x < in.size.x; x++ ){
 				for ( int y = 0; y < in.size.y; y++ ){
@@ -217,18 +218,21 @@ struct LayerConvolution
 							int minx = i * stride;
 							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
 								int miny = j * stride;
+								int x_minx = x - minx;
+								int y_miny = y - miny;
 								for ( int k = rn.min_z; k <= rn.max_z; k++ ){
-									int w_applied = filters[k].get( 0, x-minx, y-miny, z );
+									int w_applied = filters[k].get( 0, x_minx, y_miny, z );
 									float d = dz_in( b, i, j, k );
 									sum_error += w_applied * d;
-									filter_grads[k].get( 0, x-minx, y-miny, z ).grad += padded_in( b, x, y, z ) * d;
+									filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in( b, x, y, z ) * d;
 								}
 							}
 						}
+
 						if(x>=padding && y>=padding && x-padding<in.size.x && y-padding<in.size.y ){
 							dz( b, x-padding, y-padding, z ) += sum_error;
 						}
-						// dz( b, x, y, z ) = sum_error;
+
 					}
 
 				}

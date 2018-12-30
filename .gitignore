@@ -7,4 +7,5 @@ lightnet
 *.so
 .DS_Store
 
+/instrumentscli*
 /dataset/*

@@ -1,6 +1,6 @@
 {
   "net" : {
-    "batch_size":8,
+    "batch_size":4,
     "learning_rate":0.1,
     "momentum":0.6,
     "decay":0.001,
@@ -8,45 +8,16 @@
   },
 
   "layers":[
-    {
-      "type":"convolutional",
-      "batch_normalization":1,
-      "filters":8,
-      "size":5,
-      "stride":1,
-      "padding":2
-    },
-    {
-      "type":"batch_normalization"
-    },
-    {
-      "type":"relu"
-    },
-    {
-      "type":"maxpool",
-      "size":2,
-      "stride":2
-    },
-    {
-      "type":"convolutional",
-      "batch_normalization":1,
-      "filters":8,
-      "size":3,
-      "stride":1,
-      "padding":1
-    },
-    {
-      "type":"batch_normalization"
-    },
-    {
-      "type":"relu"
-    },
-    {
-      "type":"dense",
-      "out_size":10
-    },
-    {
-      "type":"sigmoid"
-    }
+    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":5, "stride":1, "padding":0},
+    {"type":"batch_normalization"},
+    {"type":"relu"},
+    {"type":"maxpool","size":2, "stride":2},
+
+    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":3, "stride":1, "padding":0},
+    {"type":"batch_normalization"},
+    {"type":"relu"},
+
+    {"type":"dense","out_size":10},
+    {"type":"sigmoid"}
   ]
 }
