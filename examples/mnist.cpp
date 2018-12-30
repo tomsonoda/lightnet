@@ -33,6 +33,7 @@ float trainMNIST( int step, vector<LayerObject*>& layers, TensorObject<float>& d
 
 	TensorObject<float> grads = layers.back()->out - expected;
 	for( int i = 0; i < layers.size(); i++ ){
+		layers[i]->dz_in.clear();
 		layers[i]->dz.clear();
 	}
 

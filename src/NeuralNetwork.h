@@ -206,26 +206,42 @@ static vector<LayerObject*> loadModel(
       layers.push_back( (LayerObject*)layer );
 
 		}else if (type=="route"){
-
 			vector <json_token_t*> json_ref_layers = model_json->getArrayForToken(json_layers[i], "layers");
 			vector <int> ref_layers;
+			int x_sum = 0;
+			int y_sum = 0;
 			int z_sum = 0;
 
+			printf("%d: route : [", i);
       for(int j=0; j<json_ref_layers.size(); j++){
         string value_str = model_json->getValueForToken(json_ref_layers[j]);
 				if(value_str.size()>0){
 					uint16_t ref_index = std::stoi( value_str ) + i;
 					printf("%d ", ref_index);
 					ref_layers.push_back(ref_index);
-
+					x_sum += layers[ref_index]->out.size.x;
+					y_sum += layers[ref_index]->out.size.y;
 					z_sum += layers[ref_index]->out.size.z;
     		}
       }
-
-      printf("\n");
 			TensorSize in_size = layers[layers.size()-1]->out.size;
-			LayerRoute *layer = new LayerRoute( layers, ref_layers, {in_size.b, in_size.x, in_size.y, z_sum});
-			layers.push_back( (LayerObject*)layer );
+			printf("] -> ( %d x %d x %d )\n", in_size.x, in_size.y, z_sum);
+
+			if(ref_layers.size()>0){
+				for(int j=0; j<ref_layers.size(); j++){
+					if(x_sum/ref_layers.size() != layers[ref_layers[j]]->out.size.x){
+						printf("reference layer x-sizes are different.\n");
+						exit(0);
+					}
+					if(y_sum/ref_layers.size() != layers[ref_layers[j]]->out.size.y){
+						printf("reference layer y-sizes are different.\n");
+						exit(0);
+					}
+				}
+				LayerRoute *layer = new LayerRoute( layers, ref_layers, {in_size.b, in_size.x, in_size.y, z_sum});
+				layers.push_back( (LayerObject*)layer );
+			}
+
 
 		}else if(type=="sigmoid"){
 

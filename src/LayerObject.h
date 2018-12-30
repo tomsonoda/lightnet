@@ -9,5 +9,6 @@ struct LayerObject
 	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
+	TensorObject<float> dz_in;
 };
 #pragma pack(pop)

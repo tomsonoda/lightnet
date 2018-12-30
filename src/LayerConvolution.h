@@ -13,6 +13,7 @@ struct LayerConvolution
 	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
+	TensorObject<float> dz_in;
 	TensorObject<float> padded_in;
 	std::vector<TensorObject<float>> filters;
 	std::vector<TensorObject<GradientObject>> filter_grads;
@@ -26,6 +27,12 @@ struct LayerConvolution
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
+			in_size.b,
+			(in_size.x - kernel_size + 2*padding) / stride + 1,
+			(in_size.y - kernel_size + 2*padding) / stride + 1,
+			number_filters
+		),
+		dz_in(
 			in_size.b,
 			(in_size.x - kernel_size + 2*padding) / stride + 1,
 			(in_size.y - kernel_size + 2*padding) / stride + 1,
@@ -185,6 +192,10 @@ struct LayerConvolution
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+			dz_in.data[i] += dz_next_layer.data[i];
+		}
+
 		for ( int k = 0; k < filter_grads.size(); k++ ){
 			for ( int i = 0; i < kernel_size; i++ ){
 				for ( int j = 0; j < kernel_size; j++ ){
@@ -208,7 +219,7 @@ struct LayerConvolution
 								int miny = j * stride;
 								for ( int k = rn.min_z; k <= rn.max_z; k++ ){
 									int w_applied = filters[k].get( 0, x-minx, y-miny, z );
-									float d = dz_next_layer( b, i, j, k );
+									float d = dz_in( b, i, j, k );
 									sum_error += w_applied * d;
 									filter_grads[k].get( 0, x-minx, y-miny, z ).grad += padded_in( b, x, y, z ) * d;
 								}

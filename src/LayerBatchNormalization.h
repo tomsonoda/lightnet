@@ -9,6 +9,7 @@ struct LayerBatchNormalization
 	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
+	TensorObject<float> dz_in;
 	TensorObject<float> mean;
 	TensorObject<float> dmean;
 	TensorObject<float> variance;
@@ -27,6 +28,7 @@ struct LayerBatchNormalization
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dz_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		mean( 1, 1, 1, in_size.z ),
 		dmean( 1, 1, 1, in_size.z ),
 		variance( 1, 1, 1, in_size.z ),
@@ -106,6 +108,9 @@ struct LayerBatchNormalization
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+			dz_in.data[i] += dz_next_layer.data[i];
+		}
 		for ( int z = 0; z < in.size.z; z++ ){
 			float dbeta_sum = 0.0;
 			float dgamma_sum = 0.0;
@@ -113,7 +118,7 @@ struct LayerBatchNormalization
 			for ( int b = 0; b < in.size.b; b++ ){
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
-						float delta = dz_next_layer( b, i, j, z );
+						float delta = dz_in( b, i, j, z );
 						float xh = xhat( b, i, j, z ); // norm
 						dbeta_sum += delta;
 						dgamma_sum += (xh * delta);
@@ -130,7 +135,7 @@ struct LayerBatchNormalization
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
 						float bxy = (float)(in.size.b * in.size.x * in.size.y);
-						dz( b, i, j, z ) += dz_next_layer( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) / bxy + dmean( 0, 0, 0, z )/bxy;
+						dz( b, i, j, z ) = dz_in( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) / bxy + dmean( 0, 0, 0, z )/bxy;
 					}
 				}
 			}

@@ -8,6 +8,7 @@ struct LayerPool
 	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
+	TensorObject<float> dz_in;
 	uint16_t stride;
 	uint16_t kernel_size;
 
@@ -16,6 +17,12 @@ struct LayerPool
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		out(
+			in_size.b,
+			(in_size.x - kernel_size) / stride + 1,
+			(in_size.y - kernel_size) / stride + 1,
+			in_size.z
+		),
+		dz_in(
 			in_size.b,
 			(in_size.x - kernel_size) / stride + 1,
 			(in_size.y - kernel_size) / stride + 1,
@@ -115,6 +122,10 @@ struct LayerPool
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+			dz_in.data[i] += dz_next_layer.data[i];
+		}
+
 		for ( int b = 0; b < in.size.b; b++ ){
 
 			for ( int x = 0; x < in.size.x; x++ ){
@@ -127,7 +138,7 @@ struct LayerPool
 							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
 								// int miny = j * stride;
 								int is_max = in( b, x, y, z ) == out( b, i, j, z ) ? 1 : 0;
-								sum_error += is_max * dz_next_layer( b, i, j, z );
+								sum_error += is_max * dz_in( b, i, j, z );
 							}
 						}
 						dz( b, x, y, z ) += sum_error;
