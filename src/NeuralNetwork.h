@@ -163,7 +163,7 @@ static vector<LayerObject*> loadModel(
 			int out_size = (in_size.x - size + 2*padding)/stride + 1;
       printf("%d: convolutional : stride=%d  kernel_size=%d filters=%d pad=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
 			i, stride, size, filters, padding, in_size.x, in_size.y, in_size.z, out_size, out_size, filters);
-      LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size);		// 28 * 28 * 1 -> 24 * 24 * 8
+      LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size, learning_rate, decay, momentum);		// 28 * 28 * 1 -> 24 * 24 * 8
       layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="dense"){
@@ -241,7 +241,6 @@ static vector<LayerObject*> loadModel(
 				LayerRoute *layer = new LayerRoute( layers, ref_layers, {in_size.b, in_size.x, in_size.y, z_sum});
 				layers.push_back( (LayerObject*)layer );
 			}
-
 
 		}else if(type=="sigmoid"){
 
