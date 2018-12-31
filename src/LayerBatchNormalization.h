@@ -56,9 +56,8 @@ struct LayerBatchNormalization
 	void forward()
 	{
 		int filters = in.size.z;
-		int batch = in.size.b;
+		scale = 1.0f / (in.size.b * in.size.x * in.size.y);
 
-		scale = 1.0f / (batch * in.size.x * in.size.y);
 		memset( mean.data, 0, in.size.z );
 		for ( int z = 0; z < filters; z++ ){
 			float sum = 0;
@@ -72,7 +71,7 @@ struct LayerBatchNormalization
 			mean(0, 0, 0, z) = sum * scale;
 		}
 
-		scale = 1./(batch * in.size.x * in.size.y - 1);
+		// scale = 1./(batch * in.size.x * in.size.y - 1);
 		memset( mean.data, 0, in.size.z );
 		for ( int z = 0; z < filters; z++ ){
 			float sum = 0;
@@ -111,6 +110,9 @@ struct LayerBatchNormalization
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
+
+		float bxy_inv = 1.0f / (float)(in.size.b * in.size.x * in.size.y);
+
 		for ( int z = 0; z < in.size.z; z++ ){
 			float dbeta_sum = 0.0;
 			float dgamma_sum = 0.0;
@@ -134,8 +136,7 @@ struct LayerBatchNormalization
 			for ( int b = 0; b < in.size.b; b++ ){
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
-						float bxy = (float)(in.size.b * in.size.x * in.size.y);
-						dz( b, i, j, z ) = dz_in( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) / bxy + dmean( 0, 0, 0, z )/bxy;
+						dz( b, i, j, z ) = dz_in( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) * bxy_inv + dmean( 0, 0, 0, z ) * bxy_inv;
 					}
 				}
 			}

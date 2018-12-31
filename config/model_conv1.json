@@ -10,7 +10,6 @@
   "layers":[
     {
       "type":"convolutional",
-      "batch_normalization":1,
       "filters":8,
       "size":5,
       "stride":1,

@@ -83,13 +83,13 @@ struct LayerConvolution
 		return out;
 	}
 
-	struct range_t
+	struct tensor_range_t
 	{
 		int min_x, min_y, min_z;
 		int max_x, max_y, max_z;
 	};
 
-	int normalize_range( float f, int max, bool is_min )
+	int normalize_range_min( float f, int max )
 	{
 		if( f <= 0 ){
 			return 0;
@@ -98,24 +98,28 @@ struct LayerConvolution
 		if( f >= max ){
 			return max;
 		}
-		if( is_min ){
-			return ceil( f );
-		}else{
-			return floor( f );
-		}
+		return ceil( f );
 	}
 
-	range_t map_to_output( int x, int y )
+	int normalize_range_max( float f, int max )
+	{
+		max -= 1;
+		if( f >= max ){
+			return max;
+		}
+		return floor( f );
+	}
+	tensor_range_t map_to_output( int x, int y )
 	{
 		float a = x;
 		float b = y;
 		return
 		{
-			normalize_range( (a - kernel_size + 1) / stride, out.size.x, true ),
-			normalize_range( (b - kernel_size + 1) / stride, out.size.y, true ),
+			normalize_range_min( (a - kernel_size + 1) / stride, out.size.x ),
+			normalize_range_min( (b - kernel_size + 1) / stride, out.size.y ),
 			0,
-			normalize_range( a / stride, out.size.x, false ),
-			normalize_range( b / stride, out.size.y, false ),
+			normalize_range_max( a / stride, out.size.x ),
+			normalize_range_max( b / stride, out.size.y ),
 			(int)filters.size() - 1,
 		};
 	}
@@ -183,10 +187,13 @@ struct LayerConvolution
 					for ( int z = 0; z < in.size.z; z++ ){
 						float& w = filters[a].get( 0, i, j, z );
 						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
-						grad.grad /= in.size.b;
 
-						w = update_weight( w, grad );
-						update_gradient( grad );
+						float m = (grad.grad + grad.grad_prev * momentum);
+						w -= lr * ( m + (decay * w));
+						grad.grad_prev = m;
+
+						// w = update_weight( w, grad );
+						// update_gradient( grad );
 					}
 				}
 			}
@@ -212,7 +219,7 @@ struct LayerConvolution
 		for ( int b = 0; b < in.size.b; b++ ){
 			for ( int x = 0; x < padded_in.size.x; x++ ){
 				for ( int y = 0; y < padded_in.size.y; y++ ){
-					range_t rn = map_to_output( x, y );
+					tensor_range_t rn = map_to_output( x, y );
 					for ( int z = 0; z < in.size.z; z++ ){
 
 						float sum_error = 0;

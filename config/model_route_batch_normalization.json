@@ -8,17 +8,17 @@
   },
 
   "layers":[
-    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":5, "stride":1, "padding":2},
+    {"type":"convolutional", "filters":8, "size":5, "stride":1, "padding":2},
     {"type":"batch_normalization"},
     {"type":"relu"},
     {"type":"maxpool","size":2, "stride":2},
 
-    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":3, "stride":1, "padding":1},
+    {"type":"convolutional",  "filters":8, "size":3, "stride":1, "padding":1},
     {"type":"batch_normalization"},
     {"type":"relu"},
 
     {"type":"route", "layers":[-4]},
-    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":3, "stride":1, "padding":1},
+    {"type":"convolutional",  "filters":8, "size":3, "stride":1, "padding":1},
     {"type":"batch_normalization"},
     {"type":"relu"},
 

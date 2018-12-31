@@ -8,10 +8,10 @@
   },
 
   "layers":[
-    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":5, "stride":1, "padding":0},
+    {"type":"convolutional", "filters":8, "size":5, "stride":1, "padding":0},
     {"type":"relu"},
     {"type":"maxpool", "size":2, "stride":2},
-    {"type":"convolutional", "batch_normalization":1, "filters":8, "size":3, "stride":1, "padding":0},
+    {"type":"convolutional", "filters":8, "size":3, "stride":1, "padding":0},
     {"type":"relu"},
     {"type":"dense", "out_size":10},
     {"type":"sigmoid"}
