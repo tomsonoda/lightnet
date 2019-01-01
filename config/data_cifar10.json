@@ -1,0 +1,6 @@
+{
+  "train_dir"        : "dataset/cifar10/train/",
+  "checkpoint_dir"   : "dataset/cifar10/checkpoint/",
+  "test_dir"         : "dataset/cifar10/test/",
+  "test_results_dir" : "dataset/cifar10/results/",
+}

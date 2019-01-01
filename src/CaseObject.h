@@ -1,4 +1,3 @@
-
 #pragma once
 #include "TensorObject.h"
 struct CaseObject
