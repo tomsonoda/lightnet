@@ -5,15 +5,14 @@
 #include <fstream>
 #include <algorithm>
 #include <chrono>
-
 #include "lightnet.h"
 #include "Utils.h"
 
 using namespace std;
 
-#define OUTPUT_TIMING 1000
+#define OUTPUT_TIMING 20
 
-float trainMNIST( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+float trainCifar( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
 
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
@@ -68,7 +67,7 @@ float trainMNIST( int step, vector<LayerObject*>& layers, TensorObject<float>& d
 	}
 }
 
-float testMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+float testCifar( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
 
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
@@ -99,60 +98,19 @@ float testMNIST( vector<LayerObject*>& layers, TensorObject<float>& data, Tensor
 	}
 }
 
-vector<CaseObject> read_cases(string data_json_path, string mode)
-{
-	JSONObject *data_json = new JSONObject();
-	DatasetObject *dataset = new DatasetObject();
-	std::vector <json_token_t*> data_tokens = data_json->load(data_json_path);
-	vector<CaseObject> cases;
-	
-	uint8_t* images;
-	uint8_t* labels;
-
-	if(mode=="train"){
-		string train_dir = data_json->getChildValueForToken(data_tokens[0], "train_dir");   // data_tokens[0] := json root
-		images = dataset->readFileToBuffer( (train_dir + "train-images-idx3-ubyte").c_str() );
-		labels = dataset->readFileToBuffer( (train_dir + "train-labels-idx1-ubyte").c_str() );
-	}else{
-		string test_dir = data_json->getChildValueForToken(data_tokens[0], "test_dir");   // data_tokens[0] := json root
-		images = dataset->readFileToBuffer( (test_dir + "t10k-images-idx3-ubyte").c_str() );
-		labels = dataset->readFileToBuffer( (test_dir + "t10k-labels-idx1-ubyte").c_str() );
-	}
-
-	uint32_t case_count = dataset->reverseUint32( *(uint32_t*)(images + 4) );
-
-	for (int i=0; i<case_count; i++){
-		CaseObject c {TensorObject<float>( 1, 28, 28, 1 ), TensorObject<float>( 1, 10, 1, 1 )};
-		uint8_t* img = images + 16 + i * (28 * 28);
-		uint8_t* label = labels + 8 + i;
-		for ( int x = 0; x < 28; x++ ){
-			for ( int y = 0; y < 28; y++ ){
-				c.data( 0, x, y, 0 ) = img[x + y * 28] / 255.f;
-			}
-		}
-		for ( int b = 0; b < 10; b++ ){
-			c.out( 0, b, 0, 0 ) = *label == b ? 1.0f : 0.0f;
-		}
-		cases.push_back( c );
-	}
-
-	delete[] images;
-	delete[] labels;
-	return cases;
-}
-
-void mnist(int argc, char **argv)
+void classification(int argc, char **argv)
 {
 	cout << endl;
 
 	string data_json_path = argv[2];
 	string model_json_path = argv[3];
 
-	vector<CaseObject> train_cases = read_cases(data_json_path, "train");
-	vector<CaseObject> test_cases = read_cases(data_json_path, "test");
+	DatasetObject *dataset = new DatasetObject();
+	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
+	vector<CaseObject> test_cases = dataset->readCases(data_json_path, "test");
+
 	JSONObject *model_json = new JSONObject();
 	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
-
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
 
 	unsigned batch_size = 1;
@@ -192,10 +150,14 @@ void mnist(int argc, char **argv)
 	int ic = 0;
 	int test_ic = 0;
 
-	CaseObject batch_cases {TensorObject<float>( batch_size, 28, 28, 1 ), TensorObject<float>( batch_size, 10, 1, 1 )};
+	printf("Train cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
+	if(train_cases.size()==0 || test_cases.size()==0){
+		exit(0);
+	}
+
+	CaseObject batch_cases {TensorObject<float>( batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( batch_size, 10, 1, 1 )};
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, decay, momentum);
-	printf("\n\nbatch_size:%d, learning_rate:%f, momentum:%f, decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, decay, opt.c_str());
-	printf("Start training :%lu \n\n", train_cases.size());
+	printf("\n\nStart training - batch_size:%d, learning_rate:%f, momentum:%f, decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, decay, opt.c_str());
 
 	auto start = std::chrono::high_resolution_clock::now();
 	for( long step = 0; step < 1000000; ){
@@ -208,7 +170,7 @@ void mnist(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 		}
 
-		float xerr = trainMNIST( step, layers, batch_cases.data, batch_cases.out, opt );
+		float xerr = trainCifar( step, layers, batch_cases.data, batch_cases.out, opt );
 		amse += xerr;
 		ic++;
 		step++;
@@ -229,7 +191,7 @@ void mnist(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 			}
 
-			float test_err = testMNIST( layers, batch_cases.data, batch_cases.out, opt );
+			float test_err = testCifar( layers, batch_cases.data, batch_cases.out, opt );
 			test_amse += test_err;
 			test_ic++;
 			cout << "  test_err =" << test_amse/test_ic << "\n";

@@ -23,6 +23,7 @@
     {"type":"batch_normalization"},
     {"type":"relu"},
     {"type":"maxpool", "size":2, "stride":2},
+    
     {"type":"dense", "out_size":512},
     {"type":"relu"},
     {"type":"dense", "out_size":10},

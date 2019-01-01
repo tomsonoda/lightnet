@@ -102,68 +102,6 @@ void trainObjectDetection(std::string model_json_path, std::string model_path, s
   float momentum = 0.6;
   float decay = 0.0005;
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, cases[0], learning_rate, decay, momentum);
-
-  /*
-	float amse = 0;
-	int ic = 0;
-
-	for(long ep=0; ep <100000;){
-		for (CaseObject& t : cases){
-			float xerr = train( layers, t.data, t.out );
-			amse += xerr;
-
-			ep++;
-			ic++;
-
-			if ( ep % 1000 == 0 ){
-        cout << "case " << ep << " err=" << amse/ic << endl;
-      }
-		}
-	}
-	// end:
-
-	while(true){
-		uint8_t * data = read_file( "test.ppm" );
-		if ( data ){
-			uint8_t * usable = data;
-			while ( *(uint32_t*)usable != 0x0A353532 ){
-        usable++;
-      }
-
-#pragma pack(push, 1)
-			struct RGB
-			{
-				uint8_t r, g, b;
-			};
-#pragma pack(pop)
-
-			RGB * rgb = (RGB*)usable;
-			TensorObject<float> image(28, 28, 1);
-			for ( int i = 0; i < 28; i++ ){
-				for ( int j = 0; j < 28; j++ ){
-					RGB rgb_ij = rgb[i * 28 + j];
-					image( j, i, 0 ) = (((float)rgb_ij.r
-							     + rgb_ij.g
-							     + rgb_ij.b)
-							    / (3.0f*255.f));
-				}
-			}
-
-			forward( layers, image );
-			TensorObject<float>& out = layers.back()->out;
-			for ( int i = 0; i < 10; i++ ){
-				printf( "[%i] %f\n", i, out( i, 0, 0 )*100.0f );
-			}
-			delete[] data;
-		}
-
-		struct timespec wait;
-		wait.tv_sec = 1;
-		wait.tv_nsec = 0;
-		nanosleep(&wait, nullptr);
-	}
-  */
-  // delete utils;
 }
 
 void testObjectDetection(string model_config_path, string model_path, string classes_path, string data_config_path, float threshold){

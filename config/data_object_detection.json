@@ -1,4 +1,5 @@
 {
+  "type"             : "images_labels",
   "train_dir"        : "dataset/set0/train/",
   "checkpoint_dir"   : "dataset/set0/checkpoint/",
   "test_dir"         : "dataset/set0/test/",
