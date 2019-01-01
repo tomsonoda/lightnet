@@ -11,12 +11,12 @@ struct LayerBatchNormalization
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
 	TensorObject<float> mean;
-	TensorObject<float> dmean;
 	TensorObject<float> xmu;
 	TensorObject<float> variance;
-	TensorObject<float> dvariance;
 	TensorObject<float> inv_variance;
 	TensorObject<float> xhat;
+	TensorObject<float> dxhat;
+	TensorObject<float> dx1;
 	TensorObject<float> gamma;
 	TensorObject<float> dgamma;
 	TensorObject<float> beta;
@@ -31,12 +31,12 @@ struct LayerBatchNormalization
 		out( in_size.b, in_size.x, in_size.y, in_size.z ),
 		dz_in( in_size.b, in_size.x, in_size.y, in_size.z ),
 		mean( 1, 1, 1, in_size.z ),
-		dmean( 1, 1, 1, in_size.z ),
 		xmu( in_size.b, in_size.x, in_size.y, in_size.z ),
 		variance( 1, 1, 1, in_size.z ),
-		dvariance( 1, 1, 1, in_size.z ),
 		inv_variance( 1, 1, 1, in_size.z ),
 		xhat( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dxhat( in_size.b, in_size.x, in_size.y, in_size.z ),
+		dx1( in_size.b, in_size.x, in_size.y, in_size.z ),
 		gamma( 1, 1, 1, in_size.z  ),
 		dgamma( 1, 1, 1, in_size.z ),
 		beta( 1, 1, 1, in_size.z ),
@@ -128,20 +128,44 @@ struct LayerBatchNormalization
 					}
 				}
 			}
-			
+
 			dbeta( 0, 0, 0, z ) = dbeta_sum;
 			dgamma( 0, 0, 0, z ) = dgamma_sum;
 
-			dmean( 0, 0, 0, z ) = dbeta_sum * inv_variance( 0, 0, 0, z );
-			dvariance( 0, 0, 0, z ) = dvariance_sum * (-0.5 * pow(variance( 0, 0, 0, z ) + 0.00001f, (float)(-3./2.)));
+			float divar = 0.0;
+			for ( int b = 0; b < in.size.b; b++ ){
+				for ( int i = 0; i < in.size.x; i++ ){
+					for ( int j = 0; j < in.size.y; j++ ){
+						dxhat( b, i, j, z ) = dz_in( b, i, j, z ) * gamma( 0, 0, 0, z );
+						divar += dxhat( b, i, j, z ) * xmu( b, i, j, z );
+					}
+				}
+			}
+
+			float dmu = 0.0;
+			for ( int b = 0; b < in.size.b; b++ ){
+				for ( int i = 0; i < in.size.x; i++ ){
+					for ( int j = 0; j < in.size.y; j++ ){
+						float dxmu1 = dxhat( b, i, j, z ) * inv_variance( 0, 0, 0, z );
+						float dsqrtvar = -1. /(variance( 0, 0, 0, z )+0.00001f) * divar;
+						float dvar = 0.5 * inv_variance( 0, 0, 0, z ) * dsqrtvar;
+						float dxmu2 = 2 * xmu( b, i, j, z ) * bxy_inv * dvar;
+						dx1( b, i, j, z ) = (dxmu1 + dxmu2);
+						dmu += -1 * (dxmu1 + dxmu2);
+					}
+				}
+			}
+
+			float dx2 = dmu * bxy_inv;
 
 			for ( int b = 0; b < in.size.b; b++ ){
 				for ( int i = 0; i < in.size.x; i++ ){
 					for ( int j = 0; j < in.size.y; j++ ){
-						dz( b, i, j, z ) = dz_in( b, i, j, z ) * inv_variance( 0, 0, 0, z ) + dvariance( 0, 0, 0, z ) * 2.0 * (in ( b, i, j, z) - mean(0, 0, 0, z)) * bxy_inv + dmean( 0, 0, 0, z ) * bxy_inv;
+						dz( b, i, j, z ) =  dx1( b, i, j, z ) + dx2;
 					}
 				}
 			}
+
 		}
 	}
 };
