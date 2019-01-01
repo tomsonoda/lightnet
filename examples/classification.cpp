@@ -10,7 +10,12 @@
 
 using namespace std;
 
-#define OUTPUT_TIMING 20
+unsigned batch_size = 1;
+float learning_rate = 0.01;
+float momentum = 0.6;
+float weights_decay = 0.01;
+string opt = "mse";
+int train_output_span = 1000;
 
 float trainCifar( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
 
@@ -57,7 +62,7 @@ float trainCifar( int step, vector<LayerObject*>& layers, TensorObject<float>& d
 	  }
 		loss /= (float)expected.size.b;
 
-		if ( step % OUTPUT_TIMING == 0 ){
+		if ( step % train_output_span == 0 ){
 			printf("----GT----\n");
 			print_tensor(expected);
 			printf("----output----\n");
@@ -98,26 +103,9 @@ float testCifar( vector<LayerObject*>& layers, TensorObject<float>& data, Tensor
 	}
 }
 
-void classification(int argc, char **argv)
+void loadModelParameters(JSONObject *model_json, vector <json_token_t*> model_tokens)
 {
-	cout << endl;
-
-	string data_json_path = argv[2];
-	string model_json_path = argv[3];
-
-	DatasetObject *dataset = new DatasetObject();
-	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
-	vector<CaseObject> test_cases = dataset->readCases(data_json_path, "test");
-
-	JSONObject *model_json = new JSONObject();
-	std::vector <json_token_t*> model_tokens = model_json->load(model_json_path);
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
-
-	unsigned batch_size = 1;
-	float learning_rate = 0.01;
-	float momentum = 0.6;
-	float decay = 0.01;
-	string opt = "mse";
 
 	string tmp = model_json->getChildValueForToken(nueral_network, "batch_size");
 	if(tmp.length()>0){
@@ -131,33 +119,55 @@ void classification(int argc, char **argv)
 	if(tmp.length()>0){
 		momentum = std::stof( tmp );
 	}
-	tmp = model_json->getChildValueForToken(nueral_network, "decay");
+	tmp = model_json->getChildValueForToken(nueral_network, "weights_decay");
 	if(tmp.length()>0){
-		decay = std::stof( tmp );
+		weights_decay = std::stof( tmp );
 	}
 	tmp = model_json->getChildValueForToken(nueral_network, "optimization");
 	if(tmp.length()>0){
 		opt = tmp;
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "train_output_span");
+	if(tmp.length()>0){
+		train_output_span = std::stoi( tmp );
 	}
 
 	if(batch_size<0){
 		fprintf(stderr, "Batch size should be 1>=.");
 		exit(0);
 	}
+}
 
-	float amse = 0;
-	float test_amse = 0;
-	int ic = 0;
-	int test_ic = 0;
+void classification(int argc, char **argv)
+{
+	cout << endl;
 
+	string data_json_path = argv[2];
+	string model_json_path = argv[3];
+
+	// dataset
+	DatasetObject *dataset = new DatasetObject();
+	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
+	vector<CaseObject> test_cases = dataset->readCases(data_json_path, "test");
 	printf("Train cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
 	if(train_cases.size()==0 || test_cases.size()==0){
 		exit(0);
 	}
 
+	// model
+	JSONObject *model_json = new JSONObject();
+	vector <json_token_t*> model_tokens = model_json->load(model_json_path);
+	loadModelParameters(model_json, model_tokens);
+
+	float amse = 0;
+	float test_amse = 0;
+	int ic = 0;
+	int test_ic = 0;
+	printf("Start training - batch_size:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, weights_decay, opt.c_str());
+
 	CaseObject batch_cases {TensorObject<float>( batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( batch_size, 10, 1, 1 )};
-	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, decay, momentum);
-	printf("\n\nStart training - batch_size:%d, learning_rate:%f, momentum:%f, decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, decay, opt.c_str());
+	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, weights_decay, momentum);
+	printf("\n");
 
 	auto start = std::chrono::high_resolution_clock::now();
 	for( long step = 0; step < 1000000; ){
@@ -175,7 +185,7 @@ void classification(int argc, char **argv)
 		ic++;
 		step++;
 
-		if ( step % OUTPUT_TIMING == 0 ){
+		if ( step % train_output_span == 0 ){
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
 			cout << "step " << step << endl;

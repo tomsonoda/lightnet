@@ -4,7 +4,8 @@
     "learning_rate":0.1,
     "momentum":0.6,
     "decay":0.001,
-    "optimization":"cross_entropy"
+    "optimization":"cross_entropy",
+    "train_output_span":20
   },
 
   "layers":[
@@ -23,7 +24,7 @@
     {"type":"batch_normalization"},
     {"type":"relu"},
     {"type":"maxpool", "size":2, "stride":2},
-    
+
     {"type":"dense", "out_size":512},
     {"type":"relu"},
     {"type":"dense", "out_size":10},

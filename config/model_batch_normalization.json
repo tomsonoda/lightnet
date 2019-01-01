@@ -4,7 +4,8 @@
     "learning_rate":0.1,
     "momentum":0.6,
     "decay":0.001,
-    "optimization":"mse"
+    "optimization":"mse",
+    "train_output_span":1000
   },
 
   "layers":[
