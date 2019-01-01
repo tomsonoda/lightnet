@@ -1,7 +1,7 @@
 {
   "net" : {
     "batch_size":4,
-    "learning_rate":0.04,
+    "learning_rate":0.01,
     "momentum":0.6,
     "decay":0.001,
     "optimization":"mse"
