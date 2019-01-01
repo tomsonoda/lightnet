@@ -14,9 +14,13 @@ int main(int argc, char **argv)
   }
 
   if(strcmp(argv[1], "classification")==0){
+
     classification(argc, argv);
+
   }else if (strcmp(argv[1], "object_detection")==0){
+
     objectDetection(argc, argv);
+
   }
 
   printf("lightnet ends.\n");

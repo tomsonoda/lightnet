@@ -14,10 +14,10 @@ unsigned batch_size = 1;
 float learning_rate = 0.01;
 float momentum = 0.6;
 float weights_decay = 0.01;
-string opt = "mse";
+string optimizer = "mse";
 int train_output_span = 1000;
 
-float trainCifar( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer ){
 
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
@@ -45,7 +45,7 @@ float trainCifar( int step, vector<LayerObject*>& layers, TensorObject<float>& d
 		update_weights( layers[i] );
 	}
 
-	if(opt=="mse"){
+	if(optimizer=="mse"){
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; i++ ){
 			float f = expected.data[i];
@@ -72,7 +72,7 @@ float trainCifar( int step, vector<LayerObject*>& layers, TensorObject<float>& d
 	}
 }
 
-float testCifar( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string opt ){
+float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer ){
 
 	for( int i = 0; i < layers.size(); i++ ){
 		if( i == 0 ){
@@ -84,7 +84,7 @@ float testCifar( vector<LayerObject*>& layers, TensorObject<float>& data, Tensor
 
 	TensorObject<float> grads = layers.back()->out - expected;
 
-	if(opt=="mse"){
+	if(optimizer=="mse"){
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; i++ ){
 			float f = expected.data[i];
@@ -125,7 +125,7 @@ void loadModelParameters(JSONObject *model_json, vector <json_token_t*> model_to
 	}
 	tmp = model_json->getChildValueForToken(nueral_network, "optimization");
 	if(tmp.length()>0){
-		opt = tmp;
+		optimizer = tmp;
 	}
 	tmp = model_json->getChildValueForToken(nueral_network, "train_output_span");
 	if(tmp.length()>0){
@@ -149,6 +149,7 @@ void classification(int argc, char **argv)
 	DatasetObject *dataset = new DatasetObject();
 	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
 	vector<CaseObject> test_cases = dataset->readCases(data_json_path, "test");
+	
 	printf("Train cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
 	if(train_cases.size()==0 || test_cases.size()==0){
 		exit(0);
@@ -161,9 +162,10 @@ void classification(int argc, char **argv)
 
 	float amse = 0;
 	float test_amse = 0;
-	int ic = 0;
-	int test_ic = 0;
-	printf("Start training - batch_size:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, weights_decay, opt.c_str());
+	int train_increment = 0;
+	int test_increment = 0;
+
+	printf("Start training - batch_size:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, weights_decay, optimizer.c_str());
 
 	CaseObject batch_cases {TensorObject<float>( batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( batch_size, 10, 1, 1 )};
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, weights_decay, momentum);
@@ -180,16 +182,16 @@ void classification(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 		}
 
-		float xerr = trainCifar( step, layers, batch_cases.data, batch_cases.out, opt );
-		amse += xerr;
-		ic++;
+		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, optimizer );
+		amse += train_err;
+		train_increment++;
 		step++;
 
 		if ( step % train_output_span == 0 ){
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
 			cout << "step " << step << endl;
-			cout << "  train_err=" << amse/ic << ", Elapsed time: " << elapsed.count() << " s\n";
+			cout << "  train error=" << amse/train_increment << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 
 			randi = rand() % (test_cases.size()-batch_size);
@@ -201,10 +203,10 @@ void classification(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
 			}
 
-			float test_err = testCifar( layers, batch_cases.data, batch_cases.out, opt );
+			float test_err = testClassification( layers, batch_cases.data, batch_cases.out, optimizer );
 			test_amse += test_err;
-			test_ic++;
-			cout << "  test_err =" << test_amse/test_ic << "\n";
+			test_increment++;
+			cout << "  test error =" << test_amse/test_increment << "\n";
 		}
 	}
 }
