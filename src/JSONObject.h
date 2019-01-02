@@ -180,7 +180,7 @@ public:
   {
     std::vector <json_token_t*> children;
     std::vector <json_token_t*> tokens = this->tokens;
-    for(int i=0; i<tokens.size(); i++){
+    for(int i=0; i<tokens.size(); ++i){
       if(tokens[i]->parent_token == parent->index){
         children.push_back(tokens[i]);
       }
@@ -198,12 +198,12 @@ public:
 
     std::vector <json_token_t*> tokens = this->tokens;
     bool is_hit = false;
-    for(int i=0; i<tokens.size(); i++){
+    for(int i=0; i<tokens.size(); ++i){
       if(tokens[i]->parent_token == parent->index){
         if (tokens[i]->type == JSON_TYPE_STRING){
           string str = this->org_string.substr(tokens[i]->start, (tokens[i]->end-tokens[i]->start));
           if (str==key){
-            for(int j=i; j<tokens.size(); j++){
+            for(int j=i; j<tokens.size(); ++j){
               if(tokens[i]->index == tokens[j]->parent_token){
                 child = tokens[j];
                 is_hit = true;
@@ -246,12 +246,12 @@ public:
     std::vector <json_token_t*> tokens = this->tokens;
     std::vector <json_token_t*> result;
     bool is_hit = false;
-    for(int i=0; i<tokens.size(); i++){
+    for(int i=0; i<tokens.size(); ++i){
       if(tokens[i]->parent_token == parent->index){
         if (tokens[i]->type == JSON_TYPE_STRING){
           string str = this->org_string.substr(tokens[i]->start, (tokens[i]->end-tokens[i]->start));
           if (str==key){
-            for(int j=i; j<tokens.size(); j++){
+            for(int j=i; j<tokens.size(); ++j){
               if( (tokens[i]->index == tokens[j]->parent_token) && (tokens[j]->type==JSON_TYPE_ARRAY)){
                 is_hit = true;
                 for(int k=j; k<tokens.size(); k++){
@@ -274,7 +274,7 @@ public:
 
   void showTokens(std::vector <json_token_t*> tokens)
   {
-    for(int i=0; i<tokens.size(); i++){
+    for(int i=0; i<tokens.size(); ++i){
       string type = "";
       string str = "";
       if (tokens[i]->type == JSON_TYPE_STRING){
@@ -402,7 +402,7 @@ private:
   					break;
   				case 'u':
   					parser->pos++;
-  					for(int i=0; i<4 && parser->pos < json_string.length() && json_string[parser->pos] != '\0'; i++) {
+  					for(int i=0; i<4 && parser->pos < json_string.length() && json_string[parser->pos] != '\0'; ++i) {
   						if(!(json_string[parser->pos] >= '0' && json_string[parser->pos] <= '9') &&
   							 !(json_string[parser->pos] >= 'A' && json_string[parser->pos] <= 'F') &&
   							 !(json_string[parser->pos] >= 'a' && json_string[parser->pos] <= 'f') ){

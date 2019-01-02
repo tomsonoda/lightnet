@@ -20,7 +20,7 @@ void getDataList(std::string dir_string, std::vector<string> &image_paths, std::
 
   vector<string> files = vector<string>();
   utils->listDir(image_dir_string,files,image_ext);
-  for (int j=0; j<files.size(); j++){
+  for (int j=0; j<files.size(); ++j){
     std::string image_path = files[j];
     std::string label_path = files[j];
     image_path = image_dir_string + image_path;
@@ -40,7 +40,7 @@ void getDataList(std::string dir_string, std::vector<string> &image_paths, std::
 
 float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected)
 {
-  for (int i=0; i<layers.size(); i++){
+  for (int i=0; i<layers.size(); ++i){
     if (i== 0){
       forward(layers[i], data);
     }else{
@@ -57,13 +57,13 @@ float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObje
     }
   }
 
-  for(int i=0; i<layers.size(); i++){
+  for(int i=0; i<layers.size(); ++i){
     update_weights(layers[i]);
   }
 
   float err = 0;
   print_tensor(grads);
-  for( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; i++ ){
+  for( int i = 0; i < grads.size.x * grads.size.y * grads.size.z; ++i ){
     float f = expected.data[i];
     if ( f > 0.5 ){
       err += abs(grads.data[i]);
@@ -85,7 +85,7 @@ vector<CaseObject> readCases(std::string data_config_path)
   std::vector<string> train_label_paths;
   getDataList(data_json->getChildValueForToken(data_tokens[0], "train_dir"), train_image_paths, train_label_paths);
   ImageProcessor *image_processor = new ImageProcessor();
-  for(int i=0; i<train_image_paths.size(); i++){
+  for(int i=0; i<train_image_paths.size(); ++i){
     image_st image = image_processor->readImageFile(train_image_paths[i], 416, 416, 3);
     printf("Read image: %s %d %d\n", train_image_paths[i].c_str(), image.width, image.height);
     // image_processor->writeImageFilePNG(utils->stringReplace(train_image_paths[i], "jpg", "png"), image);

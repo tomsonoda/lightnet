@@ -42,13 +42,13 @@ struct LayerDense
 		dw_data_size = in_size.x * in_size.y * in_size.z * out_size * sizeof( float );
 		dz_data_size = in_size.b * in_size.x * in_size.y * in_size.z * sizeof( float );
 
-		for(int i=0; i<out_size; i++){
-			for(int h=0; h<in_size.x*in_size.y*in_size.z; h++){
+		for(int i=0; i<out_size; ++i){
+			for(int h=0; h<in_size.x*in_size.y*in_size.z; ++h){
 				// weights( 0, h, i, 0 ) = 0.05 * rand() / float( RAND_MAX );
 				weights( 0, h, i, 0 ) = (2.19722f / maxval) * rand() / float( RAND_MAX );
 			}
 		}
-		for(int i=0; i<out_size * in_size.b; i++){
+		for(int i=0; i<out_size * in_size.b; ++i){
 			gradients[i].grad = 0;
 			gradients[i].grad_prev = 0;
 		}
@@ -73,12 +73,12 @@ struct LayerDense
 
 	void forward()
 	{
-		for ( int b = 0; b < in.size.b; b++ ){
-			for ( int n = 0; n < out.size.x; n++ ){
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int n = 0; n < out.size.x; ++n ){
 				float sum = 0;
-				for ( int i = 0; i < in.size.x; i++ ){
-					for ( int j = 0; j < in.size.y; j++ ){
-						for ( int z = 0; z < in.size.z; z++ ){
+				for ( int z = 0; z < in.size.z; ++z ){
+					for ( int j = 0; j < in.size.y; ++j ){
+						for ( int i = 0; i < in.size.x; ++i ){
 							int m = map( { 0, i, j, z } );
 							sum += in( b, i, j, z ) * weights( 0, m, n, 0 );
 						}
@@ -92,10 +92,10 @@ struct LayerDense
 
 	void update_weights()
 	{
-		for (int i=0; i<weigts_data_num; i++){
+		for (int i=0; i<weigts_data_num; ++i){
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
 		}
-		for ( int i = 0; i < out.size.x * in.size.b; i++ ){
+		for ( int i = 0; i < out.size.x * in.size.b; ++i ){
 				GradientObject& grad = gradients[ i ];
 				update_gradient( grad );
 		}
@@ -103,19 +103,19 @@ struct LayerDense
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
 		memset( dW.data, 0, dw_data_size );
-		for ( int n = 0; n < out.size.x; n++ ){
+		for ( int n = 0; n < out.size.x; ++n ){
 			// grad.grad = dz_next_layer( b, n, 0, 0 ) * activator_derivative( out );
-			for ( int i = 0; i < in.size.x; i++ ){
-				for ( int j = 0; j < in.size.y; j++ ){
-					for ( int z = 0; z < in.size.z; z++ ){
+			for ( int z = 0; z < in.size.z; ++z ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
 						int m = map( { 0, i, j, z } );
 
-						for( int b = 0; b < in.size.b; b++ ){
+						for( int b = 0; b < in.size.b; ++b ){
 							GradientObject& grad = gradients[ n*in.size.b + b ];
 							grad.grad = dz_in( b, n, 0, 0 );
 							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));

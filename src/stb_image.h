@@ -5204,9 +5204,9 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
             int bit_offset = 7, v = stbi__get8(s);
             for (i=0; i < (int) s->img_x; ++i) {
                int color = (v>>bit_offset)&0x1;
-               out[z++] = pal[color][0];
-               out[z++] = pal[color][1];
-               out[z++] = pal[color][2];
+               out[++z] = pal[color][0];
+               out[++z] = pal[color][1];
+               out[++z] = pal[color][2];
                if((--bit_offset) < 0) {
                   bit_offset = 7;
                   v = stbi__get8(s);
@@ -5222,16 +5222,16 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
                   v2 = v & 15;
                   v >>= 4;
                }
-               out[z++] = pal[v][0];
-               out[z++] = pal[v][1];
-               out[z++] = pal[v][2];
-               if (target == 4) out[z++] = 255;
+               out[++z] = pal[v][0];
+               out[++z] = pal[v][1];
+               out[++z] = pal[v][2];
+               if (target == 4) out[++z] = 255;
                if (i+1 == (int) s->img_x) break;
                v = (info.bpp == 8) ? stbi__get8(s) : v2;
-               out[z++] = pal[v][0];
-               out[z++] = pal[v][1];
-               out[z++] = pal[v][2];
-               if (target == 4) out[z++] = 255;
+               out[++z] = pal[v][0];
+               out[++z] = pal[v][1];
+               out[++z] = pal[v][2];
+               if (target == 4) out[++z] = 255;
             }
             stbi__skip(s, pad);
          }
@@ -5269,19 +5269,19 @@ static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req
                z += 3;
                a = (easy == 2 ? stbi__get8(s) : 255);
                all_a |= a;
-               if (target == 4) out[z++] = a;
+               if (target == 4) out[++z] = a;
             }
          } else {
             int bpp = info.bpp;
             for (i=0; i < (int) s->img_x; ++i) {
                stbi__uint32 v = (bpp == 16 ? (stbi__uint32) stbi__get16le(s) : stbi__get32le(s));
                unsigned int a;
-               out[z++] = STBI__BYTECAST(stbi__shiftsigned(v & mr, rshift, rcount));
-               out[z++] = STBI__BYTECAST(stbi__shiftsigned(v & mg, gshift, gcount));
-               out[z++] = STBI__BYTECAST(stbi__shiftsigned(v & mb, bshift, bcount));
+               out[++z] = STBI__BYTECAST(stbi__shiftsigned(v & mr, rshift, rcount));
+               out[++z] = STBI__BYTECAST(stbi__shiftsigned(v & mg, gshift, gcount));
+               out[++z] = STBI__BYTECAST(stbi__shiftsigned(v & mb, bshift, bcount));
                a = (ma ? stbi__shiftsigned(v & ma, ashift, acount) : 255);
                all_a |= a;
-               if (target == 4) out[z++] = STBI__BYTECAST(a);
+               if (target == 4) out[++z] = STBI__BYTECAST(a);
             }
          }
          stbi__skip(s, pad);
@@ -5800,7 +5800,7 @@ static void *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int req
          p = out+channel;
          if (channel >= channelCount) {
             // Fill this channel with default data.
-            for (i = 0; i < pixelCount; i++, p += 4)
+            for (i = 0; i < pixelCount; ++i, p += 4)
                *p = (channel == 3 ? 255 : 0);
          } else {
             // Read the RLE data.
@@ -5822,26 +5822,26 @@ static void *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int req
             if (bitdepth == 16 && bpc == 16) {
                stbi__uint16 *q = ((stbi__uint16 *) out) + channel;
                stbi__uint16 val = channel == 3 ? 65535 : 0;
-               for (i = 0; i < pixelCount; i++, q += 4)
+               for (i = 0; i < pixelCount; ++i, q += 4)
                   *q = val;
             } else {
                stbi_uc *p = out+channel;
                stbi_uc val = channel == 3 ? 255 : 0;
-               for (i = 0; i < pixelCount; i++, p += 4)
+               for (i = 0; i < pixelCount; ++i, p += 4)
                   *p = val;
             }
          } else {
             if (ri->bits_per_channel == 16) {    // output bpc
                stbi__uint16 *q = ((stbi__uint16 *) out) + channel;
-               for (i = 0; i < pixelCount; i++, q += 4)
+               for (i = 0; i < pixelCount; ++i, q += 4)
                   *q = (stbi__uint16) stbi__get16be(s);
             } else {
                stbi_uc *p = out+channel;
                if (bitdepth == 16) {  // input bpc
-                  for (i = 0; i < pixelCount; i++, p += 4)
+                  for (i = 0; i < pixelCount; ++i, p += 4)
                      *p = (stbi_uc) (stbi__get16be(s) >> 8);
                } else {
-                  for (i = 0; i < pixelCount; i++, p += 4)
+                  for (i = 0; i < pixelCount; ++i, p += 4)
                      *p = stbi__get8(s);
                }
             }
@@ -6775,12 +6775,12 @@ static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int re
                   count -= 128;
                   if (count > nleft) { STBI_FREE(hdr_data); STBI_FREE(scanline); return stbi__errpf("corrupt", "bad RLE data in HDR"); }
                   for (z = 0; z < count; ++z)
-                     scanline[i++ * 4 + k] = value;
+                     scanline[++i * 4 + k] = value;
                } else {
                   // Dump
                   if (count > nleft) { STBI_FREE(hdr_data); STBI_FREE(scanline); return stbi__errpf("corrupt", "bad RLE data in HDR"); }
                   for (z = 0; z < count; ++z)
-                     scanline[i++ * 4 + k] = stbi__get8(s);
+                     scanline[++i * 4 + k] = stbi__get8(s);
                }
             }
          }

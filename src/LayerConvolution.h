@@ -19,6 +19,7 @@ struct LayerConvolution
 	float lr;
 	float decay;
 	float momentum;
+	uint16_t dz_in_size;
 
 	LayerConvolution( uint16_t stride, uint16_t kernel_size, uint16_t number_filters, uint16_t padding, TensorSize in_size, float learning_rate, float decay, float momentum )
 		:
@@ -57,9 +58,9 @@ struct LayerConvolution
 			TensorObject<float> kernel( 1, kernel_size, kernel_size, in_size.z );
 			int maxval = kernel_size * kernel_size * in_size.z;
 
-			for ( int i = 0; i < kernel_size; i++ ){
-				for ( int j = 0; j < kernel_size; j++ ){
-					for ( int z = 0; z < in_size.z; z++ ){
+			for ( int i = 0; i < kernel_size; ++i ){
+				for ( int j = 0; j < kernel_size; ++j ){
+					for ( int z = 0; z < in_size.z; ++z ){
 						kernel( 0, i, j, z ) = 1.0f / maxval * rand() / float( RAND_MAX );
 					}
 				}
@@ -85,8 +86,8 @@ struct LayerConvolution
 
 	struct tensor_range_t
 	{
-		int min_x, min_y, min_z;
-		int max_x, max_y, max_z;
+		int min_x, min_y;
+		int max_x, max_y;
 	};
 
 	int normalize_range_min( float f, int max )
@@ -109,18 +110,18 @@ struct LayerConvolution
 		}
 		return floor( f );
 	}
+
 	tensor_range_t map_to_output( int x, int y )
 	{
 		float a = x;
 		float b = y;
+		float stride_inv = 1.0/stride;
 		return
 		{
-			normalize_range_min( (a - kernel_size + 1) / stride, out.size.x ),
-			normalize_range_min( (b - kernel_size + 1) / stride, out.size.y ),
-			0,
-			normalize_range_max( a / stride, out.size.x ),
-			normalize_range_max( b / stride, out.size.y ),
-			(int)filters.size() - 1,
+			normalize_range_min( (a - kernel_size + 1) * stride_inv, out.size.x ),
+			normalize_range_min( (b - kernel_size + 1) * stride_inv, out.size.y ),
+			normalize_range_max( a * stride_inv, out.size.x ),
+			normalize_range_max( b * stride_inv, out.size.y )
 		};
 	}
 
@@ -132,34 +133,31 @@ struct LayerConvolution
 
 	void forward()
 	{
-		for ( int b = 0; b < in.size.b; b++ ){
-			for ( int x = 0; x < in.size.x; x++ ){
-				for ( int y = 0; y < in.size.y; y++ ){
-					for ( int z = 0; z < in.size.z; z++ ){
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int x = 0; x < in.size.x; ++x ){
+				for ( int y = 0; y < in.size.y; ++y ){
+					for ( int z = 0; z < in.size.z; ++z ){
 						padded_in( b, padding+x, padding+y, z ) = in( b, x, y, z );
 					}
 				}
 			}
-		}
 
-		for ( int filter = 0; filter < filters.size(); filter++ ){
-			TensorObject<float>& filter_data = filters[filter];
-
-			for ( int b = 0; b < out.size.b; b++ ){
-				for ( int x = 0; x < out.size.x; x++ ){
-					for ( int y = 0; y < out.size.y; y++ ){
+			int filters_size = filters.size();
+			for ( int filter = 0; filter < filters_size; ++filter ){
+				TensorObject<float> filter_data = filters[filter];
+				for ( int y = 0; y < out.size.y; ++y ){
+					for ( int x = 0; x < out.size.x; ++x ){
 						TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 						float sum = 0;
 
-						for ( int i = 0; i < kernel_size; i++ ){
-							for ( int j = 0; j < kernel_size; j++ ){
-								for ( int z = 0; z < in.size.z; z++ ){
-									float f = filter_data( 0, i, j, z );
-									float v = padded_in( b, mapped.x + i, mapped.y + j, z );
-									sum += f*v;
+						for ( int z = 0; z < in.size.z; ++z ){
+							for ( int j = 0; j < kernel_size; ++j ){
+								for ( int i = 0; i < kernel_size; ++i ){
+									sum += filter_data( 0, i, j, z ) * padded_in( b, mapped.x + i, mapped.y + j, z );
 								}
 							}
 						}
+
 						out( b, x, y, filter ) = sum;
 					}
 				}
@@ -167,33 +165,18 @@ struct LayerConvolution
 		}
 	}
 
-	float update_weight( float w, GradientObject& grad, float multp = 1 )
-	{
-		float m = (grad.grad + grad.grad_prev * momentum);
-		w -= lr  * ( (m * multp) + (decay * w));
-		return w;
-	}
-
-	void update_gradient( GradientObject& grad )
-	{
-		grad.grad_prev = (grad.grad + grad.grad_prev * momentum);
-	}
-
 	void update_weights()
 	{
-		for ( int a = 0; a < filters.size(); a++ ){
-			for ( int i = 0; i < kernel_size; i++ ){
-				for ( int j = 0; j < kernel_size; j++ ){
-					for ( int z = 0; z < in.size.z; z++ ){
-						float& w = filters[a].get( 0, i, j, z );
+		int filters_size = filters.size();
+		for ( int a = 0; a < filters_size; ++a ){
+			for ( int z = 0; z < in.size.z; ++z ){
+				for ( int j = 0; j < kernel_size; ++j ){
+					for ( int i = 0; i < kernel_size; ++i ){
 						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
-
 						float m = (grad.grad + grad.grad_prev * momentum);
-						w -= lr * ( m + (decay * w));
 						grad.grad_prev = m;
-
-						// w = update_weight( w, grad );
-						// update_gradient( grad );
+						float& w = filters[a].get( 0, i, j, z );
+						w -= lr * ( m + (decay * w));
 					}
 				}
 			}
@@ -202,43 +185,47 @@ struct LayerConvolution
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
-		for ( int k = 0; k < filter_grads.size(); k++ ){
-			for ( int i = 0; i < kernel_size; i++ ){
-				for ( int j = 0; j < kernel_size; j++ ){
-					for ( int z = 0; z < in.size.z; z++ ){
-						filter_grads[k].get( 0, i, j, z ).grad = 0;
-					}
-				}
+		int k_end = filter_grads.size();
+		for ( int k = 0; k < k_end; ++k ){
+			for ( int i = 0; i < kernel_size * kernel_size * in.size.z; ++i ){
+					filter_grads[k].data[i].grad = 0;
 			}
 		}
 
-		for ( int b = 0; b < in.size.b; b++ ){
-			for ( int x = 0; x < padded_in.size.x; x++ ){
-				for ( int y = 0; y < padded_in.size.y; y++ ){
-					tensor_range_t rn = map_to_output( x, y );
-					for ( int z = 0; z < in.size.z; z++ ){
+		int z_max = (int)filters.size();
 
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int x = 0; x < padded_in.size.x; ++x ){
+				for ( int y = 0; y < padded_in.size.y; ++y ){
+
+					tensor_range_t rn = map_to_output( x, y );
+
+					for ( int z = 0; z < in.size.z; ++z ){
 						float sum_error = 0;
-						for ( int i = rn.min_x; i <= rn.max_x; i++ ){
-							int minx = i * stride;
-							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
-								int miny = j * stride;
-								int x_minx = x - minx;
-								int y_miny = y - miny;
-								for ( int k = rn.min_z; k <= rn.max_z; k++ ){
+						float padded_in_value = padded_in( b, x, y, z );
+
+						for ( int j = rn.min_y; j <= rn.max_y; ++j ){
+							int y_miny = y - j * stride;
+
+							for ( int i = rn.min_x; i <= rn.max_x; ++i ){
+								int x_minx = x - i * stride;
+
+								for ( int k = 0; k < z_max; ++k ){
 									float d = dz_in( b, i, j, k );
 									sum_error += filters[k].get( 0, x_minx, y_miny, z ) * d;
-									filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in( b, x, y, z ) * d;
+									filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
 								}
 							}
 						}
 
-						if(x>=padding && y>=padding && x-padding<in.size.x && y-padding<in.size.y ){
-							dz( b, x-padding, y-padding, z ) += sum_error;
+						float x_padding = x - padding;
+						float y_padding = y - padding;
+						if(x>=padding && y>=padding && x_padding<in.size.x && y_padding<in.size.y ){
+							dz( b, x_padding, y_padding, z ) += sum_error;
 						}
 					}
 

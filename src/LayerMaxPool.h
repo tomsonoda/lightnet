@@ -51,8 +51,8 @@ struct LayerPool
 
 	struct range_t
 	{
-		int min_x, min_y, min_z;
-		int max_x, max_y, max_z;
+		int min_x, min_y;
+		int max_x, max_y;
 	};
 
 	int normalize_range( float f, int max, bool lim_min )
@@ -76,14 +76,13 @@ struct LayerPool
 	{
 		float a = x;
 		float b = y;
+		float stride_inv = 1.0/stride;
 		return
 		{
-			normalize_range( (a - kernel_size + 1) / stride, out.size.x, true ),
-			normalize_range( (b - kernel_size + 1) / stride, out.size.y, true ),
-			0,
-			normalize_range( a / stride, out.size.x, false ),
-			normalize_range( b / stride, out.size.y, false ),
-			(int)out.size.z - 1,
+			normalize_range( (a - kernel_size + 1) * stride_inv, out.size.x, true ),
+			normalize_range( (b - kernel_size + 1) * stride_inv, out.size.y, true ),
+			normalize_range( a * stride_inv, out.size.x, false ),
+			normalize_range( b * stride_inv, out.size.y, false )
 		};
 	}
 
@@ -95,14 +94,14 @@ struct LayerPool
 
 	void forward()
 	{
-		for ( int b = 0; b < in.size.b; b++ ){
-			for ( int x = 0; x < out.size.x; x++ ){
-				for ( int y = 0; y < out.size.y; y++ ){
-					for ( int z = 0; z < out.size.z; z++ ){
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int z = 0; z < out.size.z; ++z ){
+				for ( int y = 0; y < out.size.y; ++y ){
+					for ( int x = 0; x < out.size.x; ++x ){
 						TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
 						float mval = -FLT_MAX;
-						for ( int i = 0; i < kernel_size; i++ ){
-							for ( int j = 0; j < kernel_size; j++ ){
+						for ( int j = 0; j < kernel_size; ++j ){
+							for ( int i = 0; i < kernel_size; ++i ){
 								float v = in( b, mapped.x + i, mapped.y + j, z );
 								if ( v > mval ){
 									mval = v;
@@ -122,22 +121,20 @@ struct LayerPool
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
-		for ( int b = 0; b < in.size.b; b++ ){
-
-			for ( int x = 0; x < in.size.x; x++ ){
-				for ( int y = 0; y < in.size.y; y++ ){
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int y = 0; y < in.size.y; ++y ){
+				for ( int x = 0; x < in.size.x; ++x ){
 					range_t rn = map_to_output( x, y );
-					for ( int z = 0; z < in.size.z; z++ ){
+					for ( int z = 0; z < in.size.z; ++z ){
 						float sum_error = 0;
-						for ( int i = rn.min_x; i <= rn.max_x; i++ ){
-							// int minx = i * stride;
-							for ( int j = rn.min_y; j <= rn.max_y; j++ ){
-								// int miny = j * stride;
-								int is_max = in( b, x, y, z ) == out( b, i, j, z ) ? 1 : 0;
+						float in_value = in( b, x, y, z );
+						for ( int j = rn.min_y; j <= rn.max_y; ++j ){
+							for ( int i = rn.min_x; i <= rn.max_x; ++i ){
+								int is_max = in_value == out( b, i, j, z ) ? 1 : 0;
 								sum_error += is_max * dz_in( b, i, j, z );
 							}
 						}

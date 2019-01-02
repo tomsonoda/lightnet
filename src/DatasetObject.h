@@ -45,7 +45,7 @@ struct DatasetObject
 
 		uint32_t case_count = dataset->reverseUint32( *(uint32_t*)(images + 4) );
 
-		for (int i=0; i<case_count; i++){
+		for (int i=0; i<case_count; ++i){
 			CaseObject c {TensorObject<float>( 1, 28, 28, 1 ), TensorObject<float>( 1, 10, 1, 1 )};
 			uint8_t* img = images + 16 + i * (28 * 28);
 			uint8_t* label = labels + 8 + i;
@@ -54,7 +54,7 @@ struct DatasetObject
 					c.data( 0, x, y, 0 ) = img[x + y * 28] / 255.f;
 				}
 			}
-			for ( int b = 0; b < 10; b++ ){
+			for ( int b = 0; b < 10; ++b ){
 				c.out( 0, b, 0, 0 ) = *label == b ? 1.0f : 0.0f;
 			}
 			cases.push_back( c );
@@ -128,18 +128,18 @@ struct DatasetObject
 			buffer = dataset->readFileToBuffer( file_name );
 		}
 		uint32_t case_count = file_size / (32 * 32 * 3 + 1);
-		for (int i=0; i<case_count; i++){
+		for (int i=0; i<case_count; ++i){
 			CaseObject c {TensorObject<float>( 1, 32, 32, 3 ), TensorObject<float>( 1, 10, 1, 1 )};
 			uint8_t* img = buffer + i * (32 * 32 * 3 + 1) + 1;
 			uint8_t* label = buffer + i * (32 * 32 * 3 + 1);
-			for(int z = 0; z < 3; z++ ){
+			for(int z = 0; z < 3; ++z ){
 				for ( int y = 0; y < 32; y++ ){
 					for ( int x = 0; x < 32; x++ ){
 						c.data( 0, x, y, z ) = img[x + (y * 32) + (32 * 32)*z] / 255.f;
 					}
 				}
 			}
-			for ( int b = 0; b < 10; b++ ){
+			for ( int b = 0; b < 10; ++b ){
 				c.out( 0, b, 0, 0 ) = *label == b ? 1.0f : 0.0f;
 			}
 			cases.push_back( c );

@@ -12,7 +12,7 @@ struct ArgumentProcessor
   {
     int i;
     float value = default_value;
-    for(i=0; i<argc-1; i++){
+    for(i=0; i<argc-1; ++i){
         if(equal(string(argv[i]).begin(), string(argv[i]).end(), name.begin())){
             value = atof(argv[i+1]);
             break;
@@ -25,7 +25,7 @@ struct ArgumentProcessor
   {
     int i;
     string value = default_value;
-    for(i=0; i<argc-1; i++){
+    for(i=0; i<argc-1; ++i){
         if(equal(string(argv[i]).begin(), string(argv[i]).end(), name.begin())){
             value = string(argv[i+1]);
             break;

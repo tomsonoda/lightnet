@@ -51,7 +51,7 @@ struct ImageProcessor
   {
     unsigned char *data = (unsigned char *)calloc(image.width * image.height * image.channels, sizeof(char));
     for(int c=0; c<image.channels; c++){
-      for(int i=0; i<image.width*image.height; i++){
+      for(int i=0; i<image.width*image.height; ++i){
         data[i*image.channels+c] = (unsigned char) (255*image.data[i + c*image.width*image.height]);
       }
     }

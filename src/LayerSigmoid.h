@@ -40,7 +40,7 @@ struct LayerSigmoid
 
 	void forward()
 	{
-		for ( int i = 0; i < in_total_size; i++ ){
+		for ( int i = 0; i < in_total_size; ++i ){
 			out.data[i] = activator_function(in.data[i]);
 		}
 	}
@@ -51,11 +51,11 @@ struct LayerSigmoid
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; i++ ){
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
-		for ( int i = 0; i < in_total_size; i++ ){
+		for ( int i = 0; i < in_total_size; ++i ){
 			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
 		}
 	}

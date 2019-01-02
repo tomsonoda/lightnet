@@ -33,7 +33,7 @@ struct TensorObject
 	TensorObject<T> operator+( TensorObject<T>& other )
 	{
 		TensorObject<T> clone( *this );
-		for ( int i = 0; i < other.size.b *other.size.x * other.size.y * other.size.z; i++ ){
+		for ( int i = 0; i < other.size.b *other.size.x * other.size.y * other.size.z; ++i ){
 			clone.data[i] += other.data[i];
 		}
 		return clone;
@@ -42,7 +42,7 @@ struct TensorObject
 	TensorObject<T> operator-( TensorObject<T>& other )
 	{
 		TensorObject<T> clone( *this );
-		for ( int i = 0; i < other.size.b *other.size.x * other.size.y * other.size.z; i++ ){
+		for ( int i = 0; i < other.size.b *other.size.x * other.size.y * other.size.z; ++i ){
 			clone.data[i] -= other.data[i];
 		}
 		return clone;

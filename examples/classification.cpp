@@ -19,7 +19,7 @@ int train_output_span = 1000;
 
 float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer ){
 
-	for( int i = 0; i < layers.size(); i++ ){
+	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forward( layers[i], data );
 		}else{
@@ -28,7 +28,7 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 	}
 
 	TensorObject<float> grads = layers.back()->out - expected;
-	for( int i = 0; i < layers.size(); i++ ){
+	for( int i = 0; i < layers.size(); ++i ){
 		layers[i]->dz_in.clear();
 		layers[i]->dz.clear();
 	}
@@ -41,13 +41,13 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 		}
 	}
 
-	for ( int i = 0; i < layers.size(); i++ ){
+	for ( int i = 0; i < layers.size(); ++i ){
 		update_weights( layers[i] );
 	}
 
 	if(optimizer=="mse"){
 		float err = 0;
-		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
 			if ( f > 0.5 ){
 				err += abs(grads.data[i]);
@@ -57,7 +57,7 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 
 	}else{
 		float loss = 0.0;
-		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
 	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
 	  }
 		loss /= (float)expected.size.b;
@@ -74,7 +74,7 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 
 float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer ){
 
-	for( int i = 0; i < layers.size(); i++ ){
+	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forward( layers[i], data );
 		}else{
@@ -86,7 +86,7 @@ float testClassification( vector<LayerObject*>& layers, TensorObject<float>& dat
 
 	if(optimizer=="mse"){
 		float err = 0;
-		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
 			if ( f > 0.5 ){
 				err += abs(grads.data[i]);
@@ -95,7 +95,7 @@ float testClassification( vector<LayerObject*>& layers, TensorObject<float>& dat
 		return (err * 100)/(float)expected.size.b;
 	}else{
 		float loss = 0.0;
-		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; i++ ){
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
 	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
 	  }
 		loss /= (float)expected.size.b;
@@ -140,8 +140,6 @@ void loadModelParameters(JSONObject *model_json, vector <json_token_t*> model_to
 
 void classification(int argc, char **argv)
 {
-	cout << endl;
-
 	string data_json_path = argv[2];
 	string model_json_path = argv[3];
 
@@ -149,8 +147,8 @@ void classification(int argc, char **argv)
 	DatasetObject *dataset = new DatasetObject();
 	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
 	vector<CaseObject> test_cases = dataset->readCases(data_json_path, "test");
-	
-	printf("Train cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
+
+	printf("\nTrain cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
 	if(train_cases.size()==0 || test_cases.size()==0){
 		exit(0);
 	}
@@ -160,11 +158,6 @@ void classification(int argc, char **argv)
 	vector <json_token_t*> model_tokens = model_json->load(model_json_path);
 	loadModelParameters(model_json, model_tokens);
 
-	float amse = 0;
-	float test_amse = 0;
-	int train_increment = 0;
-	int test_increment = 0;
-
 	printf("Start training - batch_size:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, weights_decay, optimizer.c_str());
 
 	CaseObject batch_cases {TensorObject<float>( batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( batch_size, 10, 1, 1 )};
@@ -172,18 +165,29 @@ void classification(int argc, char **argv)
 	printf("\n");
 
 	auto start = std::chrono::high_resolution_clock::now();
+	CaseObject t = train_cases[0];
+
+	int data_size = t.data.size.x * t.data.size.y * t.data.size.z;
+	int out_size = t.out.size.x * t.out.size.y * t.out.size.z;
+	int data_float_size = t.data.size.x * t.data.size.y * t.data.size.z * sizeof(float);
+	int out_float_size = t.out.size.x * t.out.size.y * t.out.size.z * sizeof(float);
+	float train_amse = 0;
+	float test_amse = 0;
+	int train_increment = 0;
+	int test_increment = 0;
+
 	for( long step = 0; step < 1000000; ){
 		int randi = rand() % (train_cases.size()-batch_size);
-		for( unsigned j = randi; j < (randi+batch_size); j++ ){
-			CaseObject t = train_cases[j];
-			unsigned batch_index_in = (j-randi)*(t.data.size.x * t.data.size.y * t.data.size.z);
-			unsigned batch_index_out = (j-randi)*(t.out.size.x * t.out.size.y * t.out.size.z);
-			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, (t.data.size.x * t.data.size.y * t.data.size.z) * sizeof(float) );
-			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
+		for( unsigned j = randi; j < (randi+batch_size); ++j ){
+			t = train_cases[j];
+			unsigned batch_index_in = (j-randi)*data_size;
+			unsigned batch_index_out = (j-randi)*out_size;
+			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
+			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 		}
 
 		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, optimizer );
-		amse += train_err;
+		train_amse += train_err;
 		train_increment++;
 		step++;
 
@@ -191,16 +195,16 @@ void classification(int argc, char **argv)
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
 			cout << "step " << step << endl;
-			cout << "  train error=" << amse/train_increment << ", Elapsed time: " << elapsed.count() << " s\n";
+			cout << "  train error=" << train_amse/train_increment << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 
 			randi = rand() % (test_cases.size()-batch_size);
-			for( unsigned j = randi; j < (randi+batch_size); j++ ){
+			for( unsigned j = randi; j < (randi+batch_size); ++j ){
 				CaseObject t = test_cases[j];
-				unsigned batch_index_in = (j-randi)*(t.data.size.x * t.data.size.y * t.data.size.z);
-				unsigned batch_index_out = (j-randi)*(t.out.size.x * t.out.size.y * t.out.size.z);
-				memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, (t.data.size.x * t.data.size.y * t.data.size.z) * sizeof(float) );
-				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, (t.out.size.x * t.out.size.y * t.out.size.z) * sizeof(float) );
+				unsigned batch_index_in = (j-randi)*(data_size);
+				unsigned batch_index_out = (j-randi)*(out_size);
+				memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
+				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 			}
 
 			float test_err = testClassification( layers, batch_cases.data, batch_cases.out, optimizer );

@@ -134,7 +134,7 @@ static vector<LayerObject*> loadModel(
 
   std::vector<json_token_t*> json_layers = model_json->getArrayForToken(model_tokens[0], "layers");
 
-  for(int i=0; i<json_layers.size(); i++){
+  for(int i=0; i<json_layers.size(); ++i){
     std::string type = model_json->getChildValueForToken(json_layers[i], "type");
 
 		if(type=="batch_normalization"){
@@ -213,7 +213,7 @@ static vector<LayerObject*> loadModel(
 			int z_sum = 0;
 
 			printf("%d: route : [", i);
-      for(int j=0; j<json_ref_layers.size(); j++){
+      for(int j=0; j<json_ref_layers.size(); ++j){
         string value_str = model_json->getValueForToken(json_ref_layers[j]);
 				if(value_str.size()>0){
 					uint16_t ref_index = std::stoi( value_str ) + i;
@@ -228,7 +228,7 @@ static vector<LayerObject*> loadModel(
 			printf("] -> ( %d x %d x %d )\n", in_size.x, in_size.y, z_sum);
 
 			if(ref_layers.size()>0){
-				for(int j=0; j<ref_layers.size(); j++){
+				for(int j=0; j<ref_layers.size(); ++j){
 					if(x_sum/ref_layers.size() != layers[ref_layers[j]]->out.size.x){
 						printf("reference layer x-sizes are different.\n");
 						exit(0);
@@ -268,9 +268,9 @@ static void print_tensor( TensorObject<float>& data )
 	int mz = data.size.z;
 	int mb = data.size.b;
 
-	for ( int b = 0; b < mb; b++ ){
+	for ( int b = 0; b < mb; ++b ){
 		printf( "[Batch %d]\n", b );
-		for ( int z = 0; z < mz; z++ ){
+		for ( int z = 0; z < mz; ++z ){
 			printf( "[Dim %d]\n", z );
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
