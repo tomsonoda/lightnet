@@ -1,6 +1,7 @@
 {
   "net" : {
     "batch_size":2,
+    "threads":1,
     "momentum":0.0,
     "decay":0.0,
     "learning_rate":0.01,

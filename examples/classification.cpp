@@ -18,6 +18,7 @@ float momentum = 0.6;
 float weights_decay = 0.01;
 string optimizer = "mse";
 int train_output_span = 1000;
+int threads = 1;
 
 float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool ){
 
@@ -113,6 +114,10 @@ void loadModelParameters(JSONObject *model_json, vector <json_token_t*> model_to
 	if(tmp.length()>0){
 		batch_size = std::stoi( tmp );
 	}
+	tmp = model_json->getChildValueForToken(nueral_network, "threads");
+	if(tmp.length()>0){
+		threads = std::stoi( tmp );
+	}
 	tmp = model_json->getChildValueForToken(nueral_network, "learning_rate");
 	if(tmp.length()>0){
 		learning_rate = std::stof( tmp );
@@ -160,7 +165,8 @@ void classification(int argc, char **argv)
 	vector <json_token_t*> model_tokens = model_json->load(model_json_path);
 	loadModelParameters(model_json, model_tokens);
 
-	printf("Start training - batch_size:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, learning_rate, momentum, weights_decay, optimizer.c_str());
+
+	printf("Start training - batch_size:%d, threads:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, threads, learning_rate, momentum, weights_decay, optimizer.c_str());
 
 	CaseObject batch_cases {TensorObject<float>( batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( batch_size, 10, 1, 1 )};
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, weights_decay, momentum);
@@ -178,7 +184,7 @@ void classification(int argc, char **argv)
 	int train_increment = 0;
 	int test_increment = 0;
 
-	ThreadPool thread_pool(8);
+	ThreadPool thread_pool(threads);
 
 	for( long step = 0; step < 1000000; ){
 		int randi = rand() % (train_cases.size()-batch_size);

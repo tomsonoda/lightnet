@@ -1,10 +1,12 @@
 {
   "net" : {
     "batch":1,
+    "threads":16,
+    
     "learning_rate":0.001,
     "momentum":0.9,
     "decay":0.0005,
-    
+
     "subdivisions":1,
     "angle":0,
     "saturation":1.5,

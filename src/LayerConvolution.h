@@ -246,8 +246,10 @@ struct LayerConvolution
 								}
 							}
 
-							if( x>=padding && y>=padding ){
-								dz( b, x-padding, y-padding, z ) += sum;
+							float x_padding = x - padding;
+							float y_padding = y - padding;
+							if(x>=padding && y>=padding && x_padding<in.size.x && y_padding<in.size.y ){
+								dz( b, x_padding, y_padding, z ) += sum;
 							}
 						}
 
