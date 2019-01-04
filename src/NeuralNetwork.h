@@ -12,8 +12,9 @@
 #include "LayerSigmoid.h"
 #include "LayerSoftmax.h"
 #include "LayerType.h"
+#include "ThreadPool.h"
 
-static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer )
+static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, ThreadPool& thread_pool )
 {
 	switch ( layer->type )
 	{
@@ -21,7 +22,7 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer )
 			((LayerBatchNormalization*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->backward( dz_next_layer );
+			((LayerConvolution*)layer)->backward( dz_next_layer, thread_pool );
 			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->backward( dz_next_layer );

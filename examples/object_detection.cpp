@@ -4,6 +4,7 @@
 #include "lightnet.h"
 #include "ImageProcessor.h"
 #include "NeuralNetwork.h"
+#include "ThreadPool.h"
 
 using namespace std;
 
@@ -48,12 +49,12 @@ float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObje
     }
   }
   TensorObject<float> grads = layers.back()->out - expected;
-
+  ThreadPool thread_pool(4);
   for (int i=layers.size()-1; i>=0; i--){
     if (i==layers.size()-1){
-      backward(layers[i], grads);
+      backward(layers[i], grads, thread_pool);
     }else{
-      backward(layers[i], layers[i+1]->dz);
+      backward(layers[i], layers[i+1]->dz, thread_pool);
     }
   }
 

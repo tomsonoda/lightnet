@@ -1,6 +1,7 @@
 #pragma once
 #include "LayerObject.h"
 #include "GradientObject.h"
+#include "ThreadPool.h"
 
 #pragma pack(push, 1)
 struct LayerConvolution
@@ -183,7 +184,7 @@ struct LayerConvolution
 		}
 	}
 
-	void backward( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer, ThreadPool& thread_pool )
 	{
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
@@ -197,42 +198,52 @@ struct LayerConvolution
 		}
 
 		int z_max = (int)filters.size();
+		std::vector< std::future<int> > results;
 
 		for ( int b = 0; b < in.size.b; ++b ){
-			for ( int x = 0; x < padded_in.size.x; ++x ){
+			results.emplace_back(
+				thread_pool.enqueue([&, b] {
+
 				for ( int y = 0; y < padded_in.size.y; ++y ){
+					for ( int x = 0; x < padded_in.size.x; ++x ){
 
-					tensor_range_t rn = map_to_output( x, y );
+						tensor_range_t rn = map_to_output( x, y );
+						for ( int z = 0; z < in.size.z; ++z ){
+							float sum = 0;
+							float padded_in_value = padded_in( b, x, y, z );
 
-					for ( int z = 0; z < in.size.z; ++z ){
-						float sum_error = 0;
-						float padded_in_value = padded_in( b, x, y, z );
+							for ( int j = rn.min_y; j <= rn.max_y; ++j ){
+								int y_miny = y - j * stride;
 
-						for ( int j = rn.min_y; j <= rn.max_y; ++j ){
-							int y_miny = y - j * stride;
+								for ( int i = rn.min_x; i <= rn.max_x; ++i ){
+									int x_minx = x - i * stride;
 
-							for ( int i = rn.min_x; i <= rn.max_x; ++i ){
-								int x_minx = x - i * stride;
-
-								for ( int k = 0; k < z_max; ++k ){
-									float d = dz_in( b, i, j, k );
-									sum_error += filters[k].get( 0, x_minx, y_miny, z ) * d;
-									filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
+									for ( int k = 0; k < z_max; ++k ){
+										float d = dz_in( b, i, j, k );
+										sum += filters[k].get( 0, x_minx, y_miny, z ) * d;
+										filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
+									}
 								}
+							}
+
+							float x_padding = x - padding;
+							float y_padding = y - padding;
+							if(x>=padding && y>=padding && x_padding<in.size.x && y_padding<in.size.y ){
+								dz( b, x_padding, y_padding, z ) += sum;
 							}
 						}
 
-						float x_padding = x - padding;
-						float y_padding = y - padding;
-						if(x>=padding && y>=padding && x_padding<in.size.x && y_padding<in.size.y ){
-							dz( b, x_padding, y_padding, z ) += sum_error;
-						}
 					}
-
 				}
-			}
+				return 0;
+			}));
+		}
+		for(auto && result: results){
+			result.get();
 		}
 
+		results.erase(results.begin(), results.end());
 	}
+
 };
 #pragma pack(pop)

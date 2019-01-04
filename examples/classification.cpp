@@ -7,6 +7,7 @@
 #include <chrono>
 #include "lightnet.h"
 #include "Utils.h"
+#include "ThreadPool.h"
 
 using namespace std;
 
@@ -17,7 +18,7 @@ float weights_decay = 0.01;
 string optimizer = "mse";
 int train_output_span = 1000;
 
-float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer ){
+float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool ){
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
@@ -35,9 +36,9 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
-			backward( layers[i], grads );
+			backward( layers[i], grads, thread_pool );
 		}else{
-			backward( layers[i], layers[i+1]->dz );
+			backward( layers[i], layers[i+1]->dz, thread_pool );
 		}
 	}
 
@@ -176,6 +177,8 @@ void classification(int argc, char **argv)
 	int train_increment = 0;
 	int test_increment = 0;
 
+	ThreadPool thread_pool(4);
+
 	for( long step = 0; step < 1000000; ){
 		int randi = rand() % (train_cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); ++j ){
@@ -186,7 +189,7 @@ void classification(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 		}
 
-		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, optimizer );
+		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, optimizer, thread_pool );
 		train_amse += train_err;
 		train_increment++;
 		step++;
