@@ -25,7 +25,7 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, Th
 			((LayerConvolution*)layer)->backward( dz_next_layer, thread_pool );
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->backward( dz_next_layer );
+			((LayerDense*)layer)->backward( dz_next_layer, thread_pool );
 			return;
 		case LayerType::dropout:
 			((LayerDropout*)layer)->backward( dz_next_layer );
@@ -86,7 +86,7 @@ static void update_weights( LayerObject* layer )
 	}
 }
 
-static void forward( LayerObject* layer, TensorObject<float>& in )
+static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& thread_pool )
 {
 	switch ( layer->type )
 	{
@@ -94,7 +94,7 @@ static void forward( LayerObject* layer, TensorObject<float>& in )
 			((LayerBatchNormalization*)layer)->forward( in );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->forward( in );
+			((LayerConvolution*)layer)->forward( in, thread_pool );
 			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->forward( in );

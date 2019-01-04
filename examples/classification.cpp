@@ -22,9 +22,9 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
-			forward( layers[i], data );
+			forward( layers[i], data, thread_pool );
 		}else{
-			forward( layers[i], layers[i-1]->out );
+			forward( layers[i], layers[i-1]->out, thread_pool );
 		}
 	}
 
@@ -73,13 +73,13 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 	}
 }
 
-float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer ){
+float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool ){
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
-			forward( layers[i], data );
+			forward( layers[i], data, thread_pool );
 		}else{
-			forward( layers[i], layers[i-1]->out );
+			forward( layers[i], layers[i-1]->out, thread_pool );
 		}
 	}
 
@@ -177,7 +177,7 @@ void classification(int argc, char **argv)
 	int train_increment = 0;
 	int test_increment = 0;
 
-	ThreadPool thread_pool(4);
+	ThreadPool thread_pool(8);
 
 	for( long step = 0; step < 1000000; ){
 		int randi = rand() % (train_cases.size()-batch_size);
@@ -210,7 +210,7 @@ void classification(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 			}
 
-			float test_err = testClassification( layers, batch_cases.data, batch_cases.out, optimizer );
+			float test_err = testClassification( layers, batch_cases.data, batch_cases.out, optimizer, thread_pool );
 			test_amse += test_err;
 			test_increment++;
 			cout << "  test error =" << test_amse/test_increment << "\n";

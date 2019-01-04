@@ -63,6 +63,7 @@ struct LayerBatchNormalization
 
 		for ( int z = 0; z < filters; ++z ){
 
+
 			float sum = 0;
 			for ( int b = 0; b < in.size.b; ++b ){
 				for ( int j = 0; j < in.size.y; ++j ){
@@ -97,6 +98,8 @@ struct LayerBatchNormalization
 					}
 				}
 			}
+
+
 		}
 	}
 

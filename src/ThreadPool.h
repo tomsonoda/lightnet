@@ -25,7 +25,6 @@ private:
     std::vector< std::thread > workers;
     // the task queue
     std::queue< std::function<void()> > tasks;
-
     // synchronization
     std::mutex queue_mutex;
     std::condition_variable condition;

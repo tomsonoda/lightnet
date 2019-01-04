@@ -4,6 +4,7 @@
 #include <string.h>
 #include "LayerObject.h"
 #include "GradientObject.h"
+#include "ThreadPool.h"
 
 #pragma pack(push, 1)
 struct LayerDense
@@ -84,7 +85,6 @@ struct LayerDense
 						}
 					}
 				}
-				// out( b, n, 0, 0 ) = activator_function( sum );
 				out( b, n, 0, 0 ) = sum;
 			}
 		}
@@ -101,31 +101,45 @@ struct LayerDense
 		}
 	}
 
-	void backward( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer, ThreadPool& thread_pool )
 	{
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
+		std::vector< std::future<int> > results;
+
 		memset( dW.data, 0, dw_data_size );
 		for ( int n = 0; n < out.size.x; ++n ){
-			// grad.grad = dz_next_layer( b, n, 0, 0 ) * activator_derivative( out );
-			for ( int z = 0; z < in.size.z; ++z ){
-				for ( int j = 0; j < in.size.y; ++j ){
-					for ( int i = 0; i < in.size.x; ++i ){
-						int m = map( { 0, i, j, z } );
+			results.emplace_back( thread_pool.enqueue([&, n] {
 
-						for( int b = 0; b < in.size.b; ++b ){
-							GradientObject& grad = gradients[ n*in.size.b + b ];
-							grad.grad = dz_in( b, n, 0, 0 );
-							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * MOMENTUM) + (WEIGHT_DECAY * weights(0, m, n, 0));
-							dz( b, i, j, z ) += dz_in( b, n, 0, 0 ) * weights( 0, m, n, 0 );
+				for ( int z = 0; z < in.size.z; ++z ){
+					for ( int j = 0; j < in.size.y; ++j ){
+						for ( int i = 0; i < in.size.x; ++i ){
+							int m = map( { 0, i, j, z } );
+
+							for( int b = 0; b < in.size.b; ++b ){
+								GradientObject& grad = gradients[ n*in.size.b + b ];
+								float dzin = dz_in( b, n, 0, 0 );
+								float w = weights(0, m, n, 0);
+								grad.grad = dzin;
+								dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * MOMENTUM) + (WEIGHT_DECAY * w);
+								dz( b, i, j, z ) += dzin * w;
+							}
+
 						}
-
 					}
 				}
-			}
+
+				return 0;
+			}));
 		}
+
+		for(auto && result: results){
+			result.get();
+		}
+		results.erase(results.begin(), results.end());
+
 	}
 };
 #pragma pack(pop)

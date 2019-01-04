@@ -41,20 +41,20 @@ void getDataList(std::string dir_string, std::vector<string> &image_paths, std::
 
 float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected)
 {
-  for (int i=0; i<layers.size(); ++i){
-    if (i== 0){
-      forward(layers[i], data);
-    }else{
-      forward(layers[i], layers[i-1]->out);
-    }
-  }
   TensorObject<float> grads = layers.back()->out - expected;
   ThreadPool thread_pool(4);
+  for (int i=0; i<layers.size(); ++i){
+    if (i== 0){
+      forward(layers[i], data, thread_pool );
+    }else{
+      forward(layers[i], layers[i-1]->out, thread_pool );
+    }
+  }
   for (int i=layers.size()-1; i>=0; i--){
     if (i==layers.size()-1){
-      backward(layers[i], grads, thread_pool);
+      backward(layers[i], grads, thread_pool );
     }else{
-      backward(layers[i], layers[i+1]->dz, thread_pool);
+      backward(layers[i], layers[i+1]->dz, thread_pool );
     }
   }
 
