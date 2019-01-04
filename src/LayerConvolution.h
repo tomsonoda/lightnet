@@ -139,9 +139,9 @@ struct LayerConvolution
 		for ( int b = 0; b < in.size.b; ++b ){
 			results.emplace_back( thread_pool.enqueue([&, b] {
 
-				for ( int x = 0; x < in.size.x; ++x ){
+				for ( int z = 0; z < in.size.z; ++z ){
 					for ( int y = 0; y < in.size.y; ++y ){
-						for ( int z = 0; z < in.size.z; ++z ){
+						for ( int x = 0; x < in.size.x; ++x ){
 							padded_in( b, padding+x, padding+y, z ) = in( b, x, y, z );
 						}
 					}
@@ -150,6 +150,7 @@ struct LayerConvolution
 				int filters_size = filters.size();
 				for ( int filter = 0; filter < filters_size; ++filter ){
 					TensorObject<float> filter_data = filters[filter];
+
 					for ( int y = 0; y < out.size.y; ++y ){
 						for ( int x = 0; x < out.size.x; ++x ){
 							TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
@@ -162,7 +163,6 @@ struct LayerConvolution
 									}
 								}
 							}
-
 							out( b, x, y, filter ) = sum;
 						}
 					}
@@ -214,29 +214,33 @@ struct LayerConvolution
 		std::vector< std::future<int> > results;
 
 		for ( int b = 0; b < in.size.b; ++b ){
+
 			results.emplace_back(thread_pool.enqueue([&, b] {
 
 				for ( int y = 0; y < padded_in.size.y; ++y ){
 					for ( int x = 0; x < padded_in.size.x; ++x ){
 
 						tensor_range_t rn = map_to_output( x, y );
+
 						for ( int z = 0; z < in.size.z; ++z ){
 							float sum = 0;
-							float padded_in_value = padded_in( b, x, y, z );
+							// float padded_in_value = padded_in( b, x, y, z );
+							float padded_in_value = padded_in.data[( b * padded_in.size.z * padded_in.size.y * padded_in.size.x ) + (z * padded_in.size.y * padded_in.size.x) + (y * padded_in.size.x) + x];
 
 							for ( int j = rn.min_y; j <= rn.max_y; ++j ){
 								int y_miny = y - j * stride;
 
 								for ( int i = rn.min_x; i <= rn.max_x; ++i ){
 									int x_minx = x - i * stride;
+
 									int xyz = z * kernel_size * kernel_size + y_miny * kernel_size + x_minx; // ( 0, x_minx, y_miny, z )
 
 									for ( int k = 0; k < z_max; ++k ){
 										// float d = dz_in( b, i, j, k );
-										// sum += filters[k].get( 0, x_minx, y_miny, z ) * d;
-										// filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
 										float d = dz_in.data[ (b * dz_in.size.z * dz_in.size.y * dz_in.size.x) + (k * dz_in.size.y * dz_in.size.x) + (j * dz_in.size.x) + i];
+										// sum += filters[k].get( 0, x_minx, y_miny, z ) * d;
 										sum += filters[k].data[xyz] * d;
+										// filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
 										filter_grads[k].data[xyz].grad += padded_in_value * d;
 									}
 								}
@@ -249,15 +253,17 @@ struct LayerConvolution
 
 					}
 				}
+
 				return 0;
 			}));
+
 		}
+
 		for(auto && result: results){
 			result.get();
 		}
-
 		results.erase(results.begin(), results.end());
-	}
 
+	}
 };
 #pragma pack(pop)
