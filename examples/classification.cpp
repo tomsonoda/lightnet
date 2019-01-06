@@ -6,11 +6,14 @@
 #include <algorithm>
 #include <chrono>
 #include "lightnet.h"
-#include "Utils.h"
-#include "ThreadPool.h"
 
+#define VERSION_MAJOR    (0)
+#define VERSION_MINOR    (1)
+#define VERSION_REVISION (0)
 
 using namespace std;
+
+int save_span = 2000;
 
 unsigned batch_size = 1;
 float learning_rate = 0.01;
@@ -106,6 +109,67 @@ float testClassification( vector<LayerObject*>& layers, TensorObject<float>& dat
 	}
 }
 
+void saveClassificationWeights( long step, vector<LayerObject*>& layers )
+{
+	string filename        = "checkpoints/backup_" + to_string(step) + ".model";
+	std::ofstream fout( filename.c_str(), std::ios::binary );
+	if (fout.fail()){
+		std::cerr << "No weights file:" << filename << std::endl;
+		return;
+	}
+	cout << "Saving weights to " << filename << " ..." << endl;
+	char ver_major    = (char)VERSION_MAJOR;
+	char ver_minor    = (char)VERSION_MINOR;
+	char ver_revision = (char)VERSION_REVISION;
+
+	fout.write(( char * ) &(ver_major), sizeof( char ) );
+	fout.write(( char * ) &(ver_minor), sizeof( char ) );
+	fout.write(( char * ) &(ver_revision), sizeof( char ) );
+	fout.write(( char * ) &(step), sizeof( long ) );
+
+	for( int i = 0; i < layers.size(); ++i ){
+		saveWeights( layers[i], fout );
+	}
+	fout.close();
+
+	// copy file to latest
+	std::ifstream src(filename, std::ios::binary);
+	std::ofstream dst("checkpoints/latest.model", std::ios::binary);
+	dst << src.rdbuf();
+}
+
+long loadClassificationWeights( vector<LayerObject*>& layers, string filename )
+{
+	std::ifstream fin( filename.c_str(), std::ios::binary );
+
+	if (fin.fail()){
+		cout << "Error : Could not open a file to load:" << filename << std::endl;
+		exit(0);
+	}
+
+	cout << "Loading weights from " << filename << " ..." << endl;
+	char ver_major    = 0;
+	char ver_minor    = 0;
+	char ver_revision = 0;
+	long step = 0;
+	fin.read(( char * ) &(ver_major), sizeof( char ) );
+	fin.read(( char * ) &(ver_minor), sizeof( char ) );
+	fin.read(( char * ) &(ver_revision), sizeof( char ) );
+	fin.read(( char * ) &(step), sizeof( long ) );
+	cout << "Model version: " << to_string(ver_major) << "." << to_string(ver_minor) << "." << to_string(ver_revision) << endl;
+	if( (ver_major!=VERSION_MAJOR) || (ver_minor!=VERSION_MINOR) || (ver_revision!=VERSION_REVISION) ){
+		cout << "Model version is different from this version:" << to_string(VERSION_MAJOR) << "." << to_string(VERSION_MINOR) << "." << to_string(VERSION_REVISION) << endl;
+		exit(0);
+	}
+	cout << "last step: " << to_string(step) << endl;
+
+	for( int i = 0; i < layers.size(); ++i ){
+		loadWeights( layers[i], fin );
+	}
+	fin.close();
+	return step;
+}
+
 void loadModelParameters(JSONObject *model_json, vector <json_token_t*> model_tokens)
 {
 	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
@@ -149,6 +213,10 @@ void classification(int argc, char **argv)
 {
 	string data_json_path = argv[2];
 	string model_json_path = argv[3];
+	string checkpoint_path = "";
+	if(argc>=5){
+ 		checkpoint_path = argv[4];
+	}
 
 	// dataset
 	DatasetObject *dataset = new DatasetObject();
@@ -165,12 +233,22 @@ void classification(int argc, char **argv)
 	vector <json_token_t*> model_tokens = model_json->load(model_json_path);
 	loadModelParameters(model_json, model_tokens);
 
+	printf("batch_size    : %d\n", batch_size);
+	printf("threads       : %d\n", threads);
+	printf("learning_rate : %f\n", learning_rate);
+	printf("momentum      : %f\n", momentum);
+	printf("weights_decay : %f\n", weights_decay);
+	printf("optimizer     : %s\n\n", optimizer.c_str());
 
-	printf("Start training - batch_size:%d, threads:%d, learning_rate:%f, momentum:%f, weights_decay:%f, optimizer:%s\n\n", batch_size, threads, learning_rate, momentum, weights_decay, optimizer.c_str());
-
+	printf("Start training\n\n");
 	CaseObject batch_cases {TensorObject<float>( batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( batch_size, 10, 1, 1 )};
+
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, learning_rate, weights_decay, momentum);
 	printf("\n");
+	long step = 0;
+	if(checkpoint_path.length()>0){
+		step = loadClassificationWeights( layers, checkpoint_path );
+	}
 
 	auto start = std::chrono::high_resolution_clock::now();
 	CaseObject t = train_cases[0];
@@ -186,7 +264,7 @@ void classification(int argc, char **argv)
 
 	ThreadPool thread_pool(threads);
 
-	for( long step = 0; step < 1000000; ){
+	while( step < 1000000 ){
 		int randi = rand() % (train_cases.size()-batch_size);
 		for( unsigned j = randi; j < (randi+batch_size); ++j ){
 			t = train_cases[j];
@@ -200,6 +278,10 @@ void classification(int argc, char **argv)
 		train_amse += train_err;
 		train_increment++;
 		step++;
+
+		if (step % save_span == 0){
+			saveClassificationWeights(step, layers);
+		}
 
 		if ( step % train_output_span == 0 ){
 			auto finish = std::chrono::high_resolution_clock::now();

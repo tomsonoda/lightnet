@@ -9,3 +9,4 @@ lightnet
 
 /instrumentscli*
 /dataset/*
+/checkpoints/*

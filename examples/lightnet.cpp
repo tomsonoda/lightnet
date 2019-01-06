@@ -8,7 +8,7 @@ extern void objectDetection(int argc, char **argv); // object_detection.cpp
 int main(int argc, char **argv)
 {
   if(argc < 4){
-    fprintf(stderr, "usage: %s classification <data_json_path> <model_json_path>\n", argv[0]);
+    fprintf(stderr, "usage: %s classification <data_json_path> <model_json_path [checkpoints_dir]\n", argv[0]);
     fprintf(stderr, "       %s object_detection <train|test> <data_json_path> <model_json_path> <model_path> [other options]\n", argv[0]);
     return 0;
   }

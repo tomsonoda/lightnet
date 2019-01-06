@@ -2,6 +2,8 @@
 #include <math.h>
 #include <float.h>
 #include <string.h>
+#include <iostream>
+#include <fstream>
 #include "LayerObject.h"
 #include "GradientObject.h"
 #include "ThreadPool.h"
@@ -67,11 +69,6 @@ struct LayerDense
 		this->dz.clear();
 	}
 
-	void update_gradient( GradientObject& grad )
-	{
-		grad.grad_prev = (grad.grad + grad.grad_prev * MOMENTUM);
-	}
-
 	void forward()
 	{
 		for ( int b = 0; b < in.size.b; ++b ){
@@ -97,7 +94,7 @@ struct LayerDense
 		}
 		for ( int i = 0; i < out.size.x * in.size.b; ++i ){
 				GradientObject& grad = gradients[ i ];
-				update_gradient( grad );
+				grad.grad_prev = (grad.grad + grad.grad_prev * MOMENTUM);
 		}
 	}
 
@@ -139,7 +136,36 @@ struct LayerDense
 			result.get();
 		}
 		results.erase(results.begin(), results.end());
+	}
 
+	void saveWeights( ofstream& fout )
+	{
+		int total_size = 0;
+		for ( int i = 0; i < out.size.x * in.size.b ; ++i ){
+			GradientObject grad = gradients[i];
+			fout.write(( char * ) &(grad.grad_prev), sizeof( float ) );
+			total_size += sizeof(float);
+		}
+
+		int size = weigts_data_num * sizeof( float );
+		fout.write(( char * )(weights.data), size );
+		total_size += size;
+		// cout << "- LayerDense             : " << to_string(total_size) << " bytes wrote." << endl;
+	}
+
+	void loadWeights( ifstream& fin )
+	{
+		int total_size = 0;
+		for ( int i = 0; i < out.size.x * in.size.b ; ++i ){
+			GradientObject grad = gradients[i];
+			fin.read(( char * ) &(grad.grad_prev), sizeof( float ) );
+			total_size += sizeof(float);
+		}
+
+		int size = weigts_data_num * sizeof( float );
+		fin.read(( char * )(weights.data), size );
+		total_size += size;
+		cout << "- LayerDense             : " << to_string(total_size) << " bytes read." << endl;
 	}
 };
 #pragma pack(pop)

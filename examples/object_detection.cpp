@@ -73,6 +73,37 @@ float train( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObje
   return err * 100;
 }
 
+void saveObjectDetectionWeights( vector<LayerObject*>& layers ){
+	string filename = "checkpoints/backup.bin";
+	std::ofstream fout( filename.c_str(), std::ios::binary );
+
+	if (fout.fail()){
+		std::cerr << "Error : Could not open a file to save." << std::endl;
+		exit(0);
+	}
+
+	for( int i = 0; i < layers.size(); ++i ){
+		saveWeights( layers[i], fout );
+	}
+
+	fout.close();
+}
+
+void loadObjectDetectionWeights( vector<LayerObject*>& layers ){
+	string filename = "checkpoints/backup.bin";
+	std::ifstream fin( filename.c_str(), std::ios::binary );
+
+	if (fin.fail()){
+		std::cerr << "Error : Could not open a file to load" << std::endl;
+		exit(0);
+	}
+
+	for( int i = 0; i < layers.size(); ++i ){
+		loadWeights( layers[i], fin );
+	}
+
+	fin.close();
+}
 vector<CaseObject> readCases(std::string data_config_path)
 {
   JSONObject *data_json = new JSONObject();

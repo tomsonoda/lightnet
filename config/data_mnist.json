@@ -1,7 +1,5 @@
 {
   "type"             : "mnist",
   "train_dir"        : "dataset/mnist/train/",
-  "checkpoint_dir"   : "dataset/mnist/checkpoint/",
   "test_dir"         : "dataset/mnist/test/",
-  "test_results_dir" : "dataset/mnist/results/",
 }

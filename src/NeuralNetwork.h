@@ -122,6 +122,56 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 	}
 }
 
+static void saveWeights( LayerObject* layer, ofstream& fout )
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->saveWeights( fout );
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->saveWeights( fout );
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->saveWeights( fout );
+			return;
+		case LayerType::dropout:
+		case LayerType::max_pool:
+		case LayerType::relu:
+		case LayerType::route:
+		case LayerType::sigmoid:
+		case LayerType::softmax:
+			return;
+		default:
+			assert( false );
+	}
+}
+
+static void loadWeights( LayerObject* layer, ifstream& fin )
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->loadWeights( fin );
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->loadWeights( fin );
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->loadWeights( fin );
+			return;
+		case LayerType::dropout:
+		case LayerType::max_pool:
+		case LayerType::relu:
+		case LayerType::route:
+		case LayerType::sigmoid:
+		case LayerType::softmax:
+			return;
+		default:
+			assert( false );
+	}
+}
+
 static vector<LayerObject*> loadModel(
 	JSONObject *model_json,
 	std::vector <json_token_t*> model_tokens,
@@ -165,6 +215,7 @@ static vector<LayerObject*> loadModel(
       printf("%d: convolutional : stride=%d  kernel_size=%d filters=%d pad=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
 			i, stride, size, filters, padding, in_size.x, in_size.y, in_size.z, out_size, out_size, filters);
       LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size, learning_rate, decay, momentum);		// 28 * 28 * 1 -> 24 * 24 * 8
+
       layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="dense"){
@@ -272,7 +323,7 @@ static void print_tensor( TensorObject<float>& data )
 	for ( int b = 0; b < mb; ++b ){
 		printf( "[Batch %d]\n", b );
 		for ( int z = 0; z < mz; ++z ){
-			printf( "[Dim %d]\n", z );
+			// printf( "[Dim %d]\n", z );
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
 					printf( "%.3f \t", (float)data( b, x, y, z ) );

@@ -1,1 +1,1 @@
-./lightnet classification config/data_mnist.json config/model_conv1.json
+./lightnet classification config/data_mnist.json config/model_conv1.json checkpoints/latest.model

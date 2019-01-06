@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+#include <fstream>
 #include "LayerObject.h"
 #include "GradientObject.h"
 #include "ThreadPool.h"
@@ -276,6 +278,43 @@ struct LayerConvolution
 		}
 		thread_results.erase(thread_results.begin(), thread_results.end());
 
+	}
+
+	void saveWeights( ofstream& fout )
+	{
+		int total_size = 0;
+		for ( int a = 0; a < out.size.z; ++a ){
+			for ( int i = 0; i <  kernel_size * kernel_size * in.size.z ; ++i ){
+				GradientObject grad = filter_grads[a].data[i];
+				fout.write(( char * ) &(grad.grad_prev), sizeof( float ) );
+				total_size += sizeof(float);
+			}
+		}
+
+		for ( int a = 0; a < out.size.z; ++a ){
+			int size = kernel_size * kernel_size * in.size.z * sizeof( float );
+			fout.write(( char * )(filters[a].data), size );
+			total_size += size;
+		}
+		// cout << "- LayerConvolution       : " << to_string(total_size) << " bytes." << endl;
+	}
+
+	void loadWeights( ifstream& fin )
+	{
+		int total_size = 0;
+		for ( int a = 0; a < out.size.z; ++a ){
+			for ( int i = 0; i <  kernel_size * kernel_size * in.size.z ; ++i ){
+				GradientObject& grad = filter_grads[a].data[i];
+				fin.read(( char * ) &(grad.grad_prev), sizeof( float ) );
+				total_size += sizeof(float);
+			}
+		}
+		for ( int a = 0; a < out.size.z; ++a ){
+			int size = kernel_size * kernel_size * in.size.z * sizeof( float );
+			fin.read(( char * )(filters[a].data), size );
+			total_size += size;
+		}
+		cout << "- LayerConvolution       : " << to_string(total_size) << " bytes read." << endl;
 	}
 };
 #pragma pack(pop)

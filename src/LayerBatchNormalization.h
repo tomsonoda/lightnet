@@ -1,6 +1,8 @@
 #pragma once
-#include "LayerObject.h"
 #include <math.h>
+#include <iostream>
+#include <fstream>
+#include "LayerObject.h"
 
 #pragma pack(push, 1)
 struct LayerBatchNormalization
@@ -183,5 +185,28 @@ struct LayerBatchNormalization
 
 		}
 	}
+
+	void saveWeights( ofstream& fout )
+	{
+		int total_size = 0;
+		int size = in.size.z * sizeof( float );
+		fout.write(( char * )(gamma.data), size );
+		total_size += size;
+		fout.write(( char * )(beta.data), size );
+		total_size += size;
+		cout << "- LayerBatchNormalization: " << to_string(total_size) << " bytes wrote." << endl;
+	}
+
+	void loadWeights( ifstream& fin )
+	{
+		int total_size = 0;
+		int size = in.size.z * sizeof( float );
+		fin.read(( char * )(gamma.data), size );
+		total_size += size;
+		fin.read(( char * )(beta.data), size );
+		total_size += size;
+		cout << "- LayerBatchNormalization: " << to_string(total_size) << " bytes read." << endl;
+	}
+
 };
 #pragma pack(pop)
