@@ -194,7 +194,7 @@ struct LayerBatchNormalization
 		total_size += size;
 		fout.write(( char * )(beta.data), size );
 		total_size += size;
-		cout << "- LayerBatchNormalization: " << to_string(total_size) << " bytes wrote." << endl;
+		// cout << "- LayerBatchNormalization: " << to_string(total_size) << " bytes wrote." << endl;
 	}
 
 	void loadWeights( ifstream& fin )

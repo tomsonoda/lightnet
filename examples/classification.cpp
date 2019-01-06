@@ -13,6 +13,7 @@
 
 using namespace std;
 
+int save_latest_span = 100;
 int save_span = 2000;
 
 unsigned batch_size = 1;
@@ -109,15 +110,13 @@ float testClassification( vector<LayerObject*>& layers, TensorObject<float>& dat
 	}
 }
 
-void saveClassificationWeights( long step, vector<LayerObject*>& layers )
+void saveClassificationWeights( long step, vector<LayerObject*>& layers, string filename )
 {
-	string filename        = "checkpoints/backup_" + to_string(step) + ".model";
 	std::ofstream fout( filename.c_str(), std::ios::binary );
 	if (fout.fail()){
-		std::cerr << "No weights file:" << filename << std::endl;
+		std::cerr << "No weights file to save:" << filename << std::endl;
 		return;
 	}
-	cout << "Saving weights to " << filename << " ..." << endl;
 	char ver_major    = (char)VERSION_MAJOR;
 	char ver_minor    = (char)VERSION_MINOR;
 	char ver_revision = (char)VERSION_REVISION;
@@ -131,11 +130,10 @@ void saveClassificationWeights( long step, vector<LayerObject*>& layers )
 		saveWeights( layers[i], fout );
 	}
 	fout.close();
-
 	// copy file to latest
-	std::ifstream src(filename, std::ios::binary);
-	std::ofstream dst("checkpoints/latest.model", std::ios::binary);
-	dst << src.rdbuf();
+	// std::ifstream src(filename, std::ios::binary);
+	// std::ofstream dst("checkpoints/latest.model", std::ios::binary);
+	// dst << src.rdbuf();
 }
 
 long loadClassificationWeights( vector<LayerObject*>& layers, string filename )
@@ -217,7 +215,11 @@ void classification(int argc, char **argv)
 	if(argc>=5){
  		checkpoint_path = argv[4];
 	}
+	Utils *utils = new Utils();
 
+	string data_json_base = data_json_path.substr(data_json_path.find_last_of("/")+1);
+	string model_json_base = model_json_path.substr(model_json_path.find_last_of("/")+1);
+	string data_model_name = utils->stringReplace(data_json_base, ".json", "") + "-" + utils->stringReplace(model_json_base, ".json", "");
 	// dataset
 	DatasetObject *dataset = new DatasetObject();
 	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
@@ -280,7 +282,13 @@ void classification(int argc, char **argv)
 		step++;
 
 		if (step % save_span == 0){
-			saveClassificationWeights(step, layers);
+			string filename        = "checkpoints/" + data_model_name + "_" + to_string(step) + ".model";
+			cout << "Saving weights to " << filename << " ..." << endl;
+			saveClassificationWeights(step, layers, filename);
+		}
+		if (step % save_latest_span == 0){
+			string filename        = "checkpoints/" + data_model_name + "_latest.model";
+			saveClassificationWeights(step, layers, filename);
 		}
 
 		if ( step % train_output_span == 0 ){
