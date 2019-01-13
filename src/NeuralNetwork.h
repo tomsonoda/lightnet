@@ -12,7 +12,12 @@
 #include "LayerSigmoid.h"
 #include "LayerSoftmax.h"
 #include "LayerType.h"
+#include "ParameterObject.h"
 #include "ThreadPool.h"
+
+#define VERSION_MAJOR    (0)
+#define VERSION_MINOR    (1)
+#define VERSION_REVISION (0)
 
 static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, ThreadPool& thread_pool )
 {
@@ -122,6 +127,7 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 	}
 }
 
+
 static void saveWeights( LayerObject* layer, ofstream& fout )
 {
 	switch ( layer->type )
@@ -145,6 +151,28 @@ static void saveWeights( LayerObject* layer, ofstream& fout )
 		default:
 			assert( false );
 	}
+}
+
+static void saveLayersWeights( long step, vector<LayerObject*>& layers, string filename )
+{
+	std::ofstream fout( filename.c_str(), std::ios::binary );
+	if (fout.fail()){
+		std::cerr << "No weights file to save:" << filename << std::endl;
+		return;
+	}
+	char ver_major    = (char)VERSION_MAJOR;
+	char ver_minor    = (char)VERSION_MINOR;
+	char ver_revision = (char)VERSION_REVISION;
+
+	fout.write(( char * ) &(ver_major), sizeof( char ) );
+	fout.write(( char * ) &(ver_minor), sizeof( char ) );
+	fout.write(( char * ) &(ver_revision), sizeof( char ) );
+	fout.write(( char * ) &(step), sizeof( long ) );
+
+	for( int i = 0; i < layers.size(); ++i ){
+		saveWeights( layers[i], fout );
+	}
+	fout.close();
 }
 
 static void loadWeights( LayerObject* layer, ifstream& fin )
@@ -171,6 +199,39 @@ static void loadWeights( LayerObject* layer, ifstream& fin )
 			assert( false );
 	}
 }
+
+static long loadLayersWeights( vector<LayerObject*>& layers, string filename )
+{
+	std::ifstream fin( filename.c_str(), std::ios::binary );
+
+	if (fin.fail()){
+		cout << "Error : Could not open a file to load:" << filename << std::endl;
+		exit(0);
+	}
+
+	cout << "Loading weights from " << filename << " ..." << endl;
+	char ver_major    = 0;
+	char ver_minor    = 0;
+	char ver_revision = 0;
+	long step = 0;
+	fin.read(( char * ) &(ver_major), sizeof( char ) );
+	fin.read(( char * ) &(ver_minor), sizeof( char ) );
+	fin.read(( char * ) &(ver_revision), sizeof( char ) );
+	fin.read(( char * ) &(step), sizeof( long ) );
+	cout << "Model version: " << to_string(ver_major) << "." << to_string(ver_minor) << "." << to_string(ver_revision) << endl;
+	if( (ver_major!=VERSION_MAJOR) || (ver_minor!=VERSION_MINOR) || (ver_revision!=VERSION_REVISION) ){
+		cout << "Model version is different from this version:" << to_string(VERSION_MAJOR) << "." << to_string(VERSION_MINOR) << "." << to_string(VERSION_REVISION) << endl;
+		exit(0);
+	}
+	cout << "last step: " << to_string(step) << endl;
+
+	for( int i = 0; i < layers.size(); ++i ){
+		loadWeights( layers[i], fin );
+	}
+	fin.close();
+	return step;
+}
+
 
 static vector<LayerObject*> loadModel(
 	JSONObject *model_json,
@@ -311,6 +372,46 @@ static vector<LayerObject*> loadModel(
 		}
   }
   return layers;
+}
+
+
+static void loadModelParameters(JSONObject *model_json, vector <json_token_t*> model_tokens, ParameterObject* parameter_object)
+{
+	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
+
+	string tmp = model_json->getChildValueForToken(nueral_network, "batch_size");
+	if(tmp.length()>0){
+		parameter_object->batch_size = std::stoi( tmp );
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "threads");
+	if(tmp.length()>0){
+		parameter_object->threads = std::stoi( tmp );
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "learning_rate");
+	if(tmp.length()>0){
+		parameter_object->learning_rate = std::stof( tmp );
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "momentum");
+	if(tmp.length()>0){
+		parameter_object->momentum = std::stof( tmp );
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "weights_decay");
+	if(tmp.length()>0){
+		parameter_object->weights_decay = std::stof( tmp );
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "optimization");
+	if(tmp.length()>0){
+		parameter_object->optimizer = tmp;
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "train_output_span");
+	if(tmp.length()>0){
+		parameter_object->train_output_span = std::stoi( tmp );
+	}
+
+	if(parameter_object->batch_size<0){
+		fprintf(stderr, "Batch size should be 1>=.");
+		exit(0);
+	}
 }
 
 static void print_tensor( TensorObject<float>& data )

@@ -1,6 +1,15 @@
 #pragma once
 #include "CaseObject.h"
 #include "JSONObject.h"
+
+#pragma pack(push, 1)
+typedef struct{
+		int id;
+		float x, y, w, h;
+		float left, right, top, bottom;
+} boundingbox_t;
+#pragma pack(pop)
+
 struct DatasetObject
 {
 	uint32_t reverseUint32(uint32_t a)
@@ -148,6 +157,50 @@ struct DatasetObject
 		return cases;
 	}
 
+	vector<boundingbox_t> readLabelBoxes(string filename)
+	{
+	    FILE *file = fopen(filename.c_str(), "r");
+	    if(!file){
+				printf("%s not found.\n",filename.c_str());
+				exit(0);
+			}
+	    float x, y, h, w;
+	    int box_id;
+	    vector<boundingbox_t> boxes = vector<boundingbox_t>();
+	    while(fscanf(file, "%d %f %f %f %f", &box_id, &x, &y, &w, &h) == 5){
+				boundingbox_t box;
+				box.id = box_id;
+				box.x  = x;
+				box.y  = y;
+				box.h  = h;
+				box.w  = w;
+				box.left   = x - w/2;
+	      box.right  = x + w/2;
+	      box.top    = y - h/2;
+	      box.bottom = y + h/2;
+				boxes.push_back(box);
+	    }
+	    fclose(file);
+	    return boxes;
+	}
+
+	vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_token_t*> data_tokens, string mode )
+	{
+		DatasetObject *dataset = new DatasetObject();
+		vector<CaseObject> cases;
+
+		uint8_t* buffer;
+		vector<uint8_t> v;
+		streamsize file_size;
+
+		if(mode=="train"){
+
+		}else{ // test cases
+			
+		}
+		return cases;
+	}
+
 	vector<CaseObject> readCases(string data_json_path, string mode)
 	{
 		vector<CaseObject> cases;
@@ -160,10 +213,11 @@ struct DatasetObject
 			cases= readCasesMNIST(data_json, data_tokens, mode);
 		}else if(dataset_type=="cifar10"){
 			cases= readCasesCifar10(data_json, data_tokens, mode);
+		}else if(dataset_type=="images_labels"){
+			cases= readCasesImagesLabels(data_json, data_tokens, mode);
 		}
 
 		delete data_json;
-
 		return cases;
 	}
 

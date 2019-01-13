@@ -1,5 +1,5 @@
 #pragma once
-#include "ArgumentProcessor.h"
+#include "ParameterObject.h"
 #include "DatasetObject.h"
 #include "JSONObject.h"
 #include "Utils.h"
