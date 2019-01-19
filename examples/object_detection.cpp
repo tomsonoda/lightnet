@@ -167,7 +167,7 @@ void objectDetection(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 		}
 
-		print_tensor(batch_cases.out);
+		// print_tensor(batch_cases.out);
 
 		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object );
 		train_amse += train_err;

@@ -152,6 +152,7 @@ static void saveWeights( LayerObject* layer, ofstream& fout )
 			((LayerDense*)layer)->saveWeights( fout );
 			return;
 		case LayerType::dropout:
+		case LayerType::leaky_relu:
 		case LayerType::max_pool:
 		case LayerType::relu:
 		case LayerType::route:
@@ -199,6 +200,7 @@ static void loadWeights( LayerObject* layer, ifstream& fin )
 			((LayerDense*)layer)->loadWeights( fin );
 			return;
 		case LayerType::dropout:
+		case LayerType::leaky_relu:
 		case LayerType::max_pool:
 		case LayerType::relu:
 		case LayerType::route:
