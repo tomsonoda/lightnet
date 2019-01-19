@@ -198,10 +198,12 @@ vector<boundingbox_t> readLabelBoxes(string filename)
 		return boxes;
 }
 
-vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_token_t*> data_tokens, string mode )
+vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_token_t*> data_tokens, JSONObject *model_json, vector<json_token_t*> model_tokens, string mode )
 {
 	Utils *utils = new Utils();
 	vector<CaseObject> cases;
+
+	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
 
 	// uint8_t* buffer;
 	vector<uint8_t> v;
@@ -234,9 +236,10 @@ vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_tok
 
 		std::ifstream ifs(label_path);
 		if(ifs.is_open()){ // if exists
-			cout << image_path << endl;
-			cout << label_path << endl;
+			// cout << image_path << endl;
+			// cout << label_path << endl;
 			image_paths.push_back(image_path);
+			label_paths.push_back(label_path);
 		}else{
 			cout << "Not exists:" + label_path << endl;
 		}
@@ -244,12 +247,45 @@ vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_tok
 
 	ImageProcessor *image_processor = new ImageProcessor();
 
-	for(int i=0; i<image_paths.size(); ++i){
-		image_st image = image_processor->readImageFile(image_paths[i], 416, 416, 3);
-		printf("Read image: %s %d %d\n", image_paths[i].c_str(), image.width, image.height);
-		// image_processor->writeImageFilePNG(utils->stringReplace(train_image_paths[i], "jpg", "png"), image);
+	int image_w = 416;
+	int image_h = 416;
+	int boxes_max = 30;
+	int classes = 1;
 
-		CaseObject c {TensorObject<float>( 1, 416, 416, 3 ), TensorObject<float>( 1, 10, 1, 1 )};
+	string tmp = model_json->getChildValueForToken(nueral_network, "max_classes");
+	if(tmp.length()>0){
+		classes = std::stoi( tmp );
+	}
+
+	printf("%s : classes max:%d\n", mode.c_str(), classes);
+
+	for(int i=0; i<image_paths.size(); ++i){
+		image_st image = image_processor->readImageFile(image_paths[i], image_w, image_h, 3);
+		// printf("Read image: %s (%d x %d)\n", image_paths[i].c_str(), image.width, image.height);
+		// image_processor->writeImageFilePNG(utils->stringReplace(image_paths[i], "jpg", "png"), image);
+		vector<boundingbox_t> boxes = readLabelBoxes(label_paths[i]);
+
+		CaseObject c {TensorObject<float>( 1, image_w, image_w, 3 ), TensorObject<float>( 1, boxes_max * (4 + classes), 1, 1 )};
+		for(int z = 0; z < 3; ++z ){
+			for ( int y = 0; y < image_h; y++ ){
+				for ( int x = 0; x < image_w; x++ ){
+					c.data( 0, x, y, z ) = image.data[x + (y * image_w) + (image_w * image_h)*z] / 255.f;
+				}
+			}
+		}
+
+		for( int j=0; j<boxes_max && j<boxes.size(); ++j){
+			int index = j * (4 + classes);
+			c.out( 0, index, 0, 0 )   = boxes[j].x;
+			c.out( 0, index+1, 0, 0 ) = boxes[j].y;
+			c.out( 0, index+2, 0, 0 ) = boxes[j].w;
+			c.out( 0, index+3, 0, 0 ) = boxes[j].h;
+			for ( int k = 0; k < classes; ++k ){
+				c.out( 0, index+4+k, 0, 0 ) = boxes[j].id == k ? 1.0f : 0.0f;
+			}
+		}
+
+		cases.push_back( c );
 	}
 
 	delete utils;
@@ -258,12 +294,14 @@ vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_tok
 	return cases;
 }
 
-vector<CaseObject> readCases(string data_json_path, string mode)
+vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode) // dataset.cpp
 {
 	vector<CaseObject> cases;
 
 	JSONObject *data_json = new JSONObject();
+	JSONObject *model_json = new JSONObject();
 	vector <json_token_t*> data_tokens = data_json->load(data_json_path);
+	vector <json_token_t*> model_tokens = model_json->load(model_json_path);
 	string dataset_type = data_json->getChildValueForToken(data_tokens[0], "type");   // data_tokens[0] := json root
 
 	if(dataset_type=="mnist"){
@@ -271,7 +309,7 @@ vector<CaseObject> readCases(string data_json_path, string mode)
 	}else if(dataset_type=="cifar10"){
 		cases= readCasesCifar10(data_json, data_tokens, mode);
 	}else if(dataset_type=="images_labels"){
-		cases= readCasesImagesLabels(data_json, data_tokens, mode);
+		cases= readCasesImagesLabels(data_json, data_tokens, model_json, model_tokens, mode);
 	}
 
 	delete data_json;

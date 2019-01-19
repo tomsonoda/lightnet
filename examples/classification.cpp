@@ -9,7 +9,7 @@
 
 using namespace std;
 
-extern vector<CaseObject> readCases(string data_json_path, string mode); // dataset.cpp
+extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
 float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
 
@@ -112,8 +112,8 @@ void classification(int argc, char **argv)
 	string data_model_name = utils->stringReplace(data_json_base, ".json", "") + "-" + utils->stringReplace(model_json_base, ".json", "");
 	// dataset
 	// DatasetObject2 *dataset = new DatasetObject2();
-	vector<CaseObject> train_cases = readCases(data_json_path, "train");
-	vector<CaseObject> test_cases = readCases(data_json_path, "test");
+	vector<CaseObject> train_cases = readCases(data_json_path, model_json_path, "train");
+	vector<CaseObject> test_cases = readCases(data_json_path, model_json_path, "test");
 
 	printf("\nTrain cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
 	if(train_cases.size()==0 || test_cases.size()==0){

@@ -9,8 +9,7 @@
 
 using namespace std;
 
-extern vector<CaseObject> readCases(string data_json_path, string mode); // dataset.cpp
-
+extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
 float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
 
@@ -114,8 +113,8 @@ void objectDetection(int argc, char **argv)
 
 	// dataset
 	// DatasetObject2 *dataset = new DatasetObject2();
-	vector<CaseObject> train_cases = readCases(data_json_path, "train");
-	vector<CaseObject> test_cases = readCases(data_json_path, "test");
+	vector<CaseObject> train_cases = readCases(data_json_path, model_json_path, "train");
+	vector<CaseObject> test_cases = readCases(data_json_path, model_json_path, "test");
 
 	printf("\nTrain cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
 	if(train_cases.size()==0 || test_cases.size()==0){
@@ -130,7 +129,9 @@ void objectDetection(int argc, char **argv)
 	parameter_object->printParameters();
 
 	printf("Start training\n\n");
-	CaseObject batch_cases {TensorObject<float>( parameter_object->batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( parameter_object->batch_size, 10, 1, 1 )};
+	CaseObject batch_cases {TensorObject<float>( parameter_object->batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( parameter_object->batch_size, train_cases[0].out.size.x,  train_cases[0].out.size.y,  train_cases[0].out.size.z )};
+
+
 
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, parameter_object->learning_rate, parameter_object->weights_decay, parameter_object->momentum);
 	printf("\n");
@@ -154,7 +155,10 @@ void objectDetection(int argc, char **argv)
 	ThreadPool thread_pool(parameter_object->threads);
 
 	while( step < 1000000 ){
-		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
+		int randi = 1;
+		if( (train_cases.size()-parameter_object->batch_size) > 0){
+			randi = rand() % (train_cases.size()-parameter_object->batch_size);
+		}
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
 			t = train_cases[j];
 			unsigned batch_index_in = (j-randi)*data_size;
@@ -162,6 +166,8 @@ void objectDetection(int argc, char **argv)
 			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 		}
+
+		print_tensor(batch_cases.out);
 
 		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object );
 		train_amse += train_err;
@@ -185,7 +191,11 @@ void objectDetection(int argc, char **argv)
 			cout << "  train error=" << train_amse/train_increment << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 
-			randi = rand() % (test_cases.size()-parameter_object->batch_size);
+			if( test_cases.size()-parameter_object->batch_size >0 ){
+				randi = rand() % (test_cases.size()-parameter_object->batch_size);
+			}else{
+				randi = rand();
+			}
 			for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
 				CaseObject t = test_cases[j];
 				unsigned batch_index_in = (j-randi)*(data_size);

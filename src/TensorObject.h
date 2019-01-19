@@ -17,6 +17,7 @@ struct TensorObject
 		size.x = _x;
 		size.y = _y;
 		size.z = _z;
+		memset(data, 0x00, size.b * size.x * size.y * size.z * sizeof( T ));
 	}
 
 	TensorObject( const TensorObject& other )
