@@ -1,12 +1,12 @@
 COMPILER = g++
-CFLAGS   = -g -Wall -O3 -std=c++11 
+CFLAGS   = -g -Wall -O3 -std=c++11
 LDFLAGS  =
 # ALIB     = liblightnet.a
 # SLIB     = liblightnet.so
 AR       = ar
 ARFLAGS  = crs
 COMMON   = -Iinclude/ -Isrc/
-EXECOBJA = lightnet.o classification.o object_detection.o
+EXECOBJA = lightnet.o classification.o object_detection.o dataset.o
 TARGET   = lightnet
 OBJDIR   = ./obj
 SRCDIR   = ./src

@@ -1,24 +1,15 @@
+#include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <algorithm>
-#include <chrono>
 #include "lightnet.h"
 
 using namespace std;
 
-// int save_latest_span = 100;
-// int save_span = 2000;
-
-// unsigned batch_size = 1;
-// float learning_rate = 0.01;
-// float momentum = 0.6;
-// float weights_decay = 0.01;
-// string optimizer = "mse";
-// int train_output_span = 1000;
-// int threads = 1;
+extern vector<CaseObject> readCases(string data_json_path, string mode); // dataset.cpp
 
 float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
 
@@ -120,9 +111,9 @@ void classification(int argc, char **argv)
 	string model_json_base = model_json_path.substr(model_json_path.find_last_of("/")+1);
 	string data_model_name = utils->stringReplace(data_json_base, ".json", "") + "-" + utils->stringReplace(model_json_base, ".json", "");
 	// dataset
-	DatasetObject *dataset = new DatasetObject();
-	vector<CaseObject> train_cases = dataset->readCases(data_json_path, "train");
-	vector<CaseObject> test_cases = dataset->readCases(data_json_path, "test");
+	// DatasetObject2 *dataset = new DatasetObject2();
+	vector<CaseObject> train_cases = readCases(data_json_path, "train");
+	vector<CaseObject> test_cases = readCases(data_json_path, "test");
 
 	printf("\nTrain cases :%lu,  Test cases  :%lu\n\n", train_cases.size(), test_cases.size());
 	if(train_cases.size()==0 || test_cases.size()==0){

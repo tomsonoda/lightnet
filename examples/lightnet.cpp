@@ -2,7 +2,7 @@
 
 using namespace std;
 
-extern void classification(int argc, char **argv);           // mnist.cpp
+extern void classification(int argc, char **argv);  // classification.cpp
 extern void objectDetection(int argc, char **argv); // object_detection.cpp
 
 int main(int argc, char **argv)
@@ -21,6 +21,4 @@ int main(int argc, char **argv)
     objectDetection(argc, argv);
 
   }
-
-  printf("lightnet ends.\n");
 }

@@ -4,6 +4,10 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+/*
+ note: This uses stb image library that has non-inline methods. We recommend to include this in cpp/c file. (not in header files.)
+*/
+
 using namespace std;
 
 #pragma pack(push, 1)
