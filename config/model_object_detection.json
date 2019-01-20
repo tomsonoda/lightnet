@@ -19,9 +19,10 @@
     "steps":[400000,450000],
     "scales":[0.1,0.1],
 
-    "width":416,
-    "height":416,
-    "channels":3,
+    "image_width":416,
+    "image_height":416,
+    "image_channels":3,
+    "max_bounding_boxes":30,
     "exposure":1.5,
     "hue":0.1
   },

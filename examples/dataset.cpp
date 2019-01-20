@@ -6,6 +6,10 @@
 #include "JSONObject.h"
 #include "Utils.h"
 
+#define OBJECT_DETECTION_IMAGE_WIDTH    (416)
+#define OBJECT_DETECTION_IMAGE_HEIGHT   (416)
+#define OBJECT_DETECTION_MAX_BOUNDBOXES (30)
+
 using namespace std;
 
 float overlap(float x1, float w1, float x2, float w2)
@@ -38,6 +42,44 @@ float boxUnion(boundingbox_t a, boundingbox_t b)
 float boxIOU(boundingbox_t a, boundingbox_t b)
 {
     return boxIntersection(a, b)/boxUnion(a, b);
+}
+
+float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens )
+{
+  int classes = 1;
+  int max_bounding_boxes = OBJECT_DETECTION_MAX_BOUNDBOXES;
+
+  json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
+  string tmp = model_json->getChildValueForToken(nueral_network, "max_classes");
+  if(tmp.length()>0){
+    classes = std::stoi( tmp );
+  }
+  tmp = model_json->getChildValueForToken(nueral_network, "max_bounding_boxes");
+  if(tmp.length()>0){
+    max_bounding_boxes = std::stoi( tmp );
+  }
+
+  float best_iou = 0.0;
+
+  for( int j=0; j<max_bounding_boxes; ++j){
+    int index = j * (4 + classes);
+    boundingbox_t a, b;
+    a.x = t_a( 0, index, 0, 0 );
+    a.y = t_a( 0, index+1, 0, 0 );
+    a.w = t_a( 0, index+2, 0, 0 );
+    a.h = t_a( 0, index+3, 0, 0 );
+
+    b.x = t_b( 0, index, 0, 0 );
+    b.y = t_b( 0, index+1, 0, 0 );
+    b.w = t_b( 0, index+2, 0, 0 );
+    b.h = t_b( 0, index+3, 0, 0 );
+    float iou = boxIOU(a, b);
+    if( iou > best_iou ){
+      best_iou = iou;
+    }
+  }
+
+  return best_iou;
 }
 
 uint32_t reverseUint32(uint32_t a)
@@ -223,7 +265,7 @@ vector<boundingbox_t> readLabelBoxes(string filename)
 		return boxes;
 }
 
-vector<CasePaths> listCasePaths( JSONObject *data_json, vector<json_token_t*> data_tokens, JSONObject *model_json, vector<json_token_t*> model_tokens, string mode )
+vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<json_token_t*> data_tokens, JSONObject *model_json, vector<json_token_t*> model_tokens, string mode )
 {
   Utils *utils = new Utils();
   vector<CasePaths> case_paths_list;
@@ -267,102 +309,68 @@ vector<CasePaths> listCasePaths( JSONObject *data_json, vector<json_token_t*> da
   return case_paths_list;
 }
 
+CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens )
+{
+  ImageProcessor *image_processor = new ImageProcessor();
+  json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
+
+  int classes = 1;
+  int max_bounding_boxes = OBJECT_DETECTION_MAX_BOUNDBOXES;
+  int image_w = OBJECT_DETECTION_IMAGE_WIDTH;
+  int image_h = OBJECT_DETECTION_IMAGE_HEIGHT;
+
+  string tmp = model_json->getChildValueForToken(nueral_network, "max_classes");
+  if(tmp.length()>0){
+    classes = std::stoi( tmp );
+  }
+  tmp = model_json->getChildValueForToken(nueral_network, "max_bounding_boxes");
+  if(tmp.length()>0){
+    max_bounding_boxes = std::stoi( tmp );
+  }
+
+  // cout << case_paths.image_path << endl;
+  // cout << case_paths.label_path << endl;
+
+  image_st image = image_processor->readImageFile(case_paths.image_path, image_w, image_h, 3);
+  vector<boundingbox_t> boxes = readLabelBoxes(case_paths.label_path);
+
+  CaseObject c {TensorObject<float>( 1, image_w, image_w, 3 ), TensorObject<float>( 1, max_bounding_boxes * (4 + classes), 1, 1 )};
+
+  for(int z = 0; z < 3; ++z ){
+    for ( int y = 0; y < image_h; y++ ){
+      for ( int x = 0; x < image_w; x++ ){
+        c.data( 0, x, y, z ) = image.data[x + (y * image_w) + (image_w * image_h)*z] / 255.f;
+      }
+    }
+  }
+
+  for( int j=0; j<max_bounding_boxes && j<boxes.size(); ++j){
+    int index = j * (4 + classes);
+    c.out( 0, index, 0, 0 )   = boxes[j].x;
+    c.out( 0, index+1, 0, 0 ) = boxes[j].y;
+    c.out( 0, index+2, 0, 0 ) = boxes[j].w;
+    c.out( 0, index+3, 0, 0 ) = boxes[j].h;
+    for ( int k = 0; k < classes; ++k ){
+      c.out( 0, index+4+k, 0, 0 ) = boxes[j].id == k ? 1.0f : 0.0f;
+    }
+  }
+  delete image_processor;
+  return c;
+}
+
 
 vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_token_t*> data_tokens, JSONObject *model_json, vector<json_token_t*> model_tokens, string mode )
 {
 	Utils *utils = new Utils();
 	vector<CaseObject> cases;
-	json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
-
-  /*
-	string dir_string;
-	if(mode=="train"){
-		dir_string = data_json->getChildValueForToken(data_tokens[0], "train_dir");   // data_tokens[0] := json root
-	}else{ // test cases
-		dir_string = data_json->getChildValueForToken(data_tokens[0], "test_dir");   // data_tokens[0] := json root
-	}
-	if (utils->stringEndsWith(dir_string, "/")==0){
-		dir_string = dir_string + "/";
-	}
-	std::string image_dir_string = dir_string + "images/";
-	std::string label_dir_string = dir_string + "labels/";
-	std::string image_ext = "jpg";
-	std::string label_ext = "txt";
-
-	vector<string> files = vector<string>();
-	vector<string> image_paths;
-	vector<string> label_paths;
-
-	utils->listDir(image_dir_string,files,image_ext);
-
-	for (int j=0; j<files.size(); ++j){
-		std::string image_path = files[j];
-		std::string label_path = files[j];
-		image_path = image_dir_string + image_path;
-		label_path = label_dir_string + utils->stringReplace(label_path, image_ext, label_ext);
-
-		std::ifstream ifs(label_path);
-		if(ifs.is_open()){ // if exists
-			// cout << image_path << endl;
-			// cout << label_path << endl;
-			image_paths.push_back(image_path);
-			label_paths.push_back(label_path);
-		}else{
-			cout << "Not exists:" + label_path << endl;
-		}
-	}
-  */
-
-  vector<CasePaths> case_paths_list = listCasePaths( data_json, data_tokens, model_json, model_tokens, mode );
-	ImageProcessor *image_processor = new ImageProcessor();
-
-	int image_w = 416;
-	int image_h = 416;
-	int boxes_max = 30;
-	int classes = 1;
-
-	string tmp = model_json->getChildValueForToken(nueral_network, "max_classes");
-	if(tmp.length()>0){
-		classes = std::stoi( tmp );
-	}
-
-	printf("%s : classes max:%d\n", mode.c_str(), classes);
+  vector<CasePaths> case_paths_list = listImageLabelCasePaths( data_json, data_tokens, model_json, model_tokens, mode );
 
   for(int i=0; i<case_paths_list.size(); ++i){
-	// for(int i=0; i<image_paths.size(); ++i){
-		// image_st image = image_processor->readImageFile(image_paths[i], image_w, image_h, 3);
-    image_st image = image_processor->readImageFile(case_paths_list[i].image_path, image_w, image_h, 3);
-		// printf("Read image: %s (%d x %d)\n", image_paths[i].c_str(), image.width, image.height);
-		// image_processor->writeImageFilePNG(utils->stringReplace(image_paths[i], "jpg", "png"), image);
-		// vector<boundingbox_t> boxes = readLabelBoxes(label_paths[i]);
-    vector<boundingbox_t> boxes = readLabelBoxes(case_paths_list[i].label_path);
-
-		CaseObject c {TensorObject<float>( 1, image_w, image_w, 3 ), TensorObject<float>( 1, boxes_max * (4 + classes), 1, 1 )};
-		for(int z = 0; z < 3; ++z ){
-			for ( int y = 0; y < image_h; y++ ){
-				for ( int x = 0; x < image_w; x++ ){
-					c.data( 0, x, y, z ) = image.data[x + (y * image_w) + (image_w * image_h)*z] / 255.f;
-				}
-			}
-		}
-
-		for( int j=0; j<boxes_max && j<boxes.size(); ++j){
-			int index = j * (4 + classes);
-			c.out( 0, index, 0, 0 )   = boxes[j].x;
-			c.out( 0, index+1, 0, 0 ) = boxes[j].y;
-			c.out( 0, index+2, 0, 0 ) = boxes[j].w;
-			c.out( 0, index+3, 0, 0 ) = boxes[j].h;
-			for ( int k = 0; k < classes; ++k ){
-				c.out( 0, index+4+k, 0, 0 ) = boxes[j].id == k ? 1.0f : 0.0f;
-			}
-		}
-
+    CaseObject c = readImageLabelCase( case_paths_list[i], model_json, model_tokens );
 		cases.push_back( c );
 	}
 
 	delete utils;
-	delete image_processor;
-
 	return cases;
 }
 
