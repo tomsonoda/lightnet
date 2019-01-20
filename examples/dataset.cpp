@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "BoundingBoxObject.h"
 #include "CaseObject.h"
 #include "ImageProcessor.h"
 #include "JSONObject.h"
@@ -7,13 +8,37 @@
 
 using namespace std;
 
-#pragma pack(push, 1)
-typedef struct{
-		int id;
-		float x, y, w, h;
-		float left, right, top, bottom;
-} boundingbox_t;
-#pragma pack(pop)
+float overlap(float x1, float w1, float x2, float w2)
+{
+    float l1 = x1 - w1/2;
+    float l2 = x2 - w2/2;
+    float left = l1 > l2 ? l1 : l2;
+    float r1 = x1 + w1/2;
+    float r2 = x2 + w2/2;
+    float right = r1 < r2 ? r1 : r2;
+    return right - left;
+}
+
+float boxIntersection(boundingbox_t a, boundingbox_t b)
+{
+    float w = overlap(a.x, a.w, b.x, b.w);
+    float h = overlap(a.y, a.h, b.y, b.h);
+    if(w < 0 || h < 0) return 0;
+    float area = w*h;
+    return area;
+}
+
+float boxUnion(boundingbox_t a, boundingbox_t b)
+{
+    float i = boxIntersection(a, b);
+    float u = a.w*a.h + b.w*b.h - i;
+    return u;
+}
+
+float boxIOU(boundingbox_t a, boundingbox_t b)
+{
+    return boxIntersection(a, b)/boxUnion(a, b);
+}
 
 uint32_t reverseUint32(uint32_t a)
 {

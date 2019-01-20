@@ -1,8 +1,8 @@
 {
   "net" : {
-    "batch":2,
-    "threads":2,
-
+    "batch_size":1,
+    "threads":1,
+    "optimization":"mse",
     "learning_rate":0.001,
     "momentum":0.9,
     "decay":0.0005,
@@ -17,7 +17,13 @@
     "max_batches":500200,
     "policy":"steps",
     "steps":[400000,450000],
-    "scales":[0.1,0.1]
+    "scales":[0.1,0.1],
+
+    "width":416,
+    "height":416,
+    "channels":3,
+    "exposure":1.5,
+    "hue":0.1
   },
 
   "layers":[

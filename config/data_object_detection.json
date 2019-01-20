@@ -2,11 +2,4 @@
   "type"             : "images_labels",
   "train_dir"        : "dataset/set0/train/",
   "test_dir"         : "dataset/set0/test/",
-  "augmentation" : {
-    "width":416,
-    "height":416,
-    "channels":3,
-    "exposure":1.5,
-    "hue":0.1
-  }
 }

@@ -9,7 +9,9 @@
 
 using namespace std;
 
-extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
+// dataset.cpp
+extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode);
+extern float boxIOU(boundingbox_t a, boundingbox_t b);
 
 float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
 
@@ -40,6 +42,7 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 	}
 
 	if(optimizer=="mse"){
+
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
@@ -50,6 +53,7 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 		return (err * 100)/(float)expected.size.b;
 
 	}else{
+
 		float loss = 0.0;
 		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
 	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
@@ -63,6 +67,7 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 			print_tensor(layers[layers.size()-1]->out);
 		}
 		return loss;
+
 	}
 }
 
@@ -78,7 +83,14 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 
 	TensorObject<float> grads = layers.back()->out - expected;
 
+	float best_iou = 0.0;
+	for( int b=0; b<layers.back()->out.size.b; ++b ){
+
+	}
+
+
 	if(optimizer=="mse"){
+
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
@@ -87,13 +99,16 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 			}
 		}
 		return (err * 100)/(float)expected.size.b;
+
 	}else{
+
 		float loss = 0.0;
 		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
 	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
 	  }
 		loss /= (float)expected.size.b;
 		return loss;
+
 	}
 }
 
@@ -130,8 +145,6 @@ void objectDetection(int argc, char **argv)
 
 	printf("Start training\n\n");
 	CaseObject batch_cases {TensorObject<float>( parameter_object->batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( parameter_object->batch_size, train_cases[0].out.size.x,  train_cases[0].out.size.y,  train_cases[0].out.size.z )};
-
-
 
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, parameter_object->learning_rate, parameter_object->weights_decay, parameter_object->momentum);
 	printf("\n");
