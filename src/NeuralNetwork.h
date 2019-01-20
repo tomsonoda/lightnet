@@ -449,7 +449,7 @@ static void loadModelParameters(JSONObject *model_json, vector <json_token_t*> m
 	}
 }
 
-static void print_tensor( TensorObject<float>& data )
+static void printTensor( TensorObject<float>& data )
 {
 	int mx = data.size.x;
 	int my = data.size.y;

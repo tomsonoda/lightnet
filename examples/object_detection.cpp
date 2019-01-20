@@ -62,9 +62,9 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 
 		if ( step % parameter_object->train_output_span == 0 ){
 			printf("----GT----\n");
-			print_tensor(expected);
+			printTensor(expected);
 			printf("----output----\n");
-			print_tensor(layers[layers.size()-1]->out);
+			printTensor(layers[layers.size()-1]->out);
 		}
 		return loss;
 
@@ -144,7 +144,10 @@ void objectDetection(int argc, char **argv)
 	parameter_object->printParameters();
 
 	printf("Start training\n\n");
-	CaseObject batch_cases {TensorObject<float>( parameter_object->batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( parameter_object->batch_size, train_cases[0].out.size.x,  train_cases[0].out.size.y,  train_cases[0].out.size.z )};
+	CaseObject batch_cases {
+		TensorObject<float>( parameter_object->batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ),
+		TensorObject<float>( parameter_object->batch_size, train_cases[0].out.size.x,  train_cases[0].out.size.y,  train_cases[0].out.size.z )
+	};
 
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, parameter_object->learning_rate, parameter_object->weights_decay, parameter_object->momentum);
 	printf("\n");
@@ -180,7 +183,7 @@ void objectDetection(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 		}
 
-		// print_tensor(batch_cases.out);
+		// printTensor(batch_cases.out);
 
 		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object );
 		train_amse += train_err;

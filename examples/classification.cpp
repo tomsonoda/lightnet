@@ -58,9 +58,9 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 
 		if ( step % parameter_object->train_output_span == 0 ){
 			printf("----GT----\n");
-			print_tensor(expected);
+			printTensor(expected);
 			printf("----output----\n");
-			print_tensor(layers[layers.size()-1]->out);
+			printTensor(layers[layers.size()-1]->out);
 		}
 		return loss;
 	}
