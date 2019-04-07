@@ -19,6 +19,8 @@ struct ParameterObject
   string optimizer;
   int train_output_span;
   int threads;
+  int max_classes;
+  int max_bounding_boxes;
 
   ParameterObject()
   {
@@ -31,6 +33,8 @@ struct ParameterObject
     optimizer = "mse";
     train_output_span = 1000;
     threads = 1;
+    max_classes = 1;
+    max_bounding_boxes = 30;
   }
 
   ~ParameterObject()
@@ -39,12 +43,14 @@ struct ParameterObject
 
   void printParameters()
   {
-    printf("batch_size    : %d\n", batch_size);
-  	printf("threads       : %d\n", threads);
-  	printf("learning_rate : %f\n", learning_rate);
-  	printf("momentum      : %f\n", momentum);
-  	printf("weights_decay : %f\n", weights_decay);
-  	printf("optimizer     : %s\n\n", optimizer.c_str());
+    printf("batch_size         : %d\n", batch_size);
+  	printf("threads            : %d\n", threads);
+  	printf("learning_rate      : %f\n", learning_rate);
+  	printf("momentum           : %f\n", momentum);
+  	printf("weights_decay      : %f\n", weights_decay);
+  	printf("optimizer          : %s\n\n", optimizer.c_str());
+    printf("max_classes        : %d\n", max_classes);
+  	printf("max_bounding_boxes : %d\n\n", max_bounding_boxes);
   }
 
   float getFloatParameter(int argc, char **argv, string name, float default_value)

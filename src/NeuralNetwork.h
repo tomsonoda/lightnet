@@ -442,6 +442,14 @@ static void loadModelParameters(JSONObject *model_json, vector <json_token_t*> m
 	if(tmp.length()>0){
 		parameter_object->train_output_span = std::stoi( tmp );
 	}
+	tmp = model_json->getChildValueForToken(nueral_network, "max_classes");
+	if(tmp.length()>0){
+		parameter_object->max_classes = std::stoi( tmp );
+	}
+	tmp = model_json->getChildValueForToken(nueral_network, "max_bounding_boxes");
+	if(tmp.length()>0){
+		parameter_object->max_bounding_boxes = std::stoi( tmp );
+	}
 
 	if(parameter_object->batch_size<0){
 		fprintf(stderr, "Batch size should be 1>=.");

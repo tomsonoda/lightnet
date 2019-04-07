@@ -14,7 +14,13 @@ extern vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<
 extern CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens );
 extern float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens );
 
-float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
+float sigmoid_derivative( float x )
+{
+	float sig = 1.0f / (1.0f + exp( -x ));
+	return sig * (1 - sig);
+}
+
+float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object){
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
@@ -24,7 +30,35 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 		}
 	}
 
-	TensorObject<float> grads = layers.back()->out - expected;
+	TensorObject<float> output_tensor = layers.back()->out;
+	for(int b = 0; b < output_tensor.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			output_tensor( b, i  , 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i  , 0, 0 ) )); // x: sigmoid
+			output_tensor( b, i+1, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+1, 0, 0 ) )); // y: sigmoid
+			output_tensor( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ); // w: exp
+			output_tensor( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ); // h: exp
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				output_tensor( b, i+4+c, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+4+c , 0, 0 ) )); // id: sigmoid
+			}
+		}
+	}
+
+	// TensorObject<float> grads = layers.back()->out - expected;
+	TensorObject<float> grads = output_tensor - expected;
+
+	// parcial differential for grads
+	for(int b = 0; b < grads.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			grads( b, i  , 0, 0 ) = sigmoid_derivative( output_tensor( b, i  , 0, 0 ) ) * grads( b, i  , 0, 0 ); // x: sigmoid derivative * grads
+			grads( b, i+1, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+1 , 0, 0 ) ) * grads( b, i+1, 0, 0 ); // y: sigmoid derivative * grads
+			grads( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ) * grads( b, i+2, 0, 0 ); // w: exp * grads
+			grads( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ) * grads( b, i+3, 0, 0 ); // h: exp * grads
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				grads( b, i+4+c, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+4+c , 0, 0 ) ) * grads( b, i+4+c , 0, 0 ); // id: sigmoid derivative * grads
+			}
+		}
+	}
+
 	for( int i = 0; i < layers.size(); ++i ){
 		layers[i]->dz_in.clear();
 		layers[i]->dz.clear();
@@ -72,7 +106,7 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 	}
 }
 
-float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens ){
+float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object ){
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
@@ -82,17 +116,45 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 		}
 	}
 
-	TensorObject<float> grads = layers.back()->out - expected;
+
+	TensorObject<float> output_tensor = layers.back()->out;
+	for(int b = 0; b < output_tensor.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			output_tensor( b, i  , 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i  , 0, 0 ) )); // x: sigmoid
+			output_tensor( b, i+1, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+1, 0, 0 ) )); // y: sigmoid
+			output_tensor( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ); // w: exp
+			output_tensor( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ); // h: exp
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				output_tensor( b, i+4+c, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+4+c , 0, 0 ) )); // id: sigmoid
+			}
+		}
+	}
+
+	TensorObject<float> grads = output_tensor - expected;
+	// TensorObject<float> grads = layers.back()->out - expected;
+	// parcial differential for grads
+	for(int b = 0; b < grads.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			grads( b, i  , 0, 0 ) = sigmoid_derivative( output_tensor( b, i  , 0, 0 ) ) * grads( b, i  , 0, 0 ); // x: sigmoid derivative * grads
+			grads( b, i+1, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+1 , 0, 0 ) ) * grads( b, i+1, 0, 0 ); // y: sigmoid derivative * grads
+			grads( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ) * grads( b, i+2, 0, 0 ); // w: exp * grads
+			grads( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ) * grads( b, i+3, 0, 0 ); // h: exp * grads
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				grads( b, i+4+c, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+4+c , 0, 0 ) ) * grads( b, i+4+c , 0, 0 ); // id: sigmoid derivative * grads
+			}
+		}
+	}
+
 
 	float best_iou = 0.0;
-	int out_size = layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
-	int out_float_size = layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z * sizeof(float);
+	int out_size = output_tensor.size.x * output_tensor.size.y * output_tensor.size.z;
+	int out_float_size = output_tensor.size.x * output_tensor.size.y * output_tensor.size.z * sizeof(float);
 
-	for( int b=0; b<layers.back()->out.size.b; ++b ){
-		TensorObject<float> output { 1, layers.back()->out.size.x, layers.back()->out.size.y, layers.back()->out.size.z };
+	for( int b=0; b<output_tensor.size.b; ++b ){
+		TensorObject<float> output { 1, output_tensor.size.x, output_tensor.size.y, output_tensor.size.z };
 		TensorObject<float> truth { 1, expected.size.x, expected.size.y, expected.size.z };
 		int batch_index = b * out_size;
-		memcpy( output.data, &(layers.back()->out.data[batch_index]), out_float_size );
+		memcpy( output.data, &(output_tensor.data[batch_index]), out_float_size );
 		memcpy( truth.data, &(expected.data[batch_index]), out_float_size );
 		float iou = boxTensorIOU(output, truth, model_json, model_tokens);
 		if (iou > best_iou){
@@ -116,7 +178,7 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 
 		float loss = 0.0;
 		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
-	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+	    loss += (-expected.data[i] * log(output_tensor.data[i]));
 	  }
 		loss /= (float)expected.size.b;
 		return loss;
@@ -196,7 +258,7 @@ void objectDetection(int argc, char **argv)
 
 		// printTensor(batch_cases.out);
 
-		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object );
+		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object);
 		train_amse += train_err;
 		train_increment++;
 		step++;
@@ -232,7 +294,7 @@ void objectDetection(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 			}
 
-			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens );
+			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens, parameter_object);
 			test_amse += test_err;
 			test_increment++;
 			cout << "  test error =" << test_amse/test_increment << "\n";

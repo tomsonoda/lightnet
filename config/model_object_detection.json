@@ -6,9 +6,10 @@
     "learning_rate":0.01,
     "momentum":0.9,
     "decay":0.0005,
-    "train_output_span":2,
+    "train_output_span":1,
 
     "max_classes":2,
+    "max_bounding_boxes":30,
 
     "subdivisions":1,
     "angle":0,
@@ -22,7 +23,6 @@
     "image_width":416,
     "image_height":416,
     "image_channels":3,
-    "max_bounding_boxes":30,
     "exposure":1.5,
     "hue":0.1
   },
