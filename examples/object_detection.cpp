@@ -14,7 +14,6 @@ extern vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<
 extern CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens );
 extern float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens );
 
-
 float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
 
 	for( int i = 0; i < layers.size(); ++i ){

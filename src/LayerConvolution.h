@@ -139,7 +139,6 @@ struct LayerConvolution
 		std::vector< std::future<int> > results;
 
 		for ( int b = 0; b < in.size.b; ++b ){
-			results.emplace_back( thread_pool.enqueue([&, b] {
 
 				for ( int z = 0; z < in.size.z; ++z ){
 					for ( int y = 0; y < in.size.y; ++y ){
@@ -151,33 +150,38 @@ struct LayerConvolution
 
 				int filters_size = filters.size();
 				for ( int filter = 0; filter < filters_size; ++filter ){
-					TensorObject<float> filter_data = filters[filter];
+					results.emplace_back( thread_pool.enqueue([&, filter] {
 
-					for ( int y = 0; y < out.size.y; ++y ){
-						for ( int x = 0; x < out.size.x; ++x ){
-							TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
-							float sum = 0;
+						TensorObject<float> filter_data = filters[filter];
 
-							for ( int z = 0; z < in.size.z; ++z ){
-								for ( int j = 0; j < kernel_size; ++j ){
-									for ( int i = 0; i < kernel_size; ++i ){
-										sum += filter_data( 0, i, j, z ) * padded_in( b, mapped.x + i, mapped.y + j, z );
+						for ( int y = 0; y < out.size.y; ++y ){
+							for ( int x = 0; x < out.size.x; ++x ){
+								TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+								float sum = 0;
+
+								for ( int z = 0; z < in.size.z; ++z ){
+									for ( int j = 0; j < kernel_size; ++j ){
+										for ( int i = 0; i < kernel_size; ++i ){
+											sum += filter_data( 0, i, j, z ) * padded_in( b, mapped.x + i, mapped.y + j, z );
+										}
 									}
 								}
+								out( b, x, y, filter ) = sum;
 							}
-							out( b, x, y, filter ) = sum;
 						}
-					}
+
+						return 0;
+					}));
+
 				}
 
-				return 0;
-			}));
+				for(auto && result: results){
+					result.get();
+				}
+				results.erase(results.begin(), results.end());
+
 		}
 
-		for(auto && result: results){
-			result.get();
-		}
-		results.erase(results.begin(), results.end());
 
 	}
 
