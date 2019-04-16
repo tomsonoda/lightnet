@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -15,7 +16,9 @@ int main(int argc, char **argv)
   if (strcmp(argv[1], "object_detection")==0){
     objectDetection(argc, argv);
   }
+
   if(strcmp(argv[1], "classification")==0){
     classification(argc, argv);
   }
+
 }
