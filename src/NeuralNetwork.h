@@ -97,7 +97,8 @@ static void update_weights( LayerObject* layer )
 	}
 }
 
-static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& thread_pool )
+static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& thread_pool
+)
 {
 	switch ( layer->type )
 	{
@@ -114,8 +115,9 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 			((LayerDropout*)layer)->forward( in );
 			return;
 		case LayerType::leaky_relu:
-				((LayerLeakyReLU*)layer)->forward( in );
-				return;
+			((LayerLeakyReLU*)layer)->forward( in );
+			return;
+
 		case LayerType::max_pool:
 			((LayerPool*)layer)->forward( in );
 			return;
@@ -326,7 +328,8 @@ static vector<LayerObject*> loadModel(
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
       printf("%d: leaky relu         : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
-      LayerLeakyReLU *layer = new LayerLeakyReLU( layers[layers.size()-1]->out.size );
+      LayerLeakyReLU *layer = new LayerLeakyReLU( layers[layers.size()-1]->out.size
+		);
       layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="maxpool"){

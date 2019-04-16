@@ -1,3 +1,5 @@
+GPU_METAL=1
+
 COMPILER = g++
 CFLAGS   = -g -Wall -O3 -std=c++11
 LDFLAGS  =
@@ -13,8 +15,20 @@ SRCDIR   = ./src
 SOURCES  = $(wildcard src/*.cpp)
 OBJECTS  = $(addprefix $(OBJDIR)/,$(notdir $(SOURCES:.cpp=.o)))
 VPATH    = ./src:./examples
-DEPS     = $(wildcard src/*.h) Makefile include/lightnet.h
+DEPS     = $(wildcard src/*.h) $(wildcard src/*.hpp) Makefile include/lightnet.h
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
+
+# GPU_METAL
+ifeq ($(GPU_METAL), 1)
+EXECOBJA = lightnet.o object_detection.o dataset.o
+COMPILER = clang++
+CFLAGS += -mmacosx-version-min=10.14 -DGPU_METAL
+LDFLAGS  = -framework Metal -framework MetalKit -framework Cocoa -framework CoreFoundation -fobjc-link-runtime
+METAL_OBJ_FLAGS = -std=c++11 -x objective-c++ -mmacosx-version-min=10.12 -Wdeprecated-declarations
+EXECOBJA += mtlpp.o
+GPU_METAL_SOURCE  = gpu_metal.metal
+TARGET += gpu_metal.metallib
+endif
 
 # all: $(TARGET) $(SLIB) $(ALIB)
 all: $(TARGET)
@@ -28,6 +42,17 @@ $(TARGET): $(EXECOBJ)
 $(OBJDIR)/%.o: %.cpp $(DEPS)
 		mkdir -p obj
 		$(COMPILER) $(CFLAGS) $(COMMON) -o $@ -c $<
+
+ifeq ($(GPU_METAL), 1)
+$(OBJDIR)/mtlpp.o: mtlpp.mm $(DEPS)
+		$(COMPILER) $(METAL_OBJ_FLAGS) -c $(SRCDIR)/mtlpp.mm -o $(OBJDIR)/mtlpp.o
+
+gpu_metal.metallib: $(OBJDIR)/gpu_metal.air
+		xcrun -sdk macosx metallib $(OBJDIR)/gpu_metal.air -o gpu_metal.metallib
+
+$(OBJDIR)/gpu_metal.air: $(SRCDIR)/$(GPU_METAL_SOURCE)
+		xcrun -sdk macosx metal -c $(SRCDIR)/$(GPU_METAL_SOURCE) -o $(OBJDIR)/gpu_metal.air
+endif
 
 # $(ALIB): $(OBJECTS)
 # 		$(AR) $(ARFLAGS) $@ $^
