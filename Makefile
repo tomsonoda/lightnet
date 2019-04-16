@@ -1,7 +1,7 @@
 # GPU_METAL=1
 
 COMPILER = g++
-CFLAGS   = -g -Wall -O3 -std=c++11
+CFLAGS   = -g -Wall -O3 -std=c++11 -pthread
 LDFLAGS  =
 # ALIB     = liblightnet.a
 # SLIB     = liblightnet.so
