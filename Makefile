@@ -57,7 +57,7 @@ $(OBJDIR)/%.o: %.cpp $(DEPS)
 		$(COMPILER) $(CFLAGS) $(COMMON) -o $@ -c $<
 
 $(OBJDIR)/%.o: %.cu $(DEPS)
-		$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+		$(NVCC) -c $< -o $@
 
 
 ifeq ($(GPU_METAL), 1)
