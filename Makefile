@@ -22,15 +22,15 @@ SOURCES  = $(wildcard src/*.cpp)
 OBJECTS  = $(addprefix $(OBJDIR)/,$(notdir $(SOURCES:.cpp=.o)))
 VPATH    = ./src:./examples
 DEPS     = $(wildcard src/*.h) $(wildcard src/*.hpp) Makefile include/lightnet.h
-EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
-OBJS     =
 
 ifeq ($(GPU), 1)
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
-OBJS+=$(addprefix $(OBJDIR)/, leaky_relu_kernels.o)
+EXECOBJA+= leaky_relu_kernels.o
 endif
+
+EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
 
 # GPU_METAL
 # ifeq ($(GPU_METAL), 1)
@@ -50,7 +50,7 @@ all: $(TARGET) obj
 # $(TARGET): $(EXECOBJ) $(ALIB)
 # 		$(COMPILER) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
 
-$(TARGET): $(EXECOBJ) $(OBJS)
+$(TARGET): $(EXECOBJ)
 		$(COMPILER) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)/%.o: %.cpp $(DEPS)
