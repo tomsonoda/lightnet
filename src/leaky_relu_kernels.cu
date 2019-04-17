@@ -7,7 +7,7 @@ void saxpy(int n, float a, float *x, float *y)
   if (i < n) y[i] = a*x[i] + y[i];
 }
 
-int main(void)
+int leakyReluForwardGPU(void)
 {
   int N = 1<<20;
   float *x, *y, *d_x, *d_y;
