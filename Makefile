@@ -1,4 +1,9 @@
 # GPU_METAL=1
+GPU=0
+ARCH= -gencode arch=compute_30,code=sm_30 \
+      -gencode arch=compute_35,code=sm_35 \
+      -gencode arch=compute_50,code=[sm_50,compute_50] \
+      -gencode arch=compute_52,code=[sm_52,compute_52]
 
 COMPILER = g++
 CFLAGS   = -g -Wall -O3 -std=c++11 -pthread
@@ -18,6 +23,13 @@ VPATH    = ./src:./examples
 DEPS     = $(wildcard src/*.h) $(wildcard src/*.hpp) Makefile include/lightnet.h
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
 
+ifeq ($(GPU), 1)
+COMMON+= -DGPU -I/usr/local/cuda/include/
+CFLAGS+= -DGPU
+LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
+OBJ+=leaky_relu_kernels.o
+endif
+
 # GPU_METAL
 # ifeq ($(GPU_METAL), 1)
 # EXECOBJA = lightnet.o object_detection.o dataset.o
@@ -31,7 +43,7 @@ EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
 # endif
 
 # all: $(TARGET) $(SLIB) $(ALIB)
-all: $(TARGET)
+all: $(TARGET) obj
 
 # $(TARGET): $(EXECOBJ) $(ALIB)
 # 		$(COMPILER) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
@@ -40,8 +52,11 @@ $(TARGET): $(EXECOBJ)
 		$(COMPILER) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)/%.o: %.cpp $(DEPS)
-		mkdir -p obj
 		$(COMPILER) $(CFLAGS) $(COMMON) -o $@ -c $<
+
+$(OBJDIR)/%.o: %.cu $(DEPS)
+		$(NVCC) $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+
 
 ifeq ($(GPU_METAL), 1)
 $(OBJDIR)/mtlpp.o: mtlpp.mm $(DEPS)
@@ -63,6 +78,9 @@ endif
 # $(warning SOURCES = $(SOURCES))
 
 .PHONY: clean
+
+obj:
+	mkdir -p obj
 
 clean:
 #   rm -f $(OBJECTS) $(TARGET) $(SLIB) $(ALIB) obj/*
