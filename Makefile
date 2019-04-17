@@ -29,7 +29,7 @@ ifeq ($(GPU), 1)
 COMMON+= -DGPU -I/usr/local/cuda/include/
 CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
-OBJS+=leaky_relu_kernels.o
+OBJS+=$(addprefix $(OBJDIR)/, leaky_relu_kernels.o)
 endif
 
 # GPU_METAL
