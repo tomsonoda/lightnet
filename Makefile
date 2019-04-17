@@ -5,6 +5,7 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 
+NVCC= nvcc
 COMPILER = g++
 CFLAGS   = -g -Wall -O3 -std=c++11 -pthread
 LDFLAGS  =
