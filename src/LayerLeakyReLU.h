@@ -41,7 +41,7 @@ struct LayerLeakyReLU
 	)
 	{
 #ifdef GPU_CUDA
-	printf("CUDA \n");
+	printf("CUDA: data_size=%d\n", data_size);
 	gpu_cuda::leakyReluForwardGPU(in.data, out.data, data_size);
 #else
 		for( int i = 0; i < data_size; ++i ){
