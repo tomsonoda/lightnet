@@ -12,6 +12,7 @@ void calc(int n, float *x, float *y)
       v = 0.1 * v;
     }
     y[i] = v;
+  }
 }
 
 void leakyReluForwardGPU(float *data_in, float *data_out, int N)
