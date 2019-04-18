@@ -29,10 +29,6 @@ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
   calc<<<blocks_per_grid, threads_per_block>>>(N, d_in, d_out);
 
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
-
-  for (int i = 0; i < N; i++){
-    printf("data_size=%d pair: %f %f\n", N, data_in, data_out);
-  }
 }
 
 } // namespace gpu
