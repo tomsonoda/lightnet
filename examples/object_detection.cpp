@@ -7,14 +7,6 @@
 #include <fstream>
 #include "lightnet.h"
 
-
-#ifdef GPU_CUDA
-namespace gpu_cuda {
-	void saxpy(int n, float a, float *x, float *y);
-	void leakyReluForwardGPU();
-} //namespace gpu
-#endif
-
 using namespace std;
 
 // in dataset.cpp
@@ -196,9 +188,6 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 
 void objectDetection(int argc, char **argv)
 {
-#ifdef GPU_CUDA
-	gpu_cuda::leakyReluForwardGPU();
-#endif
 	string data_json_path = argv[2];
 	string model_json_path = argv[3];
 	string checkpoint_path = "";

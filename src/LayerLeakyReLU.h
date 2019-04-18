@@ -1,6 +1,12 @@
 #pragma once
 #include "LayerObject.h"
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void leakyReluForwardGPU();
+} //namespace gpu
+#endif
+
 #pragma pack(push, 1)
 struct LayerLeakyReLU
 {
@@ -34,6 +40,10 @@ struct LayerLeakyReLU
 	void forward(
 	)
 	{
+#ifdef GPU_CUDA
+	printf("CUDA \n");
+	gpu_cuda::leakyReluForwardGPU(in.data, out.data, data_size);
+#else
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
 			if ( v < 0 ){
@@ -41,7 +51,7 @@ struct LayerLeakyReLU
 			}
 			out.data[i] = v;
 		}
-
+#endif
 	}
 
 	void update_weights()
