@@ -11,7 +11,7 @@ dim3 cuda_gridsize(size_t n){
       x = ceil(sqrt(k));
       y = (n-1)/(x*BLOCK) + 1;
   }
-  dim3 d = {x, y, 1};
+  __constant__ dim3 d = {x, y, 1};
   //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
   return d;
 }
@@ -35,7 +35,7 @@ __global__ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
   cudaMemcpy(d_in,  data_in,  N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
-  calc<<<cuda_gridsize(n), BLOCK>>>(d_in, d_out);
+  calc<<<cuda_gridsize(N), BLOCK>>>(d_in, d_out);
 
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
