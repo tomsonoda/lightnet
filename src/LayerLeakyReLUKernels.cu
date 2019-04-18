@@ -15,7 +15,7 @@ namespace gpu_cuda {
 //   return {x, y, 1};
 // }
 
-void calc(float *x, float *y)
+__global__ void calc(float *x, float *y)
 {
   int i = blockIdx.x*blockDim.x + threadIdx.x;
   float v = x[i];
@@ -25,7 +25,7 @@ void calc(float *x, float *y)
   y[i] = v;
 }
 
-__global__ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
+void leakyReluForwardGPU(float *data_in, float *data_out, int N)
 {
   float *d_in, *d_out;
   cudaMalloc(&d_in,  N*sizeof(float));
