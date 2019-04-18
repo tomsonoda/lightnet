@@ -1,13 +1,16 @@
 #include <stdio.h>
 
+namespace gpu {
+
 __global__
+
 void saxpy(int n, float a, float *x, float *y)
 {
   int i = blockIdx.x*blockDim.x + threadIdx.x;
   if (i < n) y[i] = a*x[i] + y[i];
 }
 
-int leakyReluForwardGPU(void)
+void leakyReluForwardGPU(void)
 {
   int N = 1<<20;
   float *x, *y, *d_x, *d_y;
@@ -34,3 +37,5 @@ int leakyReluForwardGPU(void)
     for (int i = 0; i < N; i++) maxError = max(maxError, abs(y[i]-4.0f));
   printf("Max error: %f", maxError);
 }
+
+} // namespace gpu
