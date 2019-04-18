@@ -24,7 +24,9 @@ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
   cudaMemcpy(d_in,  data_in,  N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
-  calc<<<(N+255)/256, 256>>>(N, d_in, d_out);
+  const int threads_per_block = 2*32;
+  const int blocks_per_grid = 1*12;
+  calc<<<blocks_per_grid, threads_per_block>>>(N, d_in, d_out);
 
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 
