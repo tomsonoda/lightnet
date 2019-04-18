@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void leakyReluForwardGPU();
+	void leakyReluForwardGPU(float *data_in, float *data_out, int N);
 } //namespace gpu
 #endif
 
