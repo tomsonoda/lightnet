@@ -11,7 +11,7 @@
 #ifdef GPU_CUDA
 namespace gpu {
 	void saxpy(int n, float a, float *x, float *y);
-	void leakyReluForwardGPU(void);
+	void leakyReluForwardGPU();
 } //namespace gpu
 #endif
 
@@ -197,7 +197,7 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 void objectDetection(int argc, char **argv)
 {
 #ifdef GPU_CUDA
-	leakyReluForwardGPU(void);
+	leakyReluForwardGPU();
 #endif
 	string data_json_path = argv[2];
 	string model_json_path = argv[3];
