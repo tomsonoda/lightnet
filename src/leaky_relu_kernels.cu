@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-namespace gpu {
+namespace gpu_cuda {
 
 __global__
 
