@@ -7,6 +7,8 @@
 
 #ifdef GPU
 
+namespace gpu_cuda{
+
 #pragma pack(push, 1)
 struct CudaObject
 {
@@ -27,6 +29,8 @@ struct CudaObject
   }
 };
 #pragma pack(pop)
+
+}
 
 #endif
 #endif
