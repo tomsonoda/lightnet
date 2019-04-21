@@ -16,7 +16,7 @@ namespace gpu_cuda {
     dim3 d  (x, y, 1);
     return d;
   }
-
+  
   void cudaMakeArray(float* gpu_out, int N)
   {
     cudaMalloc(&gpu_out, N*sizeof(float));
