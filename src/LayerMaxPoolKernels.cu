@@ -64,7 +64,7 @@ __global__ void calcMaxPoolBackwardGPU(float *in1, float *in2, float *in3, float
 {
 }
 
-void maxPoolForwardGPU(TensorObject *in, TensorObject *out, int stride, int kernel_size)
+void maxPoolForwardGPU(TensorObject<float> *in, TensorObject<float> *out, int stride, int kernel_size)
 {
   float *d_in, *d_out;
   int in_N = in.size.b * in.size.x * in.size.y * in.size.z;
