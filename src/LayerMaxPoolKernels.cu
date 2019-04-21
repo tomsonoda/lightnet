@@ -18,8 +18,8 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
   int z = ((id - x - (y*size_x)) / (size_x * size_y)) % size_z;
   int b = (id - x - (y*size_x) - (z*size_x*size_y)) / (size_z * size_y * size_x);
 
-  TensorCoordinate mapped = { 0, (uint16_t)x*stride, (uint16_t)y*stride, 0 };
-  float mval = -FLT_MAX;
+  TensorCoordinate mapped = { 0, x*stride, y*stride, 0 };
+  float mval = -100000.0;
   for ( int j = 0; j < kernel_size; ++j ){
     for ( int i = 0; i < kernel_size; ++i ){
 
@@ -74,7 +74,7 @@ void maxPoolForwardGPU(TensorObject<float> in, TensorObject<float> out, int stri
   cudaMemcpy(d_in,  in.data,  in_N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, out.data, N*sizeof(float), cudaMemcpyHostToDevice);
   dim3 grid = cudaGridSize(N);
-  calcLeakyReluForwardGPU<<<grid, BLOCK>>>(d_in, d_out, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, strinde, kernel_size);
+  calcMaxPoolForwardGPU<<<grid, BLOCK>>>(d_in, d_out, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, stride, kernel_size);
   cudaMemcpy(out.data, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 

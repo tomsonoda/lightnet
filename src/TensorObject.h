@@ -1,5 +1,6 @@
 #pragma once
 #include "TensorCoordinate.h"
+#include "TensorSize.h"
 #include <cassert>
 #include <vector>
 #include <string.h>
