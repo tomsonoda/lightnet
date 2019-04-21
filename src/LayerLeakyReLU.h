@@ -38,11 +38,11 @@ struct LayerLeakyReLU
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 
 #ifdef GPU_CUDA
-		cudaMakeArray(gpu_dz, data_size);
-		cudaMakeArray(gpu_in, data_size);
-		cudaMakeArray(gpu_out, data_size);
-		cudaMakeArray(gpu_dz_in, data_size);
-		cudaMakeArray(gpu_dz_next_layer, data_size);
+		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
+		gpu_cuda::cudaMakeArray(gpu_in, data_size);
+		gpu_cuda::cudaMakeArray(gpu_out, data_size);
+		gpu_cuda::cudaMakeArray(gpu_dz_in, data_size);
+		gpu_cuda::cudaMakeArray(gpu_dz_next_layer, data_size);
 #endif
 
 	}
