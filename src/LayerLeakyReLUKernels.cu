@@ -33,7 +33,7 @@ void cudaMakeArray(float *gpu_o, int N)
 void leakyReluForwardGPU(float *data_in, float *data_out, float *gpu_in, float *gpu_out, int N)
 {
   cudaMemcpy(gpu_in,  data_in,  N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(gpu_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
+  // cudaMemcpy(gpu_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);

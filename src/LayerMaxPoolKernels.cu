@@ -45,21 +45,19 @@ __global__ void calcMaxPoolBackwardGPU(float *in1, float *in2, float *in3, float
 }
 
 void maxPoolForwardGPU(float *data_in, float *data_out,
+  float *d_in, *d_out,
   int in_size_b, int in_size_x, int in_size_y, int in_size_z,
   int out_size_b, int out_size_x, int out_size_y, int out_size_z,
   int stride, int kernel_size)
 {
-  float *d_in, *d_out;
   int in_N = in_size_b * in_size_x * in_size_y * in_size_z;
   int N = out_size_b * out_size_x * out_size_y * out_size_z;
-  cudaMalloc(&d_in,  in_N*sizeof(float));
-  cudaMalloc(&d_out, N*sizeof(float));
   cudaMemcpy(d_in,  data_in,  in_N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
   calcMaxPoolForwardGPU<<<grid, BLOCK>>>(d_in, d_out, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, stride, kernel_size);
+
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 
