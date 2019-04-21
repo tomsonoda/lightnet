@@ -4,6 +4,14 @@
 
 struct CudaObject
 {
+  CudaObject()
+  {
+  }
+
+  ~CudaObject()
+  {
+  }
+
   dim3 cudaGridSize(size_t n){
     size_t k = (n-1) / BLOCK + 1;
     size_t x = k;
