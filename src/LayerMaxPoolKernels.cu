@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "Cuda.h"
 
 namespace gpu_cuda {
 

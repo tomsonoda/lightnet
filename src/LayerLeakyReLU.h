@@ -1,6 +1,5 @@
 #pragma once
 #include "LayerObject.h"
-#include "Cuda.h"
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
