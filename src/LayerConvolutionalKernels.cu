@@ -4,7 +4,7 @@
 
 namespace gpu_cuda {
 
-__global__ void calcLeakyReluForwardGPU(float *x, float *y)
+__global__ void calcConvolutionalForwardGPU(float *x, float *y)
 {
   int i = blockIdx.x*blockDim.x + threadIdx.x;
   float v = x[i];
@@ -14,18 +14,14 @@ __global__ void calcLeakyReluForwardGPU(float *x, float *y)
   y[i] = v;
 }
 
-__global__ void calcLeakyReluBackwardGPU(float *in1, float *in2, float *in3, float* out)
+__global__ void calcConvolutionalBackwardGPU(float *in1, float *in2, float *in3, float* out)
 {
-  // in1 in.data
-  // in2 dz_next_layer.data
-  // in3 dz_in.data
-  // out dz
   int i = blockIdx.x*blockDim.x + threadIdx.x;
   in3[i] += in2[i];
   out[i] +=  (in1[i] < 0) ? (0.1) : in3[i];
 }
 
-void leakyReluForwardGPU(float *data_in, float *data_out, int N)
+void convolutionalForwardGPU(float *data_in, float *data_out, int N)
 {
   float *d_in, *d_out;
   cudaMalloc(&d_in,  N*sizeof(float));
@@ -42,7 +38,7 @@ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
 }
 
 // gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data, data_size);
-void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N)
+void convolutionalBockwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N)
 {
   float *d_in1, *d_in2, *d_in3, *d_out;
   cudaMalloc(&d_in1, N*sizeof(float));

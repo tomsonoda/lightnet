@@ -130,7 +130,7 @@ vector<CaseObject> readCasesMNIST( JSONObject *data_json, vector <json_token_t*>
 
 	uint32_t case_count = reverseUint32( *(uint32_t*)(images + 4) );
 
-	for (int i=0; i<case_count; ++i){
+	for (uint32_t i=0; i<case_count; ++i){
 		CaseObject c {TensorObject<float>( 1, 28, 28, 1 ), TensorObject<float>( 1, 10, 1, 1 )};
 		uint8_t* img = images + 16 + i * (28 * 28);
 		uint8_t* label = labels + 8 + i;
@@ -217,7 +217,7 @@ vector<CaseObject> readCasesCifar10( JSONObject *data_json, vector<json_token_t*
 		buffer = readFileToBuffer( file_name );
 	}
 	uint32_t case_count = file_size / (32 * 32 * 3 + 1);
-	for (int i=0; i<case_count; ++i){
+	for (uint32_t i=0; i<case_count; ++i){
 		CaseObject c {TensorObject<float>( 1, 32, 32, 3 ), TensorObject<float>( 1, 10, 1, 1 )};
 		uint8_t* img = buffer + i * (32 * 32 * 3 + 1) + 1;
 		uint8_t* label = buffer + i * (32 * 32 * 3 + 1);
