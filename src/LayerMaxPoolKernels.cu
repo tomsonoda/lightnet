@@ -45,7 +45,7 @@ __global__ void calcMaxPoolBackwardGPU(float *in1, float *in2, float *in3, float
 }
 
 void maxPoolForwardGPU(float *data_in, float *data_out,
-  float *d_in, *d_out,
+  float *d_in, float *d_out,
   int in_size_b, int in_size_x, int in_size_y, int in_size_z,
   int out_size_b, int out_size_x, int out_size_y, int out_size_z,
   int stride, int kernel_size)
