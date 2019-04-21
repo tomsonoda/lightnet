@@ -13,9 +13,8 @@ __global__ void calcForward(float *x, float *y)
   y[i] = v;
 }
 
-__global__ void calcBackward1(float *in1, float *in2, float *in3, float* out)
+__global__ void calcBackward(float *in1, float *in2, float *in3, float* out)
 {
-  gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data, data_size);
   // in1 in.data
   // in2 dz_next_layer.data
   // in3 dz_in.data
@@ -57,7 +56,7 @@ void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, flo
 
   dim3 block (BLOCK, 1, 1);
   dim3 grid  (N / block.x, 1, 1);
-  calcBackward2<<<grid, BLOCK>>>(d_in1, d_in2, d_in3, d_out);
+  calcBackward<<<grid, BLOCK>>>(d_in1, d_in2, d_in3, d_out);
 
   cudaMemcpy(data_in3, d_in3, N*sizeof(float), cudaMemcpyDeviceToHost);
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
