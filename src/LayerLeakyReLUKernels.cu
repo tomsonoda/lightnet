@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "Cuda.hpp"
-#define BLOCK 512
 
 namespace gpu_cuda {
 
@@ -35,7 +34,8 @@ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
   dim3 block (BLOCK, 1, 1);
-  dim3 grid  cudaGridSize(N);
+  dim3 grid = cudaGridSize(N);
+
   calcLeakyReluForwardGPU<<<grid, BLOCK>>>(d_in, d_out);
 
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
@@ -56,7 +56,8 @@ void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, flo
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
   dim3 block (BLOCK, 1, 1);
-  dim3 grid  (N / block.x, 1, 1);
+  dim3 grid = cudaGridSize(N);
+
   calcLeakyReluBackwardGPU<<<grid, BLOCK>>>(d_in1, d_in2, d_in3, d_out);
 
   cudaMemcpy(data_in3, d_in3, N*sizeof(float), cudaMemcpyDeviceToHost);
