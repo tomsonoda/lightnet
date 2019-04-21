@@ -21,7 +21,6 @@ struct LayerLeakyReLU
 	TensorObject<float> dz_in;
 	unsigned data_size;
 
-	CudaObject cuda;
 	float *gpu_dz;
 	float *gpu_in;
 	float *gpu_out;
@@ -39,7 +38,7 @@ struct LayerLeakyReLU
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 
 #ifdef GPU_CUDA
-		cuda = new CudaObject();
+		CudaObject cuda = new CudaObject();
 		cuda.cudaMakeArray(gpu_dz, data_size);
 		cuda.cudaMakeArray(gpu_in, data_size);
 		cuda.cudaMakeArray(gpu_out, data_size);

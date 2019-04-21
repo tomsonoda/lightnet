@@ -7,16 +7,9 @@
 
 #ifdef GPU
 
+#pragma pack(push, 1)
 struct CudaObject
 {
-  CudaObject()
-  {
-  }
-
-  ~CudaObject()
-  {
-  }
-
   void cudaMakeArray(float* gpu_out, int N){
     cudaMalloc(&gpu_out, N*sizeof(float));
   }
@@ -33,6 +26,7 @@ struct CudaObject
     return d;
   }
 };
+#pragma pack(pop)
 
 #endif
 #endif

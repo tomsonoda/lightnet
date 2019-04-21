@@ -32,7 +32,6 @@ void leakyReluForwardGPU(float *data_in, float *data_out, float *gpu_in, float *
 
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-
   calcLeakyReluForwardGPU<<<grid, BLOCK>>>(gpu_in, gpu_out);
 
   cudaMemcpy(data_out, gpu_out, N*sizeof(float), cudaMemcpyDeviceToHost);
