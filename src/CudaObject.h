@@ -14,4 +14,4 @@ struct CudaObject
     dim3 d  (x, y, 1);
     return d;
   }
-}
+};
