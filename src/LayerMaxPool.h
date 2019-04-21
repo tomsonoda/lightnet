@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void maxPoolForwardGPU(TensorObject<float> *data_in, TensorObject<float> *data_out, int stride, int kernel_size);
+	void maxPoolForwardGPU(TensorObject<float> data_in, TensorObject<float> data_out, int stride, int kernel_size);
 	void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N);
 } //namespace gpu
 #endif
