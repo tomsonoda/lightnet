@@ -4,6 +4,7 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void leakyReluForwardGPU(float *data_in, float *data_out, int N);
+	void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N);
 } //namespace gpu
 #endif
 
@@ -42,9 +43,6 @@ struct LayerLeakyReLU
 	{
 #ifdef GPU_CUDA
 	gpu_cuda::leakyReluForwardGPU(in.data, out.data, data_size);
-	for( int i = 0; i < 100; ++i ){
-		printf("%f %f\n", in.data[i], out.data[i]);
-	}
 #else
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
@@ -62,13 +60,20 @@ struct LayerLeakyReLU
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
+#ifdef GPU_CUDA
+			gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data, data_size);
+#else
+		// for( int i = 0; i < data_size ; ++i ){
+		// 	dz_in.data[i] += dz_next_layer.data[i];
+		// }
+		// for( int i = 0; i < data_size; ++i ){
+		// 	dz.data[i] +=  (in.data[i] < 0) ? (0.1) : (1.0 * dz_in.data[i]);
+		// }
+		for( int i = 0; i < data_size ; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
+			dz.data[i] +=  (in.data[i] < 0) ? (0.1) : dz_in.data[i];
 		}
-
-		for( int i = 0; i < data_size; ++i ){
-			dz.data[i] +=  (in.data[i] < 0) ? (0.1) : (1.0 * dz_in.data[i]);
-		}
+#endif
 	}
 };
 #pragma pack(pop)
