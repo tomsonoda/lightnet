@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float* gpu_out, int N);
+	void cudaMakeArray(float* gpu_o, int N);
 	void leakyReluForwardGPU(float *data_in, float *data_out, float *gpu_in, float *gpu_out, int N);
 	void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out,
 		float *gpu_dz, float *gpu_in, float *gpu_out, float *gpu_dz_in,

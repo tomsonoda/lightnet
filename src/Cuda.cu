@@ -3,9 +3,9 @@
 #ifdef GPU
 
 namespace gpu_cuda {
-  void cudaMakeArray(float* gpu_out, int N)
+  void cudaMakeArray(float* gpu_o, int N)
   {
-    cudaMalloc(&gpu_out, N*sizeof(float));
+    cudaMalloc(&gpu_o, N*sizeof(float));
   }
 }
 
