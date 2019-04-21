@@ -14,7 +14,7 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
 
 
   int x = id % size_x;
-  int y = ((id - x) / size_x) % size_y
+  int y = ((id - x) / size_x) % size_y;
   int z = ((id - x - (y*size_x)) / (size_x * size_y)) % size_z;
   int b = (id - x - (y*size_x) - (z*size_x*size_y)) / (size_z * size_y * size_x);
 
