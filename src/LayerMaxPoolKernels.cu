@@ -9,11 +9,15 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
   int stride, int kernel_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  int id_out = id;
 
   int x = id % size_x;
-  int y = ((id - x) / size_x) % size_y;
-  int z = ((id - x - (y*size_x)) / (size_x * size_y)) % size_z;
-  int b = (id - x - (y*size_x) - (z*size_x*size_y)) / (size_z * size_y * size_x);
+  id /= size_x;
+  int y = id % size_y;
+  id /= size_y;
+  int z = id % size_z;
+  id /= size_z;
+  int b = id;
 
   int mapped_x = x * stride;
   int mapped_y = y * stride;
@@ -33,29 +37,7 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
       }
     }
   }
-  out[id] = mval;
-
-  /*
-  for ( int b = 0; b < in.size.b; ++b ){
-    for ( int z = 0; z < out.size.z; ++z ){
-      for ( int y = 0; y < out.size.y; ++y ){
-        for ( int x = 0; x < out.size.x; ++x ){
-          TensorCoordinate mapped = { 0, (uint16_t)x*stride, (uint16_t)y*stride, 0 };
-          float mval = -FLT_MAX;
-          for ( int j = 0; j < kernel_size; ++j ){
-            for ( int i = 0; i < kernel_size; ++i ){
-              float v = in( b, mapped.x + i, mapped.y + j, z );
-              if ( v > mval ){
-                mval = v;
-              }
-            }
-          }
-          out( b, x, y, z ) = mval;
-        }
-      }
-    }
-  }
-  */
+  out[id_out] = mval;
 }
 
 __global__ void calcMaxPoolBackwardGPU(float *in1, float *in2, float *in3, float* out)
