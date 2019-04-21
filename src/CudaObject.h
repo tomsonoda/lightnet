@@ -1,6 +1,11 @@
+#ifndef CUDA_H
+#define CUDA_H
+
 #define BLOCK 512
 
 #include <stdio.h>
+
+#ifdef GPU
 
 struct CudaObject
 {
@@ -28,3 +33,5 @@ struct CudaObject
     return d;
   }
 };
+
+#endif

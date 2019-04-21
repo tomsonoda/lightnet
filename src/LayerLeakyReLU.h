@@ -36,7 +36,7 @@ struct LayerLeakyReLU
 		dz_in( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		CudaObject cuda = new CudaObject();
+		CudaObject cuda = CudaObject();
 		cuda.cudaMakeArray(gpu_dz, N);
 		cuda.cudaMakeArray(gpu_in, N);
 		cuda.cudaMakeArray(gpu_out, N);
