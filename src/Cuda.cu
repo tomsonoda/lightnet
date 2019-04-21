@@ -1,5 +1,4 @@
 #define BLOCK 512
-#pragma once
 #include <stdio.h>
 
 #ifdef GPU
