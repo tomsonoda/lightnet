@@ -25,6 +25,11 @@ __global__ void calcLeakyReluBackwardGPU(float *in1, float *in2, float *in3, flo
   out[id] += (in1[id] < 0) ? (0.1) : in3[id];
 }
 
+void cudaMakeArray(float *gpu_o, int N)
+{
+  cudaMalloc(&gpu_o, N*sizeof(float));
+}
+
 void leakyReluForwardGPU(float *data_in, float *data_out, float *gpu_in, float *gpu_out, int N)
 {
   cudaMemcpy(gpu_in,  data_in,  N*sizeof(float), cudaMemcpyHostToDevice);
