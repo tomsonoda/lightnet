@@ -35,3 +35,4 @@ struct CudaObject
 };
 
 #endif
+#endif
