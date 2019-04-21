@@ -80,23 +80,6 @@ void maxPoolForwardGPU(TensorObject<float> in, TensorObject<float> out, int stri
 
 void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N)
 {
-  float *d_in1, *d_in2, *d_in3, *d_out;
-  cudaMalloc(&d_in1, N*sizeof(float));
-  cudaMalloc(&d_in2, N*sizeof(float));
-  cudaMalloc(&d_in3, N*sizeof(float));
-  cudaMalloc(&d_out, N*sizeof(float));
-
-  cudaMemcpy(d_in1, data_in1, N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_in2, data_in2, N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_in3, data_in3, N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
-
-  dim3 grid = cudaGridSize(N);
-
-  calcLeakyReluBackwardGPU<<<grid, BLOCK>>>(d_in1, d_in2, d_in3, d_out);
-
-  cudaMemcpy(data_in3, d_in3, N*sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 
 } // namespace gpu
