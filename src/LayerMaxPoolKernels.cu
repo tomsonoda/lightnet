@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include "Cuda.hpp"
-#include "TensorObject.h"
-#include "TensorCoordinate.h"
 
 namespace gpu_cuda {
 
@@ -17,7 +15,8 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
   int z = ((id - x - (y*size_x)) / (size_x * size_y)) % size_z;
   int b = (id - x - (y*size_x) - (z*size_x*size_y)) / (size_z * size_y * size_x);
 
-  TensorCoordinate mapped = { 0, x*stride, y*stride, 0 };
+  int mapped_x = x * stride;
+  int mapped_y = y * stride;
   float mval = -100000.0;
   for ( int j = 0; j < kernel_size; ++j ){
     for ( int i = 0; i < kernel_size; ++i ){
@@ -25,8 +24,8 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
       int index =
       b * (in_size_z * in_size_x * in_size_y) +
       z * (in_size_x * in_size_y) +
-      (mapped.x + i) * (in_size_x) +
-      (mapped.y);
+      (mapped_x + i) * (in_size_x) +
+      (mapped_y);
 
       float v = in[index];
       if ( v > mval ){
