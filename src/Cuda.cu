@@ -4,9 +4,7 @@
 
 #ifdef GPU
 
-#pragma pack(push, 1)
-struct CudaObject
-{
+namespace gpu_cuda {
   dim3 cudaGridSize(size_t n)
   {
     size_t k = (n-1) / BLOCK + 1;
@@ -24,8 +22,6 @@ struct CudaObject
   {
     cudaMalloc(&gpu_out, N*sizeof(float));
   }
-
-};
-#pragma pack(pop)
+}
 
 #endif
