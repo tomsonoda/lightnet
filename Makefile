@@ -14,7 +14,11 @@ LDFLAGS  =
 AR       = ar
 ARFLAGS  = crs
 COMMON   = -Iinclude/ -Isrc/
-EXECOBJA = lightnet.o classification.o object_detection.o dataset.o
+EXECOBJA = 
+ifeq ($(GPU_CUDA), 1)
+EXECOBJA = Cuda.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o
+endif
+EXECOBJA += lightnet.o classification.o object_detection.o dataset.o
 TARGET   = lightnet
 OBJDIR   = ./obj
 SRCDIR   = ./src
@@ -27,7 +31,6 @@ ifeq ($(GPU_CUDA), 1)
 COMMON+= -DGPU_CUDA -I/usr/local/cuda/include/
 CFLAGS+= -DGPU_CUDA
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
-EXECOBJA+= Cuda.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o
 endif
 
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
