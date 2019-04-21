@@ -12,6 +12,10 @@ struct CudaObject
   {
   }
 
+  void cudaMakeArray(float* gpu_out, int N){
+    cudaMalloc(&gpu_out, N*sizeof(float));
+  }
+
   dim3 cudaGridSize(size_t n){
     size_t k = (n-1) / BLOCK + 1;
     size_t x = k;

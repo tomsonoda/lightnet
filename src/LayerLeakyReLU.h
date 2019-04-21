@@ -1,10 +1,13 @@
 #pragma once
 #include "LayerObject.h"
+#include "CudaObject.h"
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void leakyReluForwardGPU(float *data_in, float *data_out, int N);
-	void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N);
+	void leakyReluForwardGPU(float *data_in, float *data_out, float *gpu_in, float *gpu_out, int N);
+	void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out,
+		float *gpu_dz, float *gpu_in, float *gpu_out, float *gpu_dz_in,
+		int N);
 } //namespace gpu
 #endif
 
@@ -18,6 +21,12 @@ struct LayerLeakyReLU
 	TensorObject<float> dz_in;
 	unsigned data_size;
 
+	float *gpu_dz;
+	float *gpu_in;
+	float *gpu_out;
+	float *gpu_dz_in;
+	float *gpu_dz_next_layer;
+
 	LayerLeakyReLU( TensorSize in_size
 	)
 		:
@@ -27,6 +36,12 @@ struct LayerLeakyReLU
 		dz_in( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		CudaObject cuda = new CudaObject();
+		cuda.cudaMakeArray(gpu_dz, N);
+		cuda.cudaMakeArray(gpu_in, N);
+		cuda.cudaMakeArray(gpu_out, N);
+		cuda.cudaMakeArray(gpu_dz_in, N);
+		cuda.cudaMakeArray(gpu_dz_next_layer, N);
 	}
 
 		void forward(
@@ -42,7 +57,7 @@ struct LayerLeakyReLU
 	)
 	{
 #ifdef GPU_CUDA
-	gpu_cuda::leakyReluForwardGPU(in.data, out.data, data_size);
+	gpu_cuda::leakyReluForwardGPU(in.data, out.data, gpu_out, data_size);
 #else
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
@@ -61,7 +76,9 @@ struct LayerLeakyReLU
 	void backward( TensorObject<float>& dz_next_layer )
 	{
 #ifdef GPU_CUDA
-			gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data, data_size);
+			gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data,
+				gpu_in, gpu_dz_next_layer, gpu_dz_in, gpu_dz,
+				data_size);
 #else
 		// for( int i = 0; i < data_size ; ++i ){
 		// 	dz_in.data[i] += dz_next_layer.data[i];
