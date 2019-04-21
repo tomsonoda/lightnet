@@ -42,6 +42,9 @@ struct LayerLeakyReLU
 	{
 #ifdef GPU_CUDA
 	gpu_cuda::leakyReluForwardGPU(in.data, out.data, data_size);
+	for( int i = 0; i < 100; ++i ){
+		printf("%f %f\n", in.data[i], out.data[i]);
+	}
 #else
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
