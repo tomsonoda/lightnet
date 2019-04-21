@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "Cuda.hpp"
+#include "CudaObject.h"
 
 namespace gpu_cuda {
 
@@ -34,7 +34,8 @@ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
   cudaMemcpy(d_in,  data_in,  N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
-  dim3 grid = cudaGridSize(N);
+  CudaObject cuda;
+  dim3 grid = cuda->cudaGridSize(N);
 
   calcLeakyReluForwardGPU<<<grid, BLOCK>>>(d_in, d_out);
 
@@ -55,7 +56,8 @@ void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, flo
   cudaMemcpy(d_in3, data_in3, N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
-  dim3 grid = cudaGridSize(N);
+  CudaObject cuda;
+  dim3 grid = cuda->cudaGridSize(N);
 
   calcLeakyReluBackwardGPU<<<grid, BLOCK>>>(d_in1, d_in2, d_in3, d_out);
 

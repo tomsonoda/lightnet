@@ -2,7 +2,9 @@
 
 #include <stdio.h>
 
-dim3 cudaGridSize(size_t n){
+struct CudaObject
+{
+  dim3 cudaGridSize(size_t n){
     size_t k = (n-1) / BLOCK + 1;
     size_t x = k;
     size_t y = 1;
@@ -12,4 +14,5 @@ dim3 cudaGridSize(size_t n){
     }
     dim3 d  (x, y, 1);
     return d;
-}
+  }
+};

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "Cuda.hpp"
+#include "CudaObject.h"
 
 namespace gpu_cuda {
 

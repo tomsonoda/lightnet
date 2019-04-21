@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "Cuda.hpp"
+#include "CudaObject.h"
 
 namespace gpu_cuda {
 
@@ -74,7 +74,8 @@ void maxPoolForwardGPU(float *data_in, float *data_out,
   cudaMalloc(&d_out, N*sizeof(float));
   cudaMemcpy(d_in,  data_in,  in_N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
-  dim3 grid = cudaGridSize(N);
+  CudaObject cuda;
+  dim3 grid = cuda->cudaGridSize(N);
   calcMaxPoolForwardGPU<<<grid, BLOCK>>>(d_in, d_out, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, stride, kernel_size);
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
