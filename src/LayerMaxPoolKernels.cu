@@ -3,6 +3,8 @@
 
 namespace gpu_cuda {
 
+extern dim3 cudaGridSize(size_t n);
+
 __global__ void calcMaxPoolForwardGPU(float *in,float *out,
   int in_size_x, int in_size_y, int in_size_z,
   int size_x, int size_y, int size_z,
