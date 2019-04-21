@@ -3,6 +3,8 @@
 
 namespace gpu_cuda {
 
+extern dim3 cudaGridSize(size_t n);
+
 __global__ void calcLeakyReluForwardGPU(float *x, float *y)
 {
   // int i = blockIdx.x*blockDim.x + threadIdx.x;
