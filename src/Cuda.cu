@@ -1,4 +1,3 @@
-#define BLOCK 512
 #include <stdio.h>
 
 #ifdef GPU
