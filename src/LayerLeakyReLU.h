@@ -36,12 +36,16 @@ struct LayerLeakyReLU
 		dz_in( in_size.b, in_size.x, in_size.y, in_size.z )
 	{
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		CudaObject cuda = CudaObject();
-		cuda.cudaMakeArray(gpu_dz, N);
-		cuda.cudaMakeArray(gpu_in, N);
-		cuda.cudaMakeArray(gpu_out, N);
-		cuda.cudaMakeArray(gpu_dz_in, N);
-		cuda.cudaMakeArray(gpu_dz_next_layer, N);
+
+#ifdef GPU_CUDA
+		CudaObject cuda = new CudaObject();
+		cuda.cudaMakeArray(gpu_dz, data_size);
+		cuda.cudaMakeArray(gpu_in, data_size);
+		cuda.cudaMakeArray(gpu_out, data_size);
+		cuda.cudaMakeArray(gpu_dz_in, data_size);
+		cuda.cudaMakeArray(gpu_dz_next_layer, data_size);
+#endif
+
 	}
 
 		void forward(
@@ -57,7 +61,7 @@ struct LayerLeakyReLU
 	)
 	{
 #ifdef GPU_CUDA
-	gpu_cuda::leakyReluForwardGPU(in.data, out.data, gpu_out, data_size);
+	gpu_cuda::leakyReluForwardGPU(in.data, out.data, gpu_in, gpu_out, data_size);
 #else
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
