@@ -1,5 +1,5 @@
 #include <stdio.h>
-#define BLOCK 512
+#include "Cuda.hpp"
 
 namespace gpu_cuda {
 

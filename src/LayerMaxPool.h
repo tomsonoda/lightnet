@@ -1,6 +1,14 @@
 #pragma once
 #include "LayerObject.h"
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void maxPoolForwardGPU(TensorObject *data_in, TensorObject *data_out, int stride, int kernel_size);
+	void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N);
+} //namespace gpu
+#endif
+
+
 #pragma pack(push, 1)
 struct LayerPool
 {
@@ -94,6 +102,9 @@ struct LayerPool
 
 	void forward()
 	{
+#ifdef GPU_CUDA
+		gpu_cuda::maxPoolForwardGPU(in, out, stride, kernel_size);
+#else
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int z = 0; z < out.size.z; ++z ){
 				for ( int y = 0; y < out.size.y; ++y ){
@@ -113,6 +124,7 @@ struct LayerPool
 				}
 			}
 		}
+#endif
 	}
 
 	void update_weights()

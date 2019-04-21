@@ -5,12 +5,13 @@ namespace gpu_cuda {
 
 __global__ void calcLeakyReluForwardGPU(float *x, float *y)
 {
-  int i = blockIdx.x*blockDim.x + threadIdx.x;
-  float v = x[i];
+  // int i = blockIdx.x*blockDim.x + threadIdx.x;
+  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  float v = x[id];
   if ( v < 0 ){
     v = 0.1 * v;
   }
-  y[i] = v;
+  y[id] = v;
 }
 
 __global__ void calcLeakyReluBackwardGPU(float *in1, float *in2, float *in3, float* out)
@@ -19,9 +20,9 @@ __global__ void calcLeakyReluBackwardGPU(float *in1, float *in2, float *in3, flo
   // in2 dz_next_layer.data
   // in3 dz_in.data
   // out dz
-  int i = blockIdx.x*blockDim.x + threadIdx.x;
-  in3[i] += in2[i];
-  out[i] +=  (in1[i] < 0) ? (0.1) : in3[i];
+  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  in3[id] += in2[id];
+  out[id] += (in1[id] < 0) ? (0.1) : in3[id];
 }
 
 void leakyReluForwardGPU(float *data_in, float *data_out, int N)
@@ -33,7 +34,6 @@ void leakyReluForwardGPU(float *data_in, float *data_out, int N)
   cudaMemcpy(d_in,  data_in,  N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
-  dim3 block (BLOCK, 1, 1);
   dim3 grid = cudaGridSize(N);
 
   calcLeakyReluForwardGPU<<<grid, BLOCK>>>(d_in, d_out);
@@ -55,7 +55,6 @@ void leakyReluBackwardGPU(float *data_in1, float *data_in2, float *data_in3, flo
   cudaMemcpy(d_in3, data_in3, N*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
 
-  dim3 block (BLOCK, 1, 1);
   dim3 grid = cudaGridSize(N);
 
   calcLeakyReluBackwardGPU<<<grid, BLOCK>>>(d_in1, d_in2, d_in3, d_out);
