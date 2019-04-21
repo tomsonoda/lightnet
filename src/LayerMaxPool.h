@@ -3,7 +3,10 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void maxPoolForwardGPU(TensorObject<float> data_in, TensorObject<float> data_out, int stride, int kernel_size);
+	void maxPoolForwardGPU(float *data_in, float *data_out,
+	  int in_size_b, int in_size_x, int in_size_y, int in_size_z,
+	  int out_size_b, int out_size_x, int out_size_y, int out_size_z,
+	  int stride, int kernel_size);
 	void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N);
 } //namespace gpu
 #endif
@@ -103,7 +106,10 @@ struct LayerPool
 	void forward()
 	{
 #ifdef GPU_CUDA
-		gpu_cuda::maxPoolForwardGPU(in, out, stride, kernel_size);
+		gpu_cuda::maxPoolForwardGPU(in.data, out.data,
+			in.size.b, in.size.x, in.size.y, in.size.z,
+			out.size.b, out.size.x, out.size.y, out.size.z,
+			stride, kernel_size);
 #else
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int z = 0; z < out.size.z; ++z ){

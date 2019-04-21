@@ -12,7 +12,6 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-
   int x = id % size_x;
   int y = ((id - x) / size_x) % size_y;
   int z = ((id - x - (y*size_x)) / (size_x * size_y)) % size_z;
@@ -64,18 +63,21 @@ __global__ void calcMaxPoolBackwardGPU(float *in1, float *in2, float *in3, float
 {
 }
 
-void maxPoolForwardGPU(TensorObject<float> in, TensorObject<float> out, int stride, int kernel_size)
+void maxPoolForwardGPU(float *data_in, float *data_out,
+  int in_size_b, int in_size_x, int in_size_y, int in_size_z,
+  int out_size_b, int out_size_x, int out_size_y, int out_size_z,
+  int stride, int kernel_size)
 {
   float *d_in, *d_out;
-  int in_N = in.size.b * in.size.x * in.size.y * in.size.z;
-  int N = out.size.b * out.size.x * out.size.y * out.size.z;
+  int in_N = in_size_b * in_size_x * in_size_y * in_size_z;
+  int N = out_size_b * out_size_x * out_size_y * out_size_z;
   cudaMalloc(&d_in,  in_N*sizeof(float));
   cudaMalloc(&d_out, N*sizeof(float));
-  cudaMemcpy(d_in,  in.data,  in_N*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_out, out.data, N*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_in,  data_in,  in_N*sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_out, data_out, N*sizeof(float), cudaMemcpyHostToDevice);
   dim3 grid = cudaGridSize(N);
-  calcMaxPoolForwardGPU<<<grid, BLOCK>>>(d_in, d_out, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, stride, kernel_size);
-  cudaMemcpy(out.data, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
+  calcMaxPoolForwardGPU<<<grid, BLOCK>>>(d_in, d_out, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, stride, kernel_size);
+  cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 
 void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N)
