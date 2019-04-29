@@ -128,7 +128,136 @@ struct LayerConvolution
 		};
 	}
 
-	void forward( TensorObject<float>& in, ThreadPool& thread_pool )
+#ifdef GPU_CUDA
+
+	void forwardGPU( TensorObject<float>& in )
+	{
+		this->in = in;
+		forwardGPU();
+	}
+
+	void forwardGPU()
+	{
+		std::vector< std::future<int> > results;
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int z = 0; z < in.size.z; ++z ){
+				for ( int y = 0; y < in.size.y; ++y ){
+					for ( int x = 0; x < in.size.x; ++x ){
+						padded_in( b, padding+x, padding+y, z ) = in( b, x, y, z );
+					}
+				}
+			}
+
+			int filters_size = filters.size();
+			for ( int filter = 0; filter < filters_size; ++filter ){
+				TensorObject<float> filter_data = filters[filter];
+				for ( int y = 0; y < out.size.y; ++y ){
+					for ( int x = 0; x < out.size.x; ++x ){
+						TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+						float sum = 0;
+
+						for ( int z = 0; z < in.size.z; ++z ){
+							for ( int j = 0; j < kernel_size; ++j ){
+								for ( int i = 0; i < kernel_size; ++i ){
+									sum += filter_data( 0, i, j, z ) * padded_in( b, mapped.x + i, mapped.y + j, z );
+								}
+							}
+						}
+						out( b, x, y, filter ) = sum;
+					}
+				}
+			}
+		}
+	}
+
+	void updateWeightsGPU()
+	{
+		int filters_size = filters.size();
+		for ( int a = 0; a < filters_size; ++a ){
+			for ( int z = 0; z < in.size.z; ++z ){
+				for ( int j = 0; j < kernel_size; ++j ){
+					for ( int i = 0; i < kernel_size; ++i ){
+						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
+						float m = (grad.grad + grad.grad_prev * momentum);
+						grad.grad_prev = m;
+						float& w = filters[a].get( 0, i, j, z );
+						w -= lr * ( m + (decay * w));
+					}
+				}
+			}
+		}
+	}
+
+	void backwardGPU( TensorObject<float>& dz_next_layer )
+	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
+			dz_in.data[i] += dz_next_layer.data[i];
+		}
+
+		int k_end = filter_grads.size();
+		int kernel_size_2 = kernel_size * kernel_size;
+		int i_end = kernel_size_2 * in.size.z;
+		for ( int k = 0; k < k_end; ++k ){
+			for ( int i = 0; i < i_end ; ++i ){
+					filter_grads[k].data[i].grad = 0;
+			}
+		}
+
+		int z_max = (int)filters.size();
+
+		for ( int b = 0; b < in.size.b; ++b ){
+			// code optimization.
+			int dz_in_xy = dz_in.size.y * dz_in.size.x;
+			int b_dz_in_xyz = b * dz_in.size.z * dz_in_xy;
+			int padded_in_xy = padded_in.size.y * padded_in.size.x;
+			int b_padded_in_xyz = b * padded_in.size.z * padded_in_xy;
+
+			int y_end = padded_in.size.y - padding;
+			for ( int y = 0; y < y_end; ++y ){
+
+				int x_end = padded_in.size.x - padding;
+				for ( int x = 0; x < x_end; ++x ){
+
+					tensor_range_t rn = map_to_output( x, y );
+
+					for ( int z = 0; z < in.size.z; ++z ){
+						float sum = 0;
+						// float padded_in_value = padded_in( b, x, y, z );
+						float padded_in_value = padded_in.data[( b_padded_in_xyz ) + (z * padded_in_xy) + (y * padded_in.size.x) + x];
+
+						for ( int j = rn.min_y; j <= rn.max_y; ++j ){
+							int y_miny = y - j * stride;
+
+							for ( int i = rn.min_x; i <= rn.max_x; ++i ){
+								int x_minx = x - i * stride;
+
+								int xyz = z * kernel_size_2 + y_miny * kernel_size + x_minx; // ( 0, x_minx, y_miny, z )
+
+								for ( int k = 0; k < z_max; ++k ){
+									// float d = dz_in( b, i, j, k );
+									float d = dz_in.data[ b_dz_in_xyz + (k * dz_in_xy) + (j * dz_in.size.x) + i];
+									// sum += filters[k].get( 0, x_minx, y_miny, z ) * d;
+									sum += filters[k].data[xyz] * d;
+									// filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
+									filter_grads[k].data[xyz].grad += padded_in_value * d;
+								}
+							}
+						}
+
+						if( x>=padding && y>=padding ){
+							dz( b, x - padding, y - padding, z ) += sum;
+						}
+
+					}
+				}
+			}
+		}
+	}
+
+#else
+	// CPU
+
+	void forward( TensorObject<float>& in,  ThreadPool& thread_pool )
 	{
 		this->in = in;
 		forward( thread_pool );
@@ -139,53 +268,48 @@ struct LayerConvolution
 		std::vector< std::future<int> > results;
 
 		for ( int b = 0; b < in.size.b; ++b ){
-
-				for ( int z = 0; z < in.size.z; ++z ){
-					for ( int y = 0; y < in.size.y; ++y ){
-						for ( int x = 0; x < in.size.x; ++x ){
-							padded_in( b, padding+x, padding+y, z ) = in( b, x, y, z );
-						}
+			for ( int z = 0; z < in.size.z; ++z ){
+				for ( int y = 0; y < in.size.y; ++y ){
+					for ( int x = 0; x < in.size.x; ++x ){
+						padded_in( b, padding+x, padding+y, z ) = in( b, x, y, z );
 					}
 				}
+			}
 
-				int filters_size = filters.size();
-				for ( int filter = 0; filter < filters_size; ++filter ){
-					results.emplace_back( thread_pool.enqueue([&, filter] {
+			int filters_size = filters.size();
+			for ( int filter = 0; filter < filters_size; ++filter ){
+				results.emplace_back( thread_pool.enqueue([&, filter] {
 
-						TensorObject<float> filter_data = filters[filter];
+					TensorObject<float> filter_data = filters[filter];
 
-						for ( int y = 0; y < out.size.y; ++y ){
-							for ( int x = 0; x < out.size.x; ++x ){
-								TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
-								float sum = 0;
-
-								for ( int z = 0; z < in.size.z; ++z ){
-									for ( int j = 0; j < kernel_size; ++j ){
-										for ( int i = 0; i < kernel_size; ++i ){
-											sum += filter_data( 0, i, j, z ) * padded_in( b, mapped.x + i, mapped.y + j, z );
-										}
+					for ( int y = 0; y < out.size.y; ++y ){
+						for ( int x = 0; x < out.size.x; ++x ){
+							TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+							float sum = 0;
+							for ( int z = 0; z < in.size.z; ++z ){
+								for ( int j = 0; j < kernel_size; ++j ){
+									for ( int i = 0; i < kernel_size; ++i ){
+										sum += filter_data( 0, i, j, z ) * padded_in( b, mapped.x + i, mapped.y + j, z );
 									}
 								}
-								out( b, x, y, filter ) = sum;
 							}
+							out( b, x, y, filter ) = sum;
 						}
+					}
 
-						return 0;
-					}));
+					return 0;
+				}));
 
-				}
+			}
 
-				for(auto && result: results){
-					result.get();
-				}
-				results.erase(results.begin(), results.end());
-
+			for(auto && result: results){
+				result.get();
+			}
+			results.erase(results.begin(), results.end());
 		}
-
-
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 		int filters_size = filters.size();
 		for ( int a = 0; a < filters_size; ++a ){
@@ -283,6 +407,8 @@ struct LayerConvolution
 		thread_results.erase(thread_results.begin(), thread_results.end());
 
 	}
+
+#endif
 
 	void saveWeights( ofstream& fout )
 	{

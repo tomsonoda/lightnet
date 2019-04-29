@@ -62,6 +62,82 @@ struct LayerDense
 		return (d.b * (in.size.z * in.size.x * in.size.y)) + (d.z * (in.size.x * in.size.y)) + (d.y * (in.size.x)) + d.x;
 	}
 
+#ifdef GPU_CUDA
+
+	void forwardGPU( TensorObject<float>& in )
+	{
+		this->in = in;
+		forwardGPU();
+		this->dz.clear();
+	}
+
+	void forwardGPU()
+	{
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int n = 0; n < out.size.x; ++n ){
+				float sum = 0;
+				for ( int z = 0; z < in.size.z; ++z ){
+					for ( int j = 0; j < in.size.y; ++j ){
+						for ( int i = 0; i < in.size.x; ++i ){
+							int m = map( { 0, i, j, z } );
+							sum += in( b, i, j, z ) * weights( 0, m, n, 0 );
+						}
+					}
+				}
+				out( b, n, 0, 0 ) = sum;
+			}
+		}
+	}
+
+	void updateWeightsGPU()
+	{
+		for (int i=0; i<weigts_data_num; ++i){
+			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
+		}
+		for ( int i = 0; i < out.size.x * in.size.b; ++i ){
+				GradientObject& grad = gradients[ i ];
+				grad.grad_prev = (grad.grad + grad.grad_prev * MOMENTUM);
+		}
+	}
+
+	void backwardGPU( TensorObject<float>& dz_next_layer )
+	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
+			dz_in.data[i] += dz_next_layer.data[i];
+		}
+
+		std::vector< std::future<int> > results;
+
+		memset( dW.data, 0, dw_data_size );
+		for ( int n = 0; n < out.size.x; ++n ){
+			for ( int z = 0; z < in.size.z; ++z ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						int m = map( { 0, i, j, z } );
+
+						for( int b = 0; b < in.size.b; ++b ){
+							GradientObject& grad = gradients[ n*in.size.b + b ];
+							float dzin = dz_in( b, n, 0, 0 );
+							float w = weights(0, m, n, 0);
+							grad.grad = dzin;
+							dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * MOMENTUM) + (WEIGHT_DECAY * w);
+							dz( b, i, j, z ) += dzin * w;
+						}
+
+					}
+				}
+			}
+		}
+
+		for(auto && result: results){
+			result.get();
+		}
+
+		results.erase(results.begin(), results.end());
+	}
+
+#else
+// CPU
 	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
@@ -87,7 +163,7 @@ struct LayerDense
 		}
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 		for (int i=0; i<weigts_data_num; ++i){
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
@@ -137,6 +213,8 @@ struct LayerDense
 		}
 		results.erase(results.begin(), results.end());
 	}
+
+#endif
 
 	void saveWeights( ofstream& fout )
 	{
