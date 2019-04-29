@@ -51,7 +51,7 @@ struct LayerRoute
 		}
 	}
 
-	void updateWeights()
+	void update_weights()
 	{
 	}
 

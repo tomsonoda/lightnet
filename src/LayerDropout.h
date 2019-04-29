@@ -41,7 +41,7 @@ struct LayerDropout
 	}
 
 
-	void updateWeights()
+	void update_weights()
 	{
 
 	}

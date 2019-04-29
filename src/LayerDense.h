@@ -87,7 +87,7 @@ struct LayerDense
 		}
 	}
 
-	void updateWeights()
+	void update_weights()
 	{
 		for (int i=0; i<weigts_data_num; ++i){
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];

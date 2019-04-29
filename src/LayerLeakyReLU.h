@@ -72,7 +72,7 @@ struct LayerLeakyReLU
 #endif
 	}
 
-	void updateWeights()
+	void update_weights()
 	{
 	}
 

@@ -45,7 +45,7 @@ struct LayerSigmoid
 		}
 	}
 
-	void updateWeights()
+	void update_weights()
 	{
 	}
 

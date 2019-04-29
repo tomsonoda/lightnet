@@ -14,24 +14,139 @@ extern vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<
 extern CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens );
 extern float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens );
 
-float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
-#ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object);
-#else
-	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
-#endif
+float sigmoid_derivative( float x )
+{
+	float sig = 1.0f / (1.0f + exp( -x ));
+	return sig * (1 - sig);
+}
+
+float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object){
+
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forward( layers[i], data, thread_pool );
+		}else{
+			forward( layers[i], layers[i-1]->out, thread_pool );
+		}
+	}
+
+	TensorObject<float> output_tensor = layers.back()->out;
+	for(int b = 0; b < output_tensor.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			output_tensor( b, i  , 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i  , 0, 0 ) )); // x: sigmoid
+			output_tensor( b, i+1, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+1, 0, 0 ) )); // y: sigmoid
+			output_tensor( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ); // w: exp
+			output_tensor( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ); // h: exp
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				output_tensor( b, i+4+c, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+4+c , 0, 0 ) )); // id: sigmoid
+			}
+		}
+	}
+
+	// TensorObject<float> grads = layers.back()->out - expected;
+	TensorObject<float> grads = output_tensor - expected;
+
+	// parcial differential for grads
+	for(int b = 0; b < grads.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			grads( b, i  , 0, 0 ) = sigmoid_derivative( output_tensor( b, i  , 0, 0 ) ) * grads( b, i  , 0, 0 ); // x: sigmoid derivative * grads
+			grads( b, i+1, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+1 , 0, 0 ) ) * grads( b, i+1, 0, 0 ); // y: sigmoid derivative * grads
+			grads( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ) * grads( b, i+2, 0, 0 ); // w: exp * grads
+			grads( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ) * grads( b, i+3, 0, 0 ); // h: exp * grads
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				grads( b, i+4+c, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+4+c , 0, 0 ) ) * grads( b, i+4+c , 0, 0 ); // id: sigmoid derivative * grads
+			}
+		}
+	}
+
+	for( int i = 0; i < layers.size(); ++i ){
+		layers[i]->dz_in.clear();
+		layers[i]->dz.clear();
+	}
+
+	for ( int i = layers.size() - 1; i >= 0; i-- ){
+		if ( i == layers.size() - 1 ){
+			backward( layers[i], grads, thread_pool );
+		}else{
+			backward( layers[i], layers[i+1]->dz, thread_pool );
+		}
+	}
+
+	for ( int i = 0; i < layers.size(); ++i ){
+		update_weights( layers[i] );
+	}
+
+	if(optimizer=="mse"){
+
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+
+	}else{
+
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+	  }
+		loss /= (float)expected.size.b;
+
+		if ( step % parameter_object->train_output_span == 0 ){
+			printf("----GT----\n");
+			printTensor(expected);
+			printf("----output----\n");
+			printTensor(layers[layers.size()-1]->out);
+		}
+		return loss;
+
+	}
 }
 
 float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object ){
-	float loss_value = 0.0;
-#ifdef GPU_CUDA
-	loss_value = testNetworkGPU( layers, data, expected, optimizer );
-#else
-	loss_value = testNetwork( layers, data, expected, optimizer, thread_pool );
-#endif
+
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forward( layers[i], data, thread_pool );
+		}else{
+			forward( layers[i], layers[i-1]->out, thread_pool );
+		}
+	}
+
+
+	TensorObject<float> output_tensor = layers.back()->out;
+	for(int b = 0; b < output_tensor.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			output_tensor( b, i  , 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i  , 0, 0 ) )); // x: sigmoid
+			output_tensor( b, i+1, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+1, 0, 0 ) )); // y: sigmoid
+			output_tensor( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ); // w: exp
+			output_tensor( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ); // h: exp
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				output_tensor( b, i+4+c, 0, 0 ) = 1.0f / (1.0f + exp( -output_tensor( b, i+4+c , 0, 0 ) )); // id: sigmoid
+			}
+		}
+	}
+
+	TensorObject<float> grads = output_tensor - expected;
+	// TensorObject<float> grads = layers.back()->out - expected;
+	// parcial differential for grads
+	for(int b = 0; b < grads.size.b; ++b ){
+		for( int i = 0; i < parameter_object->max_bounding_boxes; i=i+(4+parameter_object->max_classes)){
+			grads( b, i  , 0, 0 ) = sigmoid_derivative( output_tensor( b, i  , 0, 0 ) ) * grads( b, i  , 0, 0 ); // x: sigmoid derivative * grads
+			grads( b, i+1, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+1 , 0, 0 ) ) * grads( b, i+1, 0, 0 ); // y: sigmoid derivative * grads
+			grads( b, i+2, 0, 0 ) = exp( output_tensor( b, i+2, 0, 0 ) ) * grads( b, i+2, 0, 0 ); // w: exp * grads
+			grads( b, i+3, 0, 0 ) = exp( output_tensor( b, i+3, 0, 0 ) ) * grads( b, i+3, 0, 0 ); // h: exp * grads
+			for( int c = 0; c < parameter_object->max_classes; ++c){
+				grads( b, i+4+c, 0, 0 ) = sigmoid_derivative( output_tensor( b, i+4+c , 0, 0 ) ) * grads( b, i+4+c , 0, 0 ); // id: sigmoid derivative * grads
+			}
+		}
+	}
+
 
 	float best_iou = 0.0;
-	TensorObject<float> output_tensor = layers.back()->out;
 	int out_size = output_tensor.size.x * output_tensor.size.y * output_tensor.size.z;
 	int out_float_size = output_tensor.size.x * output_tensor.size.y * output_tensor.size.z * sizeof(float);
 
@@ -48,9 +163,28 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 	}
 	cout << "  test IOU : " << best_iou << endl;
 
-	return loss_value;
-}
+	if(optimizer=="mse"){
 
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+
+	}else{
+
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+	    loss += (-expected.data[i] * log(output_tensor.data[i]));
+	  }
+		loss /= (float)expected.size.b;
+		return loss;
+
+	}
+}
 
 void objectDetection(int argc, char **argv)
 {

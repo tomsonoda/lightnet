@@ -146,8 +146,7 @@
     {"type":"convolutional", "filters":35, "size":1, "stride":1, "padding":0},
     {"type":"batch_normalization"},
 
-    {"type":"dense", "out_size":180}
-    {"type":"detect_objects"}
+    {"type":"dense", "out_size":35}
 
   ]
 }
