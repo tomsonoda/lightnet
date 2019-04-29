@@ -147,7 +147,6 @@
     {"type":"batch_normalization"},
 
     {"type":"dense", "out_size":35}
-    {"type":"detect_objects"}
 
   ]
 }

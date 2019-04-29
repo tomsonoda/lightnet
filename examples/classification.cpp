@@ -7,22 +7,94 @@
 #include <fstream>
 #include "lightnet.h"
 
+using namespace std;
+
 extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
 float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
-#ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object);
-#else
-	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
-#endif
+
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forward( layers[i], data, thread_pool );
+		}else{
+			forward( layers[i], layers[i-1]->out, thread_pool );
+		}
+	}
+
+	TensorObject<float> grads = layers.back()->out - expected;
+	for( int i = 0; i < layers.size(); ++i ){
+		layers[i]->dz_in.clear();
+		layers[i]->dz.clear();
+	}
+
+	for ( int i = layers.size() - 1; i >= 0; i-- ){
+		if ( i == layers.size() - 1 ){
+			backward( layers[i], grads, thread_pool );
+		}else{
+			backward( layers[i], layers[i+1]->dz, thread_pool );
+		}
+	}
+
+	for ( int i = 0; i < layers.size(); ++i ){
+		update_weights( layers[i] );
+	}
+
+	if(optimizer=="mse"){
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+
+	}else{
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+	  }
+		loss /= (float)expected.size.b;
+
+		if ( step % parameter_object->train_output_span == 0 ){
+			printf("----GT----\n");
+			printTensor(expected);
+			printf("----output----\n");
+			printTensor(layers[layers.size()-1]->out);
+		}
+		return loss;
+	}
 }
 
 float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool ){
-#ifdef GPU_CUDA
-	return testNetworkGPU( layers, data, expected, optimizer);
-#else
-	return testNetwork( layers, data, expected, optimizer, thread_pool );
-#endif
+
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forward( layers[i], data, thread_pool );
+		}else{
+			forward( layers[i], layers[i-1]->out, thread_pool );
+		}
+	}
+
+	TensorObject<float> grads = layers.back()->out - expected;
+
+	if(optimizer=="mse"){
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+	}else{
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+	    loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+	  }
+		loss /= (float)expected.size.b;
+		return loss;
+	}
 }
 
 void classification(int argc, char **argv)

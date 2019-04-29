@@ -6,8 +6,7 @@ namespace gpu_cuda {
 __global__ void calcMaxPoolForwardGPU(float *in,float *out,
   int in_size_x, int in_size_y, int in_size_z,
   int size_x, int size_y, int size_z,
-  int stride, int kernel_size
-)
+  int stride, int kernel_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
@@ -41,44 +40,8 @@ __global__ void calcMaxPoolForwardGPU(float *in,float *out,
   out[id_out] = mval;
 }
 
-__device__ struct range_t
+__global__ void calcMaxPoolBackwardGPU(float *in1, float *in2, float *in3, float* out)
 {
-  int min_x, min_y;
-  int max_x, max_y;
-};
-
-__device__ int normalize_range( float f, int max, bool lim_min )
-{
-  if ( f <= 0 ){
-    return 0;
-  }
-  max -= 1;
-  if ( f >= max ){
-    return max;
-  }
-
-  if ( lim_min ){ // left side of inequality
-    return ceil( f );
-  }else{
-    return floor( f );
-  }
-}
-
-__device__ range_t map_to_output( int x, int y )
-{
-  float a = x;
-  float b = y;
-  float stride_inv = 1.0/stride;
-  return
-  {
-    normalize_range( (a - kernel_size + 1) * stride_inv, out.size.x, true ),
-    normalize_range( (b - kernel_size + 1) * stride_inv, out.size.y, true ),
-    normalize_range( a * stride_inv, out.size.x, false ),
-    normalize_range( b * stride_inv, out.size.y, false )
-  };
-}
-
-__global__ void calcMaxPoolBackwardGPU(
 }
 
 void maxPoolForwardGPU(float *data_in, float *data_out,
@@ -98,13 +61,8 @@ void maxPoolForwardGPU(float *data_in, float *data_out,
   cudaMemcpy(data_out, d_out, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 
-void maxPoolBackwardGPU(
-  float *gpu_in, float *gpu_out, float *gpu_dz, float *gpu_dz_in,
-  float *in, float *out, float *dz, float *dz_in,
-  int in_size_b, int in_size_x, int in_size_y, int in_size_z,
-  int out_size_b, int out_size_x, int out_size_y, int out_size_z,
-  int stride, int kernel_size
-)
+void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N)
 {
 }
+
 } // namespace gpu

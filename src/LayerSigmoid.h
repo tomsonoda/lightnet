@@ -20,67 +20,11 @@ struct LayerSigmoid
 		in_total_size = in_size.b *in_size.x *in_size.y *in_size.z;
 	}
 
-#ifdef GPU_CUDA
-
-	void forwardGPU( TensorObject<float>& in )
-	{
-		this->in = in;
-		forwardGPU();
-	}
-
-	void forwardGPU()
-	{
-		for ( int i = 0; i < in_total_size; ++i ){
-			out.data[i] = activator_function(in.data[i]);
-		}
-	}
-
-	void updateWeightsGPU()
-	{
-	}
-
-	void backwardGPU( TensorObject<float>& dz_next_layer )
-	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
-
-		for ( int i = 0; i < in_total_size; ++i ){
-			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
-		}
-	}
-
-#else
-
 	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
 		forward();
 	}
-
-	void forward()
-	{
-		for ( int i = 0; i < in_total_size; ++i ){
-			out.data[i] = activator_function(in.data[i]);
-		}
-	}
-
-	void updateWeights()
-	{
-	}
-
-	void backward( TensorObject<float>& dz_next_layer )
-	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
-
-		for ( int i = 0; i < in_total_size; ++i ){
-			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
-		}
-	}
-
-#endif
 
 	float activator_function( float x )
 	{
@@ -94,5 +38,26 @@ struct LayerSigmoid
 		return sig * (1 - sig);
 	}
 
+	void forward()
+	{
+		for ( int i = 0; i < in_total_size; ++i ){
+			out.data[i] = activator_function(in.data[i]);
+		}
+	}
+
+	void update_weights()
+	{
+	}
+
+	void backward( TensorObject<float>& dz_next_layer )
+	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
+			dz_in.data[i] += dz_next_layer.data[i];
+		}
+
+		for ( int i = 0; i < in_total_size; ++i ){
+			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
+		}
+	}
 };
 #pragma pack(pop)

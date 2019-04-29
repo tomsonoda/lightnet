@@ -25,15 +25,13 @@ struct LayerRoute
 		this->ref_layers = ref_layers;
 	}
 
-#ifdef GPU_CUDA
-
-	void forwardGPU( TensorObject<float>& in )
+	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
-		forwardGPU();
+		forward();
 	}
 
-	void forwardGPU()
+	void forward()
 	{
 		int z_offset = 0;
 		// printf("layers=%ld out_b_size=%d, out_x_size=%d, out_y_size=%d, out_z_size=%d, \n", ref_layers.size(), out.size.b, out.size.x, out.size.y, out.size.z);
@@ -53,11 +51,11 @@ struct LayerRoute
 		}
 	}
 
-	void updateWeightsGPU()
+	void update_weights()
 	{
 	}
 
-	void backwardGPU( TensorObject<float>& dz_next_layer )
+	void backward( TensorObject<float>& dz_next_layer )
 	{
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
@@ -80,60 +78,5 @@ struct LayerRoute
 			z_offset = layer_dz.size.z;
 		}
 	}
-
-#else
-
-	void forward( TensorObject<float>& in )
-	{
-		this->in = in;
-		forward();
-	}
-
-	void forward()
-	{
-		int z_offset = 0;
-		for( int i=0; i<ref_layers.size(); ++i ){
-			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
-			for ( int b = 0; b < layer_in.size.b; ++b ){
-				for ( int z = 0; z < layer_in.size.z; ++z ){
-					for ( int y = 0; y < layer_in.size.y; y++ ){
-						for ( int x = 0; x < layer_in.size.x; x++ ){
-							out( b, x, y, z_offset+z ) = layer_in( b, x, y, z );
-						}
-					}
-				}
-			}
-			z_offset = layer_in.size.z;
-		}
-	}
-
-	void updateWeights()
-	{
-	}
-
-	void backward( TensorObject<float>& dz_next_layer )
-	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
-
-		int z_offset = 0;
-		for( int i=0; i<ref_layers.size(); ++i ){
-			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
-			for ( int b = 0; b < layer_dz.size.b; ++b ){
-				for ( int z = 0; z < layer_dz.size.z; ++z ){
-					for ( int y = 0; y < layer_dz.size.y; y++ ){
-						for ( int x = 0; x < layer_dz.size.x; x++ ){
-							layer_dz( b, x, y, z ) += dz_in( b, x, y, z_offset+z );
-						}
-					}
-				}
-			}
-			z_offset = layer_dz.size.z;
-		}
-	}
-
-#endif
-
 };
 #pragma pack(pop)

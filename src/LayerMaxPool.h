@@ -4,21 +4,12 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_o, int N);
-
-	void maxPoolForwardGPU(
-		float *data_in, float *data_out, float *gpu_i, float *gpu_o,
+	void maxPoolForwardGPU(float *data_in, float *data_out,
+		float *gpu_i, float *gpu_o,
 	  int in_size_b, int in_size_x, int in_size_y, int in_size_z,
 	  int out_size_b, int out_size_x, int out_size_y, int out_size_z,
-	  int stride, int kernel_size
-	);
-
-	void maxPoolBackwardGPU(
-		float *gpu_in, float *gpu_out, float *gpu_dz, float *gpu_dz_in,
-		float *in, float *out, float *dz, float *dz_in,
-		int in_size_b, int in_size_x, int in_size_y, int in_size_z,
-		int out_size_b, int out_size_x, int out_size_y, int out_size_z,
-		int stride, int kernel_size
-	);
+	  int stride, int kernel_size);
+	void maxPoolBackwardGPU(float *data_in1, float *data_in2, float *data_in3, float *data_out, int N);
 } //namespace gpu
 #endif
 
@@ -70,6 +61,7 @@ struct LayerPool
 		gpu_cuda::cudaMakeArray(gpu_dz_in, dz_in_size);
 		gpu_cuda::cudaMakeArray(gpu_dz_next_layer, dz_in_size);
 #endif
+
 
 		assert( (float( in_size.x - kernel_size ) / stride + 1)
 				==
@@ -127,45 +119,6 @@ struct LayerPool
 		};
 	}
 
-#ifdef GPU_CUDA
-
-	void forwardGPU( TensorObject<float>& in )
-	{
-		this->in = in;
-		forwardGPU();
-	}
-
-	void forwardGPU()
-	{
-		gpu_cuda::maxPoolForwardGPU(
-			in.data, out.data,
-			gpu_in, gpu_out,
-			in.size.b, in.size.x, in.size.y, in.size.z,
-			out.size.b, out.size.x, out.size.y, out.size.z,
-			stride, kernel_size);
-	}
-
-	void updateWeightsGPU()
-	{
-	}
-
-	void backwardGPU( TensorObject<float>& dz_next_layer )
-	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
-		gpu_cuda::maxPoolBackwardGPU(
-			gpu_in, gpu_out, gpu_dz, gpu_dz_in,
-			in.data, out.data, dz.data, dz_in.data,
-			in.size.b, in.size.x, in.size.y, in.size.z,
-			out.size.b, out.size.x, out.size.y, out.size.z,
-			stride, kernel_size
-			);
-	}
-
-#else
-// CPU
-
 	void forward( TensorObject<float>& in )
 	{
 		this->in = in;
@@ -174,6 +127,13 @@ struct LayerPool
 
 	void forward()
 	{
+#ifdef GPU_CUDA
+		gpu_cuda::maxPoolForwardGPU(in.data, out.data,
+			gpu_in, gpu_out,
+			in.size.b, in.size.x, in.size.y, in.size.z,
+			out.size.b, out.size.x, out.size.y, out.size.z,
+			stride, kernel_size);
+#else
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int z = 0; z < out.size.z; ++z ){
 				for ( int y = 0; y < out.size.y; ++y ){
@@ -193,9 +153,10 @@ struct LayerPool
 				}
 			}
 		}
+#endif
 	}
 
-	void updateWeights()
+	void update_weights()
 	{
 	}
 
@@ -204,6 +165,7 @@ struct LayerPool
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
+
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int y = 0; y < in.size.y; ++y ){
 				for ( int x = 0; x < in.size.x; ++x ){
@@ -222,9 +184,7 @@ struct LayerPool
 				}
 			}
 		}
+
 	}
-
-#endif
-
 };
 #pragma pack(pop)
