@@ -185,7 +185,7 @@ struct LayerConvolution
 
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 		int filters_size = filters.size();
 		for ( int a = 0; a < filters_size; ++a ){

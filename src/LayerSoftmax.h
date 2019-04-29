@@ -52,7 +52,7 @@ struct LayerSoftmax
 		}
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 	}
 

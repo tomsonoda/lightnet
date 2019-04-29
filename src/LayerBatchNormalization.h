@@ -105,7 +105,7 @@ struct LayerBatchNormalization
 		}
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 		for( int i=0; i < in.size.z; ++i ){
 			gamma.data[i] -= lr * dgamma.data[i];

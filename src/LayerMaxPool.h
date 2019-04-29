@@ -156,7 +156,7 @@ struct LayerPool
 #endif
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 	}
 

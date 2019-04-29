@@ -38,7 +38,7 @@ struct LayerReLU
 		}
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 	}
 
