@@ -4,8 +4,6 @@
 #include <iostream>
 #include <algorithm> // std::equal
 
-using namespace std;
-
 #pragma pack(push, 1)
 struct ParameterObject
 {

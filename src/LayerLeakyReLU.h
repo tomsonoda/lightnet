@@ -47,21 +47,40 @@ struct LayerLeakyReLU
 
 	}
 
-		void forward(
-			TensorObject<float>& in
-		)
+#ifdef GPU_CUDA
+
+	void forwardGPU( TensorObject<float>& in )
 	{
 		this->in = in;
-		forward(
-		);
+		forwardGPU();
 	}
 
-	void forward(
-	)
+	void forwardGPU()
 	{
-#ifdef GPU_CUDA
-	gpu_cuda::leakyReluForwardGPU(in.data, out.data, gpu_in, gpu_out, data_size);
+		gpu_cuda::leakyReluForwardGPU(in.data, out.data, gpu_in, gpu_out, data_size);
+	}
+
+	void updateWeightsGPU()
+	{
+	}
+
+	void backwardGPU( TensorObject<float>& dz_next_layer )
+	{
+			gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data,
+				gpu_in, gpu_dz_next_layer, gpu_dz_in, gpu_dz,
+				data_size);
+	}
+
 #else
+
+	void forward( TensorObject<float>& in )
+	{
+		this->in = in;
+		forward();
+	}
+
+	void forward()
+	{
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
 			if ( v < 0 ){
@@ -69,20 +88,14 @@ struct LayerLeakyReLU
 			}
 			out.data[i] = v;
 		}
-#endif
 	}
 
-	void update_weights()
+	void updateWeights()
 	{
 	}
 
 	void backward( TensorObject<float>& dz_next_layer )
 	{
-#ifdef GPU_CUDA
-			gpu_cuda::leakyReluBackwardGPU(in.data, dz_next_layer.data, dz_in.data, dz.data,
-				gpu_in, gpu_dz_next_layer, gpu_dz_in, gpu_dz,
-				data_size);
-#else
 		// for( int i = 0; i < data_size ; ++i ){
 		// 	dz_in.data[i] += dz_next_layer.data[i];
 		// }
@@ -93,7 +106,9 @@ struct LayerLeakyReLU
 			dz_in.data[i] += dz_next_layer.data[i];
 			dz.data[i] +=  (in.data[i] < 0) ? (0.1) : dz_in.data[i];
 		}
-#endif
 	}
+
+#endif
+
 };
 #pragma pack(pop)

@@ -3,6 +3,7 @@
 #include "TensorObject.h"
 #include "LayerBatchNormalization.h"
 #include "LayerDense.h"
+#include "LayerDetectObjects.h"
 #include "LayerLeakyReLU.h"
 #include "LayerMaxPool.h"
 #include "LayerReLU.h"
@@ -19,6 +20,264 @@
 #define VERSION_MINOR    (1)
 #define VERSION_REVISION (0)
 
+static void printTensor( TensorObject<float>& data )
+{
+	int mx = data.size.x;
+	int my = data.size.y;
+	int mz = data.size.z;
+	int mb = data.size.b;
+
+	for ( int b = 0; b < mb; ++b ){
+		printf( "[Batch %d]\n", b );
+		for ( int z = 0; z < mz; ++z ){
+			// printf( "[Dim %d]\n", z );
+			for ( int y = 0; y < my; y++ ){
+				for ( int x = 0; x < mx; x++ ){
+					printf( "%.3f \t", (float)data( b, x, y, z ) );
+				}
+				printf( "\n" );
+			}
+			printf( "\n" );
+		}
+	}
+}
+
+#ifdef GPU_CUDA
+
+static void backwardGPU( LayerObject* layer, TensorObject<float>& dz_next_layer)
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::dropout:
+			((LayerDropout*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::leaky_relu:
+			((LayerLeakyReLU*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::max_pool:
+			((LayerPool*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::relu:
+			((LayerReLU*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::softmax:
+			((LayerSoftmax*)layer)->backwardGPU( dz_next_layer );
+			return;
+		default:
+			assert( false );
+	}
+}
+
+static void updateWeightsGPU( LayerObject* layer )
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::dropout:
+			((LayerDropout*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::leaky_relu:
+				((LayerLeakyReLU*)layer)->updateWeightsGPU();
+				return;
+		case LayerType::max_pool:
+			((LayerPool*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::relu:
+			((LayerReLU*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->updateWeightsGPU();
+			return;
+		case LayerType::softmax:
+			((LayerSoftmax*)layer)->updateWeightsGPU();
+			return;
+		default:
+			assert( false );
+	}
+}
+
+static void forwardGPU( LayerObject* layer, TensorObject<float>& in)
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->forwardGPU( in );
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->forwardGPU( in );
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->forwardGPU( in );
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->forwardGPU( in );
+			return;
+		case LayerType::dropout:
+			((LayerDropout*)layer)->forwardGPU( in );
+			return;
+		case LayerType::leaky_relu:
+			((LayerLeakyReLU*)layer)->forwardGPU( in );
+			return;
+
+		case LayerType::max_pool:
+			((LayerPool*)layer)->forwardGPU( in );
+			return;
+		case LayerType::relu:
+			((LayerReLU*)layer)->forwardGPU( in );
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->forwardGPU( in );
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->forwardGPU( in );
+			return;
+		case LayerType::softmax:
+			((LayerSoftmax*)layer)->forwardGPU( in );
+			return;
+		default:
+			printf("layer type=%d\n", layer->type);
+			assert( false );
+	}
+}
+
+static float trainNetworkGPU(
+	int step,
+	vector<LayerObject*>& layers,
+	TensorObject<float>& data,
+	TensorObject<float>& expected,
+	string optimizer,
+	ParameterObject *parameter_object
+	)
+{
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forwardGPU( layers[i], data );
+		}else{
+			forwardGPU( layers[i], layers[i-1]->out );
+		}
+	}
+
+	TensorObject<float> grads = layers.back()->out - expected;
+	for( int i = 0; i < layers.size(); ++i ){
+		layers[i]->dz_in.clear();
+		layers[i]->dz.clear();
+	}
+
+	for ( int i = layers.size() - 1; i >= 0; i-- ){
+		if ( i == layers.size() - 1 ){
+			backwardGPU( layers[i], grads );
+		}else{
+			backwardGPU( layers[i], layers[i+1]->dz );
+		}
+	}
+
+	for ( int i = 0; i < layers.size(); ++i ){
+		updateWeightsGPU( layers[i] );
+	}
+
+	if(optimizer=="mse"){
+
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+
+	}else{
+
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+			loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+		}
+		loss /= (float)expected.size.b;
+
+		if ( step % parameter_object->train_output_span == 0 ){
+			printf("----GT----\n");
+			printTensor(expected);
+			printf("----output----\n");
+			printTensor(layers[layers.size()-1]->out);
+		}
+		return loss;
+	}
+}
+
+static float testNetworkGPU(
+	vector<LayerObject*>& layers,
+	TensorObject<float>& data,
+	TensorObject<float>& expected,
+	string optimizer
+	)
+	{
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forwardGPU( layers[i], data );
+		}else{
+			forwardGPU( layers[i], layers[i-1]->out );
+		}
+	}
+
+	TensorObject<float> grads = layers.back()->out - expected;
+
+	if(optimizer=="mse"){
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+
+	}else{
+
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+			loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+		}
+		loss /= (float)expected.size.b;
+		return loss;
+
+	}
+}
+
+#else
+// CPU
+
 static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, ThreadPool& thread_pool )
 {
 	switch ( layer->type )
@@ -31,6 +290,9 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, Th
 			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->backward( dz_next_layer, thread_pool );
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::dropout:
 			((LayerDropout*)layer)->backward( dz_next_layer );
@@ -58,39 +320,42 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, Th
 	}
 }
 
-static void update_weights( LayerObject* layer )
+static void updateWeights( LayerObject* layer )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->update_weights();
+			((LayerBatchNormalization*)layer)->updateWeights();
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->update_weights();
+			((LayerConvolution*)layer)->updateWeights();
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->update_weights();
+			((LayerDense*)layer)->updateWeights();
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->updateWeights();
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->update_weights();
+			((LayerDropout*)layer)->updateWeights();
 			return;
 		case LayerType::leaky_relu:
-				((LayerLeakyReLU*)layer)->update_weights();
+				((LayerLeakyReLU*)layer)->updateWeights();
 				return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->update_weights();
+			((LayerPool*)layer)->updateWeights();
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->update_weights();
+			((LayerReLU*)layer)->updateWeights();
 			return;
 		case LayerType::route:
-			((LayerRoute*)layer)->update_weights();
+			((LayerRoute*)layer)->updateWeights();
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->update_weights();
+			((LayerSigmoid*)layer)->updateWeights();
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->update_weights();
+			((LayerSoftmax*)layer)->updateWeights();
 			return;
 		default:
 			assert( false );
@@ -111,13 +376,15 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 		case LayerType::dense:
 			((LayerDense*)layer)->forward( in );
 			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->forward( in );
+			return;
 		case LayerType::dropout:
 			((LayerDropout*)layer)->forward( in );
 			return;
 		case LayerType::leaky_relu:
 			((LayerLeakyReLU*)layer)->forward( in );
 			return;
-
 		case LayerType::max_pool:
 			((LayerPool*)layer)->forward( in );
 			return;
@@ -139,6 +406,109 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 	}
 }
 
+static float trainNetwork(
+	int step,
+	vector<LayerObject*>& layers,
+	TensorObject<float>& data,
+	TensorObject<float>& expected,
+	string optimizer,
+	ThreadPool& thread_pool,
+	ParameterObject *parameter_object
+	)
+{
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forward( layers[i], data, thread_pool );
+		}else{
+			forward( layers[i], layers[i-1]->out, thread_pool );
+		}
+	}
+
+	TensorObject<float> grads = layers.back()->out - expected;
+	for( int i = 0; i < layers.size(); ++i ){
+		layers[i]->dz_in.clear();
+		layers[i]->dz.clear();
+	}
+
+	for ( int i = layers.size() - 1; i >= 0; i-- ){
+		if ( i == layers.size() - 1 ){
+			backward( layers[i], grads, thread_pool );
+		}else{
+			backward( layers[i], layers[i+1]->dz, thread_pool );
+		}
+	}
+
+	for ( int i = 0; i < layers.size(); ++i ){
+		updateWeights( layers[i] );
+	}
+
+	if(optimizer=="mse"){
+
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+
+	}else{
+
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+			loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+		}
+		loss /= (float)expected.size.b;
+
+		if ( step % parameter_object->train_output_span == 0 ){
+			printf("----GT----\n");
+			printTensor(expected);
+			printf("----output----\n");
+			printTensor(layers[layers.size()-1]->out);
+		}
+		return loss;
+	}
+}
+
+static float testNetwork(
+	vector<LayerObject*>& layers,
+	TensorObject<float>& data,
+	TensorObject<float>& expected,
+	string optimizer,
+	ThreadPool& thread_pool
+	)
+	{
+	for( int i = 0; i < layers.size(); ++i ){
+		if( i == 0 ){
+			forward( layers[i], data, thread_pool );
+		}else{
+			forward( layers[i], layers[i-1]->out, thread_pool );
+		}
+	}
+
+	TensorObject<float> grads = layers.back()->out - expected;
+
+	if(optimizer=="mse"){
+		float err = 0;
+		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
+			float f = expected.data[i];
+			if ( f > 0.5 ){
+				err += abs(grads.data[i]);
+			}
+		}
+		return (err * 100)/(float)expected.size.b;
+	}else{
+		float loss = 0.0;
+		for ( int i = 0; i < grads.size.b *grads.size.x * grads.size.y * grads.size.z; ++i ){
+			loss += (-expected.data[i] * log(layers.back()->out.data[i]));
+		}
+		loss /= (float)expected.size.b;
+		return loss;
+	}
+}
+
+#endif
 
 static void saveWeights( LayerObject* layer, ofstream& fout )
 {
@@ -201,6 +571,7 @@ static void loadWeights( LayerObject* layer, ifstream& fin )
 		case LayerType::dense:
 			((LayerDense*)layer)->loadWeights( fin );
 			return;
+		case LayerType::detect_objects:
 		case LayerType::dropout:
 		case LayerType::leaky_relu:
 		case LayerType::max_pool:
@@ -310,6 +681,24 @@ static vector<LayerObject*> loadModel(
       LayerConvolution * layer = new LayerConvolution( stride, size, filters, padding, in_size, learning_rate, decay, momentum);		// 28 * 28 * 1 -> 24 * 24 * 8
 
       layers.push_back( (LayerObject*)layer );
+
+		}else if(type=="detect_objects"){
+			int max_classes = 1;
+			int max_bounding_boxes = 1;
+			json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
+			string tmp = model_json->getChildValueForToken(nueral_network, "max_classes");
+			if(tmp.length()>0){
+				max_classes = std::stoi( tmp );
+			}
+			tmp = model_json->getChildValueForToken(nueral_network, "max_bounding_boxes");
+			if(tmp.length()>0){
+				max_bounding_boxes = std::stoi( tmp );
+			}
+
+			TensorSize in_size = layers[layers.size()-1]->out.size;
+			printf("%d: detect_objects     : max_classes=%d max_bounding_boxes=%d: ( %d ) -> ( %d )\n",i, max_classes, max_bounding_boxes, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			LayerDetectObjects *layer = new LayerDetectObjects( in_size, max_classes, max_bounding_boxes );
+			layers.push_back( (LayerObject*)layer );
 
 		}else if(type=="dense"){
 
@@ -457,27 +846,5 @@ static void loadModelParameters(JSONObject *model_json, vector <json_token_t*> m
 	if(parameter_object->batch_size<0){
 		fprintf(stderr, "Batch size should be 1>=.");
 		exit(0);
-	}
-}
-
-static void printTensor( TensorObject<float>& data )
-{
-	int mx = data.size.x;
-	int my = data.size.y;
-	int mz = data.size.z;
-	int mb = data.size.b;
-
-	for ( int b = 0; b < mb; ++b ){
-		printf( "[Batch %d]\n", b );
-		for ( int z = 0; z < mz; ++z ){
-			// printf( "[Dim %d]\n", z );
-			for ( int y = 0; y < my; y++ ){
-				for ( int x = 0; x < mx; x++ ){
-					printf( "%.3f \t", (float)data( b, x, y, z ) );
-				}
-				printf( "\n" );
-			}
-			printf( "\n" );
-		}
 	}
 }
