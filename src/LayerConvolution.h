@@ -98,6 +98,7 @@ struct LayerConvolution
 		memset( padded_in.data, 0, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
 
 #ifdef GPU_CUDA
+
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
 		gpu_cuda::cudaMakeArray(gpu_in, data_size);

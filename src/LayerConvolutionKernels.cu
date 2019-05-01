@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "CudaObject.h"
 
 namespace gpu_cuda {
 
@@ -39,12 +40,12 @@ __global__ void calcConvolutionForwardPaddedInGPU(float *in, float *padded_in,
 __global__ void calcConvolutionForwardGPU( float *padded_in, float *out,
     int out_size_x, int out_size_y, int out_size_z)
 {
-  int x = id % in_size_x;
-  id /= in_size_x;
-  int y = id % in_size_y;
+  int x = id % out_size_x;
+  id /= out_size_x;
+  int y = id % out_size_y;
   id /= in_size_y;
-  int z = id % in_size_z;
-  id /= in_size_z;
+  int z = id % out_size_z;
+  id /= out_size_z;
   int b = id;
 
   int out_index = b * (out_size_z * out_size_x * out_size_y) +
@@ -52,7 +53,7 @@ __global__ void calcConvolutionForwardGPU( float *padded_in, float *out,
   y * (out_size_x) +
   x ;
   float sum = 0.0;
-  
+
   out[out_index] = sum;
   /*
   for ( int b = 0; b < in.size.b; ++b ){
