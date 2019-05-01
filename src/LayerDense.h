@@ -8,6 +8,12 @@
 #include "GradientObject.h"
 #include "ThreadPool.h"
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void cudaMakeArray(float *gpu_array, int N);
+}
+#endif
+
 #pragma pack(push, 1)
 struct LayerDense
 {
@@ -16,6 +22,12 @@ struct LayerDense
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
+
+	float *gpu_dz;
+	float *gpu_in;
+	float *gpu_out;
+	float *gpu_dz_in;
+
 	TensorObject<float> weights;
 	TensorObject<float> dW;
 	unsigned weigts_data_num;
@@ -64,15 +76,16 @@ struct LayerDense
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( TensorObject<float>& in )
+	void forwardGPU( float *in )
 	{
-		this->in = in;
+		this->gpu_in = in;
 		forwardGPU();
 		this->dz.clear();
 	}
 
 	void forwardGPU()
 	{
+		/*
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int n = 0; n < out.size.x; ++n ){
 				float sum = 0;
@@ -87,6 +100,7 @@ struct LayerDense
 				out( b, n, 0, 0 ) = sum;
 			}
 		}
+		*/
 	}
 
 	void updateWeightsGPU()
@@ -100,14 +114,14 @@ struct LayerDense
 		}
 	}
 
-	void backwardGPU( TensorObject<float>& dz_next_layer )
+	void backwardGPU( float* dz_next_layer )
 	{
+		/*
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
 		std::vector< std::future<int> > results;
-
 		memset( dW.data, 0, dw_data_size );
 		for ( int n = 0; n < out.size.x; ++n ){
 			for ( int z = 0; z < in.size.z; ++z ){
@@ -128,12 +142,7 @@ struct LayerDense
 				}
 			}
 		}
-
-		for(auto && result: results){
-			result.get();
-		}
-
-		results.erase(results.begin(), results.end());
+		*/
 	}
 
 #else

@@ -4,6 +4,12 @@
 #include <fstream>
 #include "LayerObject.h"
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void cudaMakeArray(float *gpu_array, int N);
+}
+#endif
+
 #pragma pack(push, 1)
 struct LayerBatchNormalization
 {
@@ -12,6 +18,12 @@ struct LayerBatchNormalization
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
+
+	float *gpu_dz;
+	float *gpu_in;
+	float *gpu_out;
+	float *gpu_dz_in;
+
 	TensorObject<float> mean;
 	TensorObject<float> xmu;
 	TensorObject<float> variance;
@@ -50,18 +62,28 @@ struct LayerBatchNormalization
 			beta.data[i]  = 0.05 * rand() / float( RAND_MAX );
 		}
 		memset( mean.data, 0, in.size.z );
+
+#ifdef GPU_CUDA
+		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
+		gpu_cuda::cudaMakeArray(gpu_in, data_size);
+		gpu_cuda::cudaMakeArray(gpu_out, data_size);
+		gpu_cuda::cudaMakeArray(gpu_dz_in, data_size);
+#endif
+
 	}
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( TensorObject<float>& in )
+	void forwardGPU( float* in )
 	{
-		this->in = in;
+		this->gpu_in = in;
 		forwardGPU();
 	}
 
 	void forwardGPU()
 	{
+		/*
 		int filters = in.size.z;
 		scale = 1.0f / (in.size.b * in.size.x * in.size.y);
 
@@ -103,8 +125,8 @@ struct LayerBatchNormalization
 				}
 			}
 
-
 		}
+		*/
 	}
 
 	void updateWeightsGPU()
@@ -115,9 +137,9 @@ struct LayerBatchNormalization
 		}
 	}
 
-	void backwardGPU( TensorObject<float>& dz_next_layer )
+	void backwardGPU( float* dz_next_layer )
 	{
-
+		/*
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
@@ -186,6 +208,7 @@ struct LayerBatchNormalization
 			}
 
 		}
+		*/
 	}
 
 #else

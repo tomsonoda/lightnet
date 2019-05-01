@@ -3,8 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float *gpu_o, int N);
-
+	void cudaMakeArray(float *gpu_array, int N);
 	void maxPoolForwardGPU(
 		float *data_in, float *data_out, float *gpu_i, float *gpu_o,
 	  int in_size_b, int in_size_x, int in_size_y, int in_size_z,
@@ -24,23 +23,23 @@ namespace gpu_cuda {
 
 
 #pragma pack(push, 1)
-struct LayerPool
+struct LayerMaxPool
 {
 	LayerType type = LayerType::max_pool;
 	TensorObject<float> dz;
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
-	uint16_t stride;
-	uint16_t kernel_size;
 
 	float *gpu_dz;
 	float *gpu_in;
 	float *gpu_out;
 	float *gpu_dz_in;
-	float *gpu_dz_next_layer;
 
-	LayerPool( uint16_t stride, uint16_t kernel_size, TensorSize in_size )
+	uint16_t stride;
+	uint16_t kernel_size;
+
+	LayerMaxPool( uint16_t stride, uint16_t kernel_size, TensorSize in_size )
 		:
 		dz( in_size.b, in_size.x, in_size.y, in_size.z ),
 		in( in_size.b, in_size.x, in_size.y, in_size.z ),
@@ -68,7 +67,6 @@ struct LayerPool
 		int dz_in_size = dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z;
 		gpu_cuda::cudaMakeArray(gpu_out, dz_in_size);
 		gpu_cuda::cudaMakeArray(gpu_dz_in, dz_in_size);
-		gpu_cuda::cudaMakeArray(gpu_dz_next_layer, dz_in_size);
 #endif
 
 		assert( (float( in_size.x - kernel_size ) / stride + 1)
@@ -129,9 +127,9 @@ struct LayerPool
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( TensorObject<float>& in )
+	void forwardGPU( float* in )
 	{
-		this->in = in;
+		this->gpu_in = in;
 		forwardGPU();
 	}
 
@@ -149,8 +147,9 @@ struct LayerPool
 	{
 	}
 
-	void backwardGPU( TensorObject<float>& dz_next_layer )
+	void backwardGPU( float *dz_next_layer )
 	{
+		/*
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
@@ -161,6 +160,7 @@ struct LayerPool
 			out.size.b, out.size.x, out.size.y, out.size.z,
 			stride, kernel_size
 			);
+			*/
 	}
 
 #else

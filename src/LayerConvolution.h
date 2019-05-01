@@ -5,6 +5,12 @@
 #include "GradientObject.h"
 #include "ThreadPool.h"
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void cudaMakeArray(float *gpu_array, int N);
+}
+#endif
+
 #pragma pack(push, 1)
 struct LayerConvolution
 {
@@ -13,6 +19,12 @@ struct LayerConvolution
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
+
+	float *gpu_dz;
+	float *gpu_in;
+	float *gpu_out;
+	float *gpu_dz_in;
+
 	TensorObject<float> padded_in;
 	std::vector<TensorObject<float>> filters;
 	std::vector<TensorObject<GradientObject>> filter_grads;
@@ -77,6 +89,16 @@ struct LayerConvolution
 		}
 
 		memset( padded_in.data, 0, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
+
+#ifdef GPU_CUDA
+	int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
+	gpu_cuda::cudaMakeArray(gpu_dz, data_size);
+	gpu_cuda::cudaMakeArray(gpu_in, data_size);
+	int dz_in_size = dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z;
+	gpu_cuda::cudaMakeArray(gpu_out, dz_in_size);
+	gpu_cuda::cudaMakeArray(gpu_dz_in, dz_in_size);
+#endif
+
 	}
 
 	TensorCoordinate map_to_input( TensorCoordinate out, int z )
@@ -130,14 +152,15 @@ struct LayerConvolution
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( TensorObject<float>& in )
+	void forwardGPU( float* in )
 	{
-		this->in = in;
+		this->gpu_in = in;
 		forwardGPU();
 	}
 
 	void forwardGPU()
 	{
+		/*
 		std::vector< std::future<int> > results;
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int z = 0; z < in.size.z; ++z ){
@@ -168,6 +191,7 @@ struct LayerConvolution
 				}
 			}
 		}
+		*/
 	}
 
 	void updateWeightsGPU()
@@ -188,8 +212,10 @@ struct LayerConvolution
 		}
 	}
 
-	void backwardGPU( TensorObject<float>& dz_next_layer )
+	void backwardGPU( float *dz_next_layer )
 	{
+		
+		/*
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
@@ -252,6 +278,7 @@ struct LayerConvolution
 				}
 			}
 		}
+		*/
 	}
 
 #else

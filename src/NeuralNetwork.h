@@ -20,6 +20,15 @@
 #define VERSION_MINOR    (1)
 #define VERSION_REVISION (0)
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void cudaMakeArray(float *gpu_array, int N);
+	void cudaPutArray( float *gpu_array, float *cpu_array, int N );
+	void cudaGetArray( float *cpu_array, float *gpu_array, int N );
+}
+#endif
+
+
 static void printTensor( TensorObject<float>& data )
 {
 	int mx = data.size.x;
@@ -30,7 +39,6 @@ static void printTensor( TensorObject<float>& data )
 	for ( int b = 0; b < mb; ++b ){
 		printf( "[Batch %d]\n", b );
 		for ( int z = 0; z < mz; ++z ){
-			// printf( "[Dim %d]\n", z );
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
 					printf( "%.3f \t", (float)data( b, x, y, z ) );
@@ -44,7 +52,7 @@ static void printTensor( TensorObject<float>& data )
 
 #ifdef GPU_CUDA
 
-static void backwardGPU( LayerObject* layer, TensorObject<float>& dz_next_layer)
+static void backwardGPU( LayerObject* layer, float* dz_next_layer)
 {
 	switch ( layer->type )
 	{
@@ -67,7 +75,7 @@ static void backwardGPU( LayerObject* layer, TensorObject<float>& dz_next_layer)
 			((LayerLeakyReLU*)layer)->backwardGPU( dz_next_layer );
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->backwardGPU( dz_next_layer );
+			((LayerMaxPool*)layer)->backwardGPU( dz_next_layer );
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->backwardGPU( dz_next_layer );
@@ -109,7 +117,7 @@ static void updateWeightsGPU( LayerObject* layer )
 				((LayerLeakyReLU*)layer)->updateWeightsGPU();
 				return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->updateWeightsGPU();
+			((LayerMaxPool*)layer)->updateWeightsGPU();
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->updateWeightsGPU();
@@ -128,7 +136,7 @@ static void updateWeightsGPU( LayerObject* layer )
 	}
 }
 
-static void forwardGPU( LayerObject* layer, TensorObject<float>& in)
+static void forwardGPU( LayerObject* layer, float* in)
 {
 	switch ( layer->type )
 	{
@@ -152,7 +160,7 @@ static void forwardGPU( LayerObject* layer, TensorObject<float>& in)
 			return;
 
 		case LayerType::max_pool:
-			((LayerPool*)layer)->forwardGPU( in );
+			((LayerMaxPool*)layer)->forwardGPU( in );
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->forwardGPU( in );
@@ -181,25 +189,35 @@ static float trainNetworkGPU(
 	ParameterObject *parameter_object
 	)
 {
+	int in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
+	float *gpu_array = nullptr;
+	gpu_cuda::cudaMakeArray( gpu_array, in_size );
+	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
+
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], data );
+			forwardGPU( layers[i], gpu_array );
 		}else{
-			forwardGPU( layers[i], layers[i-1]->out );
+			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
 	}
 
-	TensorObject<float> grads = layers.back()->out - expected;
+	int out_size = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
+	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
+	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
+
+	TensorObject<float> grads = output_data - expected;
+
 	for( int i = 0; i < layers.size(); ++i ){
-		layers[i]->dz_in.clear();
-		layers[i]->dz.clear();
+		memset(layers[i]->gpu_dz_in, 0x00, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z * sizeof( float ));
+		memset(layers[i]->gpu_dz, 0x00, layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z * sizeof( float ));
 	}
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
-			backwardGPU( layers[i], grads );
+			backwardGPU( layers[i], grads.data );
 		}else{
-			backwardGPU( layers[i], layers[i+1]->dz );
+			backwardGPU( layers[i], layers[i+1]->gpu_dz );
 		}
 	}
 
@@ -242,16 +260,25 @@ static float testNetworkGPU(
 	TensorObject<float>& expected,
 	string optimizer
 	)
-	{
+{
+	int in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
+	float *gpu_array = nullptr;
+	gpu_cuda::cudaMakeArray( gpu_array, in_size );
+	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
+
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], data );
+			forwardGPU( layers[i], gpu_array );
 		}else{
-			forwardGPU( layers[i], layers[i-1]->out );
+			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
 	}
 
-	TensorObject<float> grads = layers.back()->out - expected;
+	int out_size = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
+	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
+	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
+
+	TensorObject<float> grads = output_data - expected;
 
 	if(optimizer=="mse"){
 		float err = 0;
@@ -301,7 +328,7 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, Th
 			((LayerLeakyReLU*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->backward( dz_next_layer );
+			((LayerMaxPool*)layer)->backward( dz_next_layer );
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->backward( dz_next_layer );
@@ -343,7 +370,7 @@ static void updateWeights( LayerObject* layer )
 				((LayerLeakyReLU*)layer)->updateWeights();
 				return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->updateWeights();
+			((LayerMaxPool*)layer)->updateWeights();
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->updateWeights();
@@ -386,7 +413,7 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 			((LayerLeakyReLU*)layer)->forward( in );
 			return;
 		case LayerType::max_pool:
-			((LayerPool*)layer)->forward( in );
+			((LayerMaxPool*)layer)->forward( in );
 			return;
 		case LayerType::relu:
 			((LayerReLU*)layer)->forward( in );
@@ -730,7 +757,7 @@ static vector<LayerObject*> loadModel(
 			int out_size_y = (in_size.y - size ) / stride + 1;
       printf("%d: maxpool            : stride=%d  kernel_size=%d: ( %d x %d x %d ) -> ( %d x %d x %d )\n",
 			i, stride, size, in_size.x, in_size.y, in_size.z, out_size_x, out_size_y, in_size.z);
-      LayerPool * layer = new LayerPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
+      LayerMaxPool * layer = new LayerMaxPool( stride, size, in_size );				// 24 * 24 * 8 -> 12 * 12 * 8
       layers.push_back( (LayerObject*)layer );
 
     }else if(type=="relu"){

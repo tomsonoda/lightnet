@@ -1,6 +1,12 @@
 #pragma once
 #include "LayerObject.h"
 
+#ifdef GPU_CUDA
+namespace gpu_cuda {
+	void cudaMakeArray(float *gpu_array, int N);
+}
+#endif
+
 #pragma pack(push, 1)
 struct LayerSoftmax
 {
@@ -9,6 +15,11 @@ struct LayerSoftmax
 	TensorObject<float> in;
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
+
+	float *gpu_dz;
+	float *gpu_in;
+	float *gpu_out;
+	float *gpu_dz_in;
 
 	LayerSoftmax( TensorSize in_size )
 		:
@@ -21,14 +32,15 @@ struct LayerSoftmax
  	}
 #ifdef GPU_CUDA
 
-	void forwardGPU( TensorObject<float>& in )
+	void forwardGPU( float* in )
 	{
-		this->in = in;
+		this->gpu_in = in;
 		forwardGPU();
 	}
 
 	void forwardGPU()
 	{
+		/*
 		for ( int b = 0; b < in.size.b; ++b ){
 
 			float max_v = 0.0;
@@ -54,15 +66,17 @@ struct LayerSoftmax
 			}
 
 		}
+		*/
 	}
 
 	void updateWeightsGPU()
 	{
 	}
 
-	void backwardGPU( TensorObject<float>& dz_next_layer )
+	void backwardGPU( float* dz_next_layer )
 	{
 
+		/*
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
@@ -70,6 +84,7 @@ struct LayerSoftmax
 		for ( int i = 0; i < in.size.b * in.size.x * in.size.y * in.size.z; ++i ){
 			dz.data[i] += dz_in.data[i];
 		}
+		*/
 
 	}
 
