@@ -97,12 +97,6 @@ struct LayerConvolution
 
 		memset( padded_in.data, 0, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
 
-		data_in_size  = in_size.b * in_size.x * in_size.y * in_size.z;
-		data_out_size = in_size.b *
-		( (in_size.x - kernel_size + 2*padding) / stride + 1 ) *
-		( (in_size.y - kernel_size + 2*padding) / stride + 1 ) *
-		number_filters;
-
 #ifdef GPU_CUDA
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
@@ -176,7 +170,7 @@ struct LayerConvolution
 
 	void forwardGPU()
 	{
-		convolutionForwardGPU(gpu_in, gpu_out, gpu_padded_in,
+		gpu_cuda::convolutionForwardGPU(gpu_in, gpu_out, gpu_padded_in,
 			in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, padding);
 	}
 
