@@ -24,14 +24,14 @@ void reluForwardGPU(float *in, float *out, int N)
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcLeakyReluForwardGPU<<<grid, BLOCK>>>(in, out);
+  calcReluForwardGPU<<<grid, BLOCK>>>(in, out);
 }
 
 void reluBackwardGPU( float *dz_in, float *dz, float *in, int N )
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcLeakyReluBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in );
+  calcReluBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in );
 }
 
 } // namespace gpu
