@@ -14,9 +14,10 @@ __global__ void calcReluForwardGPU(float *in, float *out)
   out[id] = v;
 }
 
-__global__ void calcReluBackwardGPU(float *dz_in, float *dz, float *in)
+__global__ void calcReluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  dz_in[id] += dz_next_layer[id]; 
   dz[id] +=  (in[id] < 0) ? (0) : (1.0 * dz_in[id]);
 }
 
@@ -29,12 +30,9 @@ void reluForwardGPU(float *in, float *out, int N)
 
 void reluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, int N )
 {
-  for( int i = 0; i < N; ++i ){
-    dz_in[i] += dz_next_layer[i];
-  }
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcReluBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in );
+  calcReluBackwardGPU<<<grid, BLOCK>>>( dz_next_layer, dz_in, dz, in );
 }
 
 } // namespace gpu
