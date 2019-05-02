@@ -160,9 +160,9 @@ void convolutionForwardGPU( float *dz_in, float *out, float *padded_in, int batc
 
 void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in )
 {
-  for( int i = 0; i < out_size_b * out_size_x * out_size_y * out_size_z ; ++i ){
-    dz_in[i] += dz_next_layer[i];
-  }
+  // for( int i = 0; i < out_size_b * out_size_x * out_size_y * out_size_z ; ++i ){
+  //   dz_in[i] += dz_next_layer[i];
+  // }
 }
 
 } // namespace gpu
