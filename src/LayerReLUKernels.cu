@@ -32,7 +32,6 @@ void reluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, 
   for( int i = 0; i < N; ++i ){
     dz_in[i] += dz_next_layer[i];
   }
-
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
   calcReluBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in );
