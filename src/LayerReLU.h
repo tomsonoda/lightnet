@@ -5,7 +5,7 @@
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_array, int N);
 	void reluForwardGPU( float *gpu_in, float *gpu_out, int N);
-	void reluBackwardGPU( float *gpu_dz_in, float *gpu_dz, float *in, int N );
+	void reluBackwardGPU( float *dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *in, int N );
 }
 #endif
 
@@ -64,10 +64,7 @@ struct LayerReLU
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		for( int i = 0; i < data_size; ++i ){
-			gpu_dz_in[i] += dz_next_layer[i];
-		}
-		gpu_cuda::reluBackwardGPU( gpu_dz_in, gpu_dz, gpu_in, data_size );
+		gpu_cuda::reluBackwardGPU(  dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, data_size );
 	}
 
 #else

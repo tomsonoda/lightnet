@@ -13,7 +13,7 @@ namespace gpu_cuda {
 		int in_size_x, int in_size_y, int in_size_z,
 	  int out_size_x, int out_size_y, int out_size_,
 		int padding );
-	void convolutionBockwardGPU( float *gpu_dz_in, float *gpu_dz, float *gpu_padded_in );
+	void convolutionBockwardGPU( float *dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *gpu_padded_in );
 }
 #endif
 
@@ -202,10 +202,7 @@ struct LayerConvolution
 
 	void backwardGPU( float *dz_next_layer )
 	{
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z ; ++i ){
-			gpu_dz_in[i] += dz_next_layer[i];
-		}
-		gpu_cuda::convolutionBockwardGPU( gpu_dz_in, gpu_dz, gpu_padded_in );
+		gpu_cuda::convolutionBockwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in );
 	}
 
 #else

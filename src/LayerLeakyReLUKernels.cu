@@ -27,8 +27,12 @@ void leakyReluForwardGPU(float *in, float *out, int N )
   calcLeakyReluForwardGPU<<<grid, BLOCK>>>(in, out);
 }
 
-void leakyReluBackwardGPU( float *dz_in, float *dz, float *in, int N )
+void leakyReluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, int N )
 {
+  for( int i = 0; i < N ; ++i ){
+    dz_in[i] += dz_next_layer[i];
+  }
+
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
   calcLeakyReluBackwardGPU<<<grid, BLOCK>>>( dz_in, dz , in);
