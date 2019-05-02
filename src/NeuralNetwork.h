@@ -212,12 +212,13 @@ static float trainNetworkGPU(
 	TensorObject<float> grads = output_data - expected;
 
 	for( int i = 0; i < layers.size(); ++i ){
-		printf("clear memory [%d] size:%d\n", i, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z * sizeof( float ));
+		// printf("clear memory [%d] size:%d\n", i, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z * sizeof( float ));
 		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z);
 		gpu_cuda::cudaClearArray( layers[i]->gpu_dz, layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z);
 	}
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
+		printf("backward [%d]\n", i);
 		if ( i == layers.size() - 1 ){
 			backwardGPU( layers[i], grads.data );
 		}else{
