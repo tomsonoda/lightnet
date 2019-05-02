@@ -23,7 +23,7 @@ struct ParameterObject
   ParameterObject()
   {
     save_latest_span = 100;
-    save_span = 100;
+    save_span = 1000;
     batch_size = 1;
     learning_rate = 0.01;
     momentum = 0.6;
