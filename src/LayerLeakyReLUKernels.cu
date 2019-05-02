@@ -3,7 +3,7 @@
 
 namespace gpu_cuda {
 
-__global__ void calcReluForwardGPU(float *in, float *out)
+__global__ void calcLeakyReluForwardGPU(float *in, float *out)
 {
   // int i = blockIdx.x*blockDim.x + threadIdx.x;
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -14,7 +14,7 @@ __global__ void calcReluForwardGPU(float *in, float *out)
   out[id] = v;
 }
 
-__global__ void calcReluBackwardGPU( float *dz_in, float *dz, float *in)
+__global__ void calcLeakyReluBackwardGPU( float *dz_in, float *dz, float *in)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   dz[id] +=  (in[id] < 0) ? (0.01) : (1.0 * dz_in[id]);
