@@ -5,6 +5,10 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52]
 
+ifeq ($(GPU_CUDA), 1)
+EXECOBJA = Cuda.o LayerConvolutionKernels.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o LayerReLUKernels.o
+endif
+
 NVCC= nvcc
 COMPILER = g++
 CFLAGS   = -g -Wall -O3 -std=c++11 -pthread
@@ -14,7 +18,7 @@ LDFLAGS  =
 AR       = ar
 ARFLAGS  = crs
 COMMON   = -Iinclude/ -Isrc/
-EXECOBJA = lightnet.o classification.o object_detection.o dataset.o
+EXECOBJA += lightnet.o classification.o object_detection.o dataset.o
 TARGET   = lightnet
 OBJDIR   = ./obj
 SRCDIR   = ./src
@@ -27,7 +31,6 @@ ifeq ($(GPU_CUDA), 1)
 COMMON+= -DGPU_CUDA -I/usr/local/cuda/include/
 CFLAGS+= -DGPU_CUDA
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
-EXECOBJA+= Cuda.o LayerConvolutionKernels.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o LayerReLUKernels.o
 endif
 
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
