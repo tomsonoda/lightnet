@@ -14,9 +14,10 @@ __global__ void calcLeakyReluForwardGPU(float *in, float *out)
   out[id] = v;
 }
 
-__global__ void calcLeakyReluBackwardGPU( float *dz_in, float *dz, float *in )
+__global__ void calcLeakyReluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  dz_in[id] += dz_next_layer[id]; 
   dz[id] +=  (in[id] < 0) ? (0.01) : (dz_in[id]);
 }
 
@@ -29,13 +30,13 @@ void leakyReluForwardGPU(float *in, float *out, int N )
 
 void leakyReluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, int N )
 {
-  for( int i = 0; i < N ; ++i ){
-    dz_in[i] += dz_next_layer[i];
-  }
+  // for( int i = 0; i < N ; ++i ){
+  //   dz_in[i] += dz_next_layer[i];
+  // }
 
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcLeakyReluBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in );
+  calcLeakyReluBackwardGPU<<<grid, BLOCK>>>( dz_next_layer, dz_in, dz, in );
 }
 
 } // namespace gpu

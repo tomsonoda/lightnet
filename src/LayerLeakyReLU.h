@@ -5,7 +5,7 @@
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_o, int N);
 	void leakyReluForwardGPU(float *in, float *out, int N);
-	void leakyReluBackwardGPU(  float *dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *gpu_in, int data_size );
+	void leakyReluBackwardGPU( float *gpu_dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *gpu_in, int data_size );
 } //namespace gpu
 #endif
 
@@ -86,7 +86,7 @@ struct LayerLeakyReLU
 	{
 		for( int i = 0; i < data_size; ++i ){
 			float v = in.data[i];
-			if ( v < 0 ){
+			if( v < 0 ){
 				v = 0.01 * v;
 			}
 			out.data[i] = v;
