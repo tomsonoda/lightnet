@@ -78,6 +78,13 @@ __device__ range_t map_to_output( int x, int y, int dz_in_size_x, int dz_in_size
   };
 }
 
+
+// __global__ void calcMaxPoolBackwardCopyNextLayerGPU(float * dz_next_layer, float *dz_in)
+// {
+//   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+//   dz_in[id] += dz_next_layer[id];
+// }
+
 __global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, float *out, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride, int kernel_size ){
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_dz = id;
@@ -107,7 +114,6 @@ __global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, floa
     }
   }
   dz[id_dz] += sum_error;
-
   /*
   for ( int b = 0; b < in.size.b; ++b ){
     for ( int y = 0; y < in.size.y; ++y ){
@@ -130,12 +136,6 @@ __global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, floa
   */
 }
 
-__global__ void calcMaxPoolBackwardCopyNextLayerGPU(float * dz_next_layer, float *dz_in)
-{
-  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  dz_in[id] += dz_next_layer[id];
-}
-
 void maxPoolForwardGPU(float *in, float *out, int in_size_x, int in_size_y, int in_size_z, int out_size_b, int out_size_x, int out_size_y, int out_size_z, int stride, int kernel_size)
 {
   int out_N = out_size_b * out_size_x * out_size_y * out_size_z;
@@ -150,7 +150,7 @@ void maxPoolBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *i
 
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(in_N);
-  calcMaxPoolBackwardCopyNextLayerGPU<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
+  cudaAddArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
 
   int N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   dim3 grid = cuda.cudaGridSize(N);
