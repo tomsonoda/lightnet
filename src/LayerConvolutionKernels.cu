@@ -4,57 +4,6 @@
 
 namespace gpu_cuda {
 
-  TensorCoordinate map_to_input( TensorCoordinate out, int z, int stride )
-  {
-    out.x *= stride;
-    out.y *= stride;
-    out.z = z;
-    return out;
-  }
-
-  struct tensor_range_t
-  {
-    int min_x, min_y;
-    int max_x, max_y;
-  };
-
-  int normalize_range_min( float f, int max )
-  {
-    if( f <= 0 ){
-      return 0;
-    }
-    max -= 1;
-    if( f >= max ){
-      return max;
-    }
-    return ceil( f );
-  }
-
-  int normalize_range_max( float f, int max )
-  {
-    max -= 1;
-    if( f >= max ){
-      return max;
-    }
-    return floor( f );
-  }
-
-  __device__ range_t map_to_output( int x, int y, int stride, int dz_in_size_x, int dz_in_size_y )
-  {
-    float a = x;
-    float b = y;
-    float stride_inv = 1.0/stride;
-    return
-    {
-      normalize_range( (a - kernel_size + 1) * stride_inv, dz_in_size_x, true ),
-      normalize_range( (b - kernel_size + 1) * stride_inv, dz_in_size_y, true ),
-      normalize_range( a * stride_inv, dz_in_size_x, false ),
-      normalize_range( b * stride_inv, dz_in_size_y, false )
-    };
-  }
-
-
-
 __global__ void calcConvolutionForwardPaddedInGPU(float *in, float *padded_in,
     int in_size_x, int in_size_y, int in_size_z, int padding)
 {
