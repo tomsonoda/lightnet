@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "CudaObject.h"
-#include "TensorCoordinate.h"
 
 namespace gpu_cuda {
 
@@ -52,10 +51,6 @@ __global__ void calcConvolutionForwardGPU( float *padded_in, float *out,
   id /= out_size_z;
   int b = id;
 
-  int out_index = b * (out_size_z * out_size_x * out_size_y) +
-  z * (out_size_x * out_size_y) +
-  y * (out_size_x) +
-  x ;
   float sum = 0.0;
 
   out[id_out] = sum;
