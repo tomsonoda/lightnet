@@ -78,7 +78,7 @@ __device__ range_t map_to_output( int x, int y, int dz_in_size_x, int dz_in_size
   };
 }
 
-__device__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, float *out, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride, int kernel_size ){
+__global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, float *out, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride, int kernel_size ){
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_dz = id;
 
