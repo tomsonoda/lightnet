@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include "CudaObject.h"
+#include "TensorCoordinate.h"
 
 namespace gpu_cuda {
 
-  TensorCoordinate map_to_input( TensorCoordinate out, int z )
+  TensorCoordinate map_to_input( TensorCoordinate out, int z, int stride )
   {
     out.x *= stride;
     out.y *= stride;
@@ -38,19 +39,20 @@ namespace gpu_cuda {
     return floor( f );
   }
 
-  tensor_range_t map_to_output( int x, int y )
+  __device__ range_t map_to_output( int x, int y, int stride, int dz_in_size_x, int dz_in_size_y )
   {
     float a = x;
     float b = y;
     float stride_inv = 1.0/stride;
     return
     {
-      normalize_range_min( (a - kernel_size + 1) * stride_inv, out.size.x ),
-      normalize_range_min( (b - kernel_size + 1) * stride_inv, out.size.y ),
-      normalize_range_max( a * stride_inv, out.size.x ),
-      normalize_range_max( b * stride_inv, out.size.y )
+      normalize_range( (a - kernel_size + 1) * stride_inv, dz_in_size_x, true ),
+      normalize_range( (b - kernel_size + 1) * stride_inv, dz_in_size_y, true ),
+      normalize_range( a * stride_inv, dz_in_size_x, false ),
+      normalize_range( b * stride_inv, dz_in_size_y, false )
     };
   }
+
 
 
 __global__ void calcConvolutionForwardPaddedInGPU(float *in, float *padded_in,
