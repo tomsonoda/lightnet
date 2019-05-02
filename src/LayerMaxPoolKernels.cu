@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "CudaObject.h"
+#include "CudaCommon.cuh"
 
 namespace gpu_cuda {
 
@@ -150,7 +151,7 @@ void maxPoolBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *i
 
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(in_N);
-  cudaAddArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
+  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
 
   int N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   dim3 grid = cuda.cudaGridSize(N);
