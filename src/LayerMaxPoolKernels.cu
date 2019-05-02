@@ -140,9 +140,9 @@ void maxPoolForwardGPU(float *in, float *out, int in_size_x, int in_size_y, int 
 
 void maxPoolBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *out, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride, int kernel_size)
 {
-  // for( int i = 0; i < batch_size * dz_in_size_x * dz_in_size_y * dz_in_size_z; ++i ){
-  //   dz_in[i] += dz_next_layer[i];
-  // }
+  for( int i = 0; i < batch_size * dz_in_size_x * dz_in_size_y * dz_in_size_z; ++i ){
+    dz_in[i] += dz_next_layer[i];
+  }
 
   int N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   CudaObject cuda = CudaObject();
