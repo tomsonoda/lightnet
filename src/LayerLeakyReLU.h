@@ -22,6 +22,7 @@ struct LayerLeakyReLU
 	float *gpu_in;
 	float *gpu_out;
 	float *gpu_dz_in;
+	float *gpu_dz_next_layer;
 
 	int data_size;
 
@@ -40,6 +41,7 @@ struct LayerLeakyReLU
 		gpu_cuda::cudaMakeArray(gpu_in, data_size);
 		gpu_cuda::cudaMakeArray(gpu_out, data_size);
 		gpu_cuda::cudaMakeArray(gpu_dz_in, data_size);
+		gpu_cuda::cudaMakeArray(gpu_dz_next_layer, data_size);
 #endif
 
 	}
@@ -63,7 +65,8 @@ struct LayerLeakyReLU
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		gpu_cuda::leakyReluBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, data_size );
+		this->gpu_dz_next_layer = dz_next_layer;
+		gpu_cuda::leakyReluBackwardGPU( this->gpu_dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, data_size );
 	}
 
 #else

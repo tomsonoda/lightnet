@@ -66,6 +66,10 @@ struct LayerReLU
 	void backwardGPU( float* dz_next_layer )
 	{
 		this->gpu_dz_next_layer = dz_next_layer;
+		backwardGPU();
+	}
+	void backwardGPU()
+	{
 		gpu_cuda::reluBackwardGPU( gpu_dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, data_size );
 	}
 
