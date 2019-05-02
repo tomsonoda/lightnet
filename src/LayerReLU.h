@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float *gpu_array, int N);
+	extern void cudaMakeArray(float *gpu_array, int N);
 	void reluForwardGPU( float *gpu_in, float *gpu_out, int N);
 	void reluBackwardGPU( float *gpu_dz_in, float *gpu_dz, float *in, int N );
 }
