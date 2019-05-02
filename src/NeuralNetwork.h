@@ -23,9 +23,9 @@
 #ifdef GPU_CUDA
 
 namespace gpu_cuda {
-	extern void cudaMakeArray(float *gpu_array, int N);
-	extern void cudaPutArray( float *gpu_array, float *cpu_array, int N );
-	extern void cudaGetArray( float *cpu_array, float *gpu_array, int N );
+	void cudaMakeArray(float *gpu_array, int N);
+	void cudaPutArray( float *gpu_array, float *cpu_array, int N );
+	void cudaGetArray( float *cpu_array, float *gpu_array, int N );
 }
 
 #endif
