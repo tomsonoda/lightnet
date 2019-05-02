@@ -5,7 +5,7 @@
 namespace gpu_cuda {
 	void cudaMakeArray( float *gpu_array, int N );
 	void maxPoolForwardGPU( float *in, float *out, int in_size_x, int in_size_y, int in_size_z, int out_size_b, int out_size_x, int out_size_y, int out_size_z, int stride, int kernel_size );
-	void maxPoolBackwardGPU( float *dz_in, float *dz, float *in, int dz_size_b, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride);
+	void maxPoolBackwardGPU( float *dz_in, float *dz, float *in, int dz_size_b, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride, int kernel_size);
 } //namespace gpu
 #endif
 
@@ -135,7 +135,7 @@ struct LayerMaxPool
 		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
 			gpu_dz_in[i] += dz_next_layer[i];
 		}
-		gpu_cuda::maxPoolBackwardGPU( gpu_dz_in, gpu_dz, gpu_in, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, stride );
+		gpu_cuda::maxPoolBackwardGPU( gpu_dz_in, gpu_dz, gpu_in, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, stride, kernel_size );
 	}
 
 #else
