@@ -196,7 +196,7 @@ struct LayerConvolution
 
 	void backwardGPU( float *dz_next_layer )
 	{
-		for( int i = 0; i < data_size ; ++i ){
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z ; ++i ){
 			gpu_dz_in[i] += dz_next_layer[i];
 		}
 		gpu_cuda::convolutionBockwardGPU( gpu_dz_in, gpu_dz, gpu_padded_in );

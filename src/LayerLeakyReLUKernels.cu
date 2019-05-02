@@ -20,7 +20,7 @@ __global__ void calcReluBackwardGPU( float *dz_in, float *dz, float *in)
   dz[id] +=  (in[id] < 0) ? (0.01) : (1.0 * dz_in[id]);
 }
 
-void leakyReluBackwardGPU(float *in, float *out, int N)
+void leakyReluForwardGPU(float *in, float *out, int N)
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
