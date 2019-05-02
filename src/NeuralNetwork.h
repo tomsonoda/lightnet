@@ -224,7 +224,7 @@ static float trainNetworkGPU(
 	}
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
-		printf("backward [%d]\n", i);
+		// printf("backward [%d]\n", i);
 		if ( i == layers.size() - 1 ){
 			backwardGPU( layers[i], gpu_out_array );
 		}else{
