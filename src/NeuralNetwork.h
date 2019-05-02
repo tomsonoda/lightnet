@@ -193,13 +193,18 @@ static float trainNetworkGPU(
 	)
 {
 	int in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
-	float *gpu_array = nullptr;
-	gpu_cuda::cudaMakeArray( gpu_array, in_size );
-	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
+	int out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
+
+	float *gpu_in_array = nullptr;
+	float *gpu_out_array = nullptr;
+	gpu_cuda::cudaMakeArray( gpu_in_array, in_size );
+	gpu_cuda::cudaMakeArray( gpu_out_array, out_size );
+
+	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], gpu_array );
+			forwardGPU( layers[i], gpu_in_array );
 		}else{
 			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
@@ -211,6 +216,8 @@ static float trainNetworkGPU(
 
 	TensorObject<float> grads = output_data - expected;
 
+	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
+
 	for( int i = 0; i < layers.size(); ++i ){
 		// printf("clear memory [%d] size:%d\n", i, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z * sizeof( float ));
 		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z);
@@ -220,7 +227,7 @@ static float trainNetworkGPU(
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		printf("backward [%d]\n", i);
 		if ( i == layers.size() - 1 ){
-			backwardGPU( layers[i], grads.data );
+			backwardGPU( layers[i], gpu_out_array );
 		}else{
 			backwardGPU( layers[i], layers[i+1]->gpu_dz );
 		}
