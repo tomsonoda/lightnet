@@ -4,8 +4,8 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray( float *gpu_array, int N );
-	void maxPoolForwardGPU( float *in, float *out, int in_size_x, int in_size_y, int in_size_z, int out_size_b, int out_size_x, int out_size_y, int out_size_z, int stride, int kernel_size );
-	void maxPoolBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *out, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int stride, int kernel_size);
+	void maxPoolForwardGPU(float *in, float *out, int in_size_x, int in_size_y, int in_size_z, int out_size_b, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride );
+	void maxPoolBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *out, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int kernel_size, int stride );
 } //namespace gpu
 #endif
 
@@ -65,7 +65,6 @@ struct LayerMaxPool
 				==
 				((in_size.y - kernel_size) / stride + 1) );
 
-
 	}
 
 	TensorCoordinate map_to_input( TensorCoordinate out, int z )
@@ -123,7 +122,7 @@ struct LayerMaxPool
 
 	void forwardGPU()
 	{
-		gpu_cuda::maxPoolForwardGPU(gpu_in, gpu_out, in.size.x, in.size.y, in.size.z, out.size.b, out.size.x, out.size.y, out.size.z, stride, kernel_size);
+		gpu_cuda::maxPoolForwardGPU(gpu_in, gpu_out, in.size.x, in.size.y, in.size.z, out.size.b, out.size.x, out.size.y, out.size.z, kernel_size, stride);
 	}
 
 	void updateWeightsGPU()
@@ -132,7 +131,7 @@ struct LayerMaxPool
 
 	void backwardGPU( float *dz_next_layer )
 	{
-		gpu_cuda::maxPoolBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_out, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, stride, kernel_size );
+		gpu_cuda::maxPoolBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_out, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, kernel_size, stride );
 	}
 
 #else
