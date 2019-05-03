@@ -6,13 +6,13 @@ __global__ inline void cudaAddFirstArrayToSecondArray(float * dz_next_layer, flo
   dz_in[id] += dz_next_layer[id];
 }
 
-__global__ inline struct range_t
+inline struct range_t
 {
   int min_x, min_y;
   int max_x, max_y;
 };
 
-__global__ inline int normalize_range( float f, int max, bool lim_min )
+__device__ inline int normalize_range( float f, int max, bool lim_min )
 {
   if ( f <= 0 ){
     return 0;
@@ -29,7 +29,7 @@ __global__ inline int normalize_range( float f, int max, bool lim_min )
   }
 }
 
-__global__ inline range_t map_to_output( int x, int y, int dz_in_size_x, int dz_in_size_y, int kernel_size, int stride )
+__device__ inline range_t map_to_output( int x, int y, int dz_in_size_x, int dz_in_size_y, int kernel_size, int stride )
 {
   float a = x;
   float b = y;

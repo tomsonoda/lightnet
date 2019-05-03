@@ -106,11 +106,6 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *filt
   if( x>=padding && y>=padding && x-padding<dz_size_x && y-padding<dz_size_y ){
     float sum_error = 0;
 
-    _b * (size.z * size.x * size.y) +
-    _z * (size.x * size.y) +
-    _y * (size.x) +
-    _x
-
     range_t rn = map_to_output( x, y, dz_in_size_x, dz_in_size_y, kernel_size, stride );
     int filter_size = 1 * kernel_size * kernel_size * dz_size_z;
 
