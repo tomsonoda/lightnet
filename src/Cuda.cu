@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "CudaObject.h"
 
 namespace gpu_cuda {
