@@ -40,6 +40,8 @@ struct LayerConvolution
 	uint16_t kernel_size;
 	uint16_t padding;
 	uint16_t filter_size;
+	
+	uint16_t number_filters;
 	float lr;
 	float decay;
 	float momentum;
@@ -69,6 +71,7 @@ struct LayerConvolution
 		this->padding = padding;
 		this->decay = decay;
 		this->momentum = momentum;
+		this->number_filters = number_filters;
 
 		assert( (float( in_size.x - kernel_size + 2*padding) / stride + 1)
 				==
