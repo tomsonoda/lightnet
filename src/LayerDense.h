@@ -80,7 +80,6 @@ struct LayerDense
 	{
 		this->gpu_in = in;
 		forwardGPU();
-		this->dz.clear();
 	}
 
 	void forwardGPU()
@@ -151,7 +150,6 @@ struct LayerDense
 	{
 		this->in = in;
 		forward();
-		this->dz.clear();
 	}
 
 	void forward()

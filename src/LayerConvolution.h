@@ -207,6 +207,7 @@ struct LayerConvolution
 
 	void backwardGPU( float *dz_next_layer )
 	{
+		gpu_cuda::cudaClearArray( gpu_filter_grads, filter_size * number_filters );
 		gpu_cuda::convolutionBockwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z );
 	}
 

@@ -91,23 +91,9 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
 
 __global__ void calcConvolutionBackwardGPU(float *in1, float *in2, float *in3, float* out)
 {
-/*
-int k_end = filter_grads.size();
-int kernel_size_2 = kernel_size * kernel_size;
-int i_end = kernel_size_2 * in.size.z;
-for ( int k = 0; k < k_end; ++k ){
-  for ( int i = 0; i < i_end ; ++i ){
-      filter_grads[k].data[i].grad = 0;
-  }
-}
 
-int z_max = (int)filters.size();
-std::vector< std::future<int> > thread_results;
-
-for ( int b = 0; b < in.size.b; ++b ){
-
-  thread_results.emplace_back(thread_pool.enqueue([&, b] {
-
+  /*
+  for ( int b = 0; b < in.size.b; ++b ){
     // code optimization.
     int dz_in_xy = dz_in.size.y * dz_in.size.x;
     int b_dz_in_xyz = b * dz_in.size.z * dz_in_xy;
@@ -136,7 +122,7 @@ for ( int b = 0; b < in.size.b; ++b ){
 
               int xyz = z * kernel_size_2 + y_miny * kernel_size + x_minx; // ( 0, x_minx, y_miny, z )
 
-              for ( int k = 0; k < z_max; ++k ){
+              for ( int k = 0; k < (int)filters.size(); ++k ){
                 // float d = dz_in( b, i, j, k );
                 float d = dz_in.data[ b_dz_in_xyz + (k * dz_in_xy) + (j * dz_in.size.x) + i];
                 // sum += filters[k].get( 0, x_minx, y_miny, z ) * d;
@@ -151,10 +137,10 @@ for ( int b = 0; b < in.size.b; ++b ){
             dz( b, x - padding, y - padding, z ) += sum;
           }
         }
-
       }
     }
-*/
+  }
+  */
 }
 
 void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size )
@@ -175,6 +161,8 @@ void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(in_N);
   cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
+
+
 }
 
 } // namespace gpu

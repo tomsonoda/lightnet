@@ -365,7 +365,7 @@ vector<CaseObject> readCasesImagesLabels( JSONObject *data_json, vector<json_tok
 	vector<CaseObject> cases;
   vector<CasePaths> case_paths_list = listImageLabelCasePaths( data_json, data_tokens, model_json, model_tokens, mode );
 
-  for(int i=0; i<case_paths_list.size(); ++i){
+  for(unsigned i=0; i<case_paths_list.size(); ++i){
     CaseObject c = readImageLabelCase( case_paths_list[i], model_json, model_tokens );
 		cases.push_back( c );
 	}
