@@ -8,7 +8,6 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
     int in_size_x, int in_size_y, int in_size_z, int padding)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_out = id;
 
   int x = id % in_size_x;
   id /= in_size_x;
@@ -89,7 +88,7 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
   }*/
 }
 
-__global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *filters, float *filter_grads, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
+__global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
@@ -186,7 +185,7 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
 
   int dz_N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   dim3 grid_dz = cuda.cudaGridSize(dz_N);
-  calcConvolutionBackwardGPU<<<grid_dz, BLOCK>>>( dz_in, dz, filters, filter_grads, dz_size_x, dz_size_y, dz_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size );
+  calcConvolutionBackwardGPU<<<grid_dz, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size );
 }
 
 } // namespace gpu
