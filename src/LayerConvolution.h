@@ -8,6 +8,7 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray( float *gpu_array, int N );
+	void cudaMakeRandomArray(float *gpu_array, int N, int maxval );
 	void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int filter_size );
 	void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z );
 }
