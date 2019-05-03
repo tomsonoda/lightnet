@@ -38,7 +38,7 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
   */
 }
 
-__global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int filter_size)
+__global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride, int filter_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
@@ -60,7 +60,7 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
       for ( int i = 0; i < kernel_size; ++i ){
         int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
         int padded_in_index = b * (padded_in_size_x * padded_in_size_y * padded_in_size_z) + z * (padded_in_size_x * padded_in_size_y) + (mapped_y + j) * (padded_in_size_x) + (mapped_x + i);
-        sum += filters[filer * filter_size + filter_index] * padded_in[padded_in_index];
+        sum += filters[filter * filter_size + filter_index] * padded_in[padded_in_index];
       }
     }
   }
@@ -157,7 +157,7 @@ for ( int b = 0; b < in.size.b; ++b ){
 */
 }
 
-void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int filter_size )
+void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size )
 {
   int in_size = batch_size * in_size_x * in_size_y * in_size_z;
   CudaObject cuda = CudaObject();
@@ -166,7 +166,7 @@ void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filt
 
   int out_size = batch_size * out_size_x * out_size_y * out_size_z;
   dim3 grid_out = cuda.cudaGridSize(out_size);
-  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, out_size_x, out_size_y, out_size_z, kernel_size);
+  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, out_size_x, out_size_y, out_size_z, kernel_size, stride, filter_size);
 }
 
 void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z )
