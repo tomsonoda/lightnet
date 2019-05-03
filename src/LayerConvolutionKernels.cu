@@ -175,7 +175,7 @@ __global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_g
   id /= kernel_size;
   int filter = id;
 
-  int filter_size = 1 * kernel_size * kernel_size * in_size.z;
+  int filter_size = 1 * kernel_size * kernel_size * in_size_z;
   int filter_grad_index = (filter * filter_size + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
 
   float grad = filter_grads[ filter_grad_index ];
@@ -232,6 +232,7 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
 
 void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate)
 {
+  CudaObject cuda = CudaObject();
   int N = number_filters * kernel_size * kernel_size * in_size_z;
   dim3 grid = cuda.cudaGridSize(N);
   calcConvolutionUpdateWeightsGPU<<<grid, BLOCK>>>( filters, filter_grads, in_size_z, number_filters, kernel_size, momentum, decay, learning_rate );
