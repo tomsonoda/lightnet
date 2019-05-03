@@ -12,6 +12,7 @@ namespace gpu_cuda {
 	void cudaMakeRandomArray(float *gpu_array, int N, int maxval );
 	void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size );
 	void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size );
+	void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate);
 }
 #endif
 
@@ -192,20 +193,8 @@ struct LayerConvolution
 
 	void updateWeightsGPU()
 	{
-		int filters_size = filters.size();
-		for ( int a = 0; a < filters_size; ++a ){
-			for ( int z = 0; z < in.size.z; ++z ){
-				for ( int j = 0; j < kernel_size; ++j ){
-					for ( int i = 0; i < kernel_size; ++i ){
-						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
-						float m = (grad.grad + grad.grad_prev * momentum);
-						grad.grad_prev = m;
-						float& w = filters[a].get( 0, i, j, z );
-						w -= lr * ( m + (decay * w));
-					}
-				}
-			}
-		}
+		gpu_cuda::convolutionUpdateWeightsGPU( filters, filter_grads, in.size.z, number_filters, kernel_size, momentum, decay, learning_rate);
+
 	}
 
 	void backwardGPU( float *dz_next_layer )
