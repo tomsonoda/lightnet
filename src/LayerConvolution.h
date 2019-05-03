@@ -117,7 +117,7 @@ struct LayerConvolution
 		int padded_in_size = in_size.b * (in_size.x + 2*padding) * (in_size.y + 2*padding) * in_size.z;
 		gpu_cuda::cudaMakeArray( gpu_padded_in, padded_in_size );
 
-		gpu_cuda::cudaMakeRandomArray( gpu_filters, filter_size * number_filters );
+		gpu_cuda::cudaMakeRandomArray( gpu_filters, filter_size * number_filters, filter_size );
 		gpu_cuda::cudaMakeArray( gpu_filter_grads, filter_size * number_filters );
 
 #endif
