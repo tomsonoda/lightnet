@@ -193,7 +193,7 @@ struct LayerConvolution
 
 	void updateWeightsGPU()
 	{
-		gpu_cuda::convolutionUpdateWeightsGPU( filters, filter_grads, in.size.z, number_filters, kernel_size, momentum, decay, lr);
+		gpu_cuda::convolutionUpdateWeightsGPU( gpu_filters, gpu_filter_grads, in.size.z, number_filters, kernel_size, momentum, decay, lr);
 
 	}
 
