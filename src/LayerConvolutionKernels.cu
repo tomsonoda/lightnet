@@ -8,6 +8,7 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
     int in_size_x, int in_size_y, int in_size_z, int padding)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  int id_out = id;
 
   int x = id % in_size_x;
   id /= in_size_x;
@@ -40,7 +41,6 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
 __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride, int filter_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_out = id;
 
   int x = id % out_size_x;
   id /= out_size_x;
