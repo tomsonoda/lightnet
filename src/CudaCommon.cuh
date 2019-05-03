@@ -6,7 +6,7 @@ __global__ inline void cudaAddFirstArrayToSecondArray(float * dz_next_layer, flo
   dz_in[id] += dz_next_layer[id];
 }
 
-inline struct range_t
+struct range_t
 {
   int min_x, min_y;
   int max_x, max_y;

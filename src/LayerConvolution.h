@@ -11,7 +11,7 @@ namespace gpu_cuda {
 	void cudaClearArray( float *gpu_array, int N );
 	void cudaMakeRandomArray(float *gpu_array, int N, int maxval );
 	void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size );
-	void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size );
+	void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size );
 }
 #endif
 
@@ -211,7 +211,7 @@ struct LayerConvolution
 	void backwardGPU( float *dz_next_layer )
 	{
 		gpu_cuda::cudaClearArray( gpu_filter_grads, filter_size * 2 * number_filters );
-		gpu_cuda::convolutionBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in, gpu_filters, gpu_filter_grads, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, padded_in.size.x, padded_in.size.y, padded_in.size.z, padding, kernel_size, stride, filter_size );
+		gpu_cuda::convolutionBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in, gpu_filters, gpu_filter_grads, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, padded_in.size.x, padded_in.size.y, padded_in.size.z, padding, kernel_size, stride, number_filters, filter_size );
 	}
 
 #else
