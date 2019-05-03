@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "CudaObject.h"
+#include "CudaCommon.cuh"
 
 namespace gpu_cuda {
 
@@ -37,8 +38,7 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
   */
 }
 
-__global__ void calcConvolutionForwardGPU( float *padded_in, float *out,
-    int out_size_x, int out_size_y, int out_size_z)
+__global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int filter_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
@@ -47,13 +47,25 @@ __global__ void calcConvolutionForwardGPU( float *padded_in, float *out,
   id /= out_size_x;
   int y = id % out_size_y;
   id /= out_size_y;
-  int z = id % out_size_z;
+  int filter = id % out_size_z;
   id /= out_size_z;
   int b = id;
 
-  float sum = 0.0;
+  int mapped_x = x * stride;
+  int mapped_y = y * stride;
 
+  float sum = 0.0;
+  for ( int z = 0; z < padded_in_size_z; ++z ){
+    for ( int j = 0; j < kernel_size; ++j ){
+      for ( int i = 0; i < kernel_size; ++i ){
+        int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
+        int padded_in_index = b * (padded_in_size_x * padded_in_size_y * padded_in_size_z) + z * (padded_in_size_x * padded_in_size_y) + (mapped_y + j) * (padded_in_size_x) + (mapped_x + i);
+        sum += filters[filer * filter_size + filter_index] * padded_in[padded_in_index];
+      }
+    }
+  }
   out[id_out] = sum;
+
   /*
   for ( int b = 0; b < in.size.b; ++b ){
     int filters_size = filters.size();
@@ -63,7 +75,6 @@ __global__ void calcConvolutionForwardGPU( float *padded_in, float *out,
         for ( int x = 0; x < out.size.x; ++x ){
           TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
           float sum = 0;
-
           for ( int z = 0; z < in.size.z; ++z ){
             for ( int j = 0; j < kernel_size; ++j ){
               for ( int i = 0; i < kernel_size; ++i ){
@@ -146,23 +157,24 @@ for ( int b = 0; b < in.size.b; ++b ){
 */
 }
 
-void convolutionForwardGPU( float *dz_in, float *out, float *padded_in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padding )
+void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int filter_size )
 {
   int in_size = batch_size * in_size_x * in_size_y * in_size_z;
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(in_size);
-  calcConvolutionForwardPaddedInGPU<<<grid_in, BLOCK>>>(dz_in, padded_in, in_size_x, in_size_y, in_size_z, padding);
+  calcConvolutionForwardPaddedInGPU<<<grid_in, BLOCK>>>(in, padded_in, in_size_x, in_size_y, in_size_z, padding);
 
   int out_size = batch_size * out_size_x * out_size_y * out_size_z;
   dim3 grid_out = cuda.cudaGridSize(out_size);
-  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>(padded_in, out, out_size_x, out_size_y, out_size_z);
+  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, out_size_x, out_size_y, out_size_z, kernel_size);
 }
 
-void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in )
+void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z )
 {
-  // for( int i = 0; i < out_size_b * out_size_x * out_size_y * out_size_z ; ++i ){
-  //   dz_in[i] += dz_next_layer[i];
-  // }
+  int in_N = batch_size * dz_in_size_x * dz_in_size_y * dz_in_size_z;
+  CudaObject cuda = CudaObject();
+  dim3 grid_in = cuda.cudaGridSize(in_N);
+  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
 }
 
 } // namespace gpu

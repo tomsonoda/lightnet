@@ -8,12 +8,8 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray( float *gpu_array, int N );
-	void convolutionForwardGPU( float *in, float *out, float *padded_in,
-		int batch_size,
-		int in_size_x, int in_size_y, int in_size_z,
-	  int out_size_x, int out_size_y, int out_size_,
-		int padding );
-	void convolutionBockwardGPU( float *dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *gpu_padded_in );
+	void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int filter_size );
+	void convolutionBockwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z );
 }
 #endif
 
@@ -32,13 +28,17 @@ struct LayerConvolution
 	float *gpu_dz_in;
 
 	TensorObject<float> padded_in;
-	float *gpu_padded_in;
-
 	std::vector<TensorObject<float>> filters;
 	std::vector<TensorObject<GradientObject>> filter_grads;
+
+	float *gpu_padded_in;
+	float *gpu_filters;
+	float *gpu_filter_grads;
+
 	uint16_t stride;
 	uint16_t kernel_size;
 	uint16_t padding;
+	uint16_t filter_size;
 	float lr;
 	float decay;
 	float momentum;
@@ -77,9 +77,10 @@ struct LayerConvolution
 				==
 				((in_size.y - kernel_size + 2*padding) / stride + 1) );
 
+		filter_size = 1 * kernel_size * kernel_size * in_size.z;
 		for ( int a = 0; a < number_filters; a++ ){
 			TensorObject<float> kernel( 1, kernel_size, kernel_size, in_size.z );
-			int maxval = kernel_size * kernel_size * in_size.z;
+			int maxval = filter_size;
 
 			for ( int i = 0; i < kernel_size; ++i ){
 				for ( int j = 0; j < kernel_size; ++j ){
@@ -101,19 +102,22 @@ struct LayerConvolution
 #ifdef GPU_CUDA
 
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
-		gpu_cuda::cudaMakeArray(gpu_in, data_size);
+		gpu_cuda::cudaMakeArray( gpu_dz, data_size );
+		gpu_cuda::cudaMakeArray( gpu_in, data_size );
 
 		int dz_in_size = in_size.b *
 		( (in_size.x - kernel_size + 2*padding) / stride + 1 ) *
 		( (in_size.y - kernel_size + 2*padding) / stride + 1 ) *
 		number_filters;
 
-		gpu_cuda::cudaMakeArray(gpu_out, dz_in_size);
-		gpu_cuda::cudaMakeArray(gpu_dz_in, dz_in_size);
+		gpu_cuda::cudaMakeArray( gpu_out, dz_in_size );
+		gpu_cuda::cudaMakeArray( gpu_dz_in, dz_in_size );
 
 		int padded_in_size = in_size.b * (in_size.x + 2*padding) * (in_size.y + 2*padding) * in_size.z;
-		gpu_cuda::cudaMakeArray(gpu_padded_in, padded_in_size);
+		gpu_cuda::cudaMakeArray( gpu_padded_in, padded_in_size );
+
+		gpu_cuda::cudaMakeRandomArray( gpu_filters, filter_size * number_filters );
+		gpu_cuda::cudaMakeArray( gpu_filter_grads, filter_size * number_filters );
 
 #endif
 
@@ -178,8 +182,7 @@ struct LayerConvolution
 
 	void forwardGPU()
 	{
-		gpu_cuda::convolutionForwardGPU(gpu_in, gpu_out, gpu_padded_in,
-			in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, padding);
+		gpu_cuda::convolutionForwardGPU( gpu_in, gpu_out, gpu_padded_in, gpu_filters, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, padded_in.size.x, padded_in.size.y, padded_in.size.z, padding, filter_size );
 	}
 
 	void updateWeightsGPU()
@@ -202,7 +205,7 @@ struct LayerConvolution
 
 	void backwardGPU( float *dz_next_layer )
 	{
-		gpu_cuda::convolutionBockwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in );
+		gpu_cuda::convolutionBockwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z );
 	}
 
 #else
