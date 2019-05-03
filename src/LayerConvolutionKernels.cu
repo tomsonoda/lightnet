@@ -41,6 +41,7 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
 __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride, int filter_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  int id_out = id;
 
   int x = id % out_size_x;
   id /= out_size_x;
@@ -91,7 +92,6 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
 __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_out = id;
 
   int x = id % dz_size_x;
   id /= dz_size_x;
@@ -100,7 +100,6 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
   int z = id % dz_size_z;
   id /= dz_size_z;
   int b = id;
-
 
   if( x>=padding && y>=padding && x-padding<dz_size_x && y-padding<dz_size_y ){
     float sum_error = 0;
