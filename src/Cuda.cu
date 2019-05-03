@@ -1,14 +1,19 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "CudaObject.h"
 
 namespace gpu_cuda {
 
+__device__ unsigned int Rand(unsigned int randx)
+{
+  randx = randx*1103515245+12345;
+  return randx&2147483647;
+}
+
 __global__ void setRandom(float *gpu_array, int maxval )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  gpu_array[id] = 1.0f / maxval * rand() / float( RAND_MAX );
+  gpu_array[id] = 1.0f / maxval * Rand(id) / float( RAND_MAX );
 }
 
 void cudaMakeArray(float *gpu_array, int N )
