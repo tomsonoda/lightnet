@@ -6,7 +6,7 @@ namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_array, int N);
 	void routeForwardGPU(float *in, float *out, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset );
 	void routeBackwardaAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N );
-	void routeBackwardGPU(  float *dz_in, float *dz, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset )
+	void routeBackwardGPU(  float *dz_in, float *dz, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset );
 }
 #endif
 
@@ -62,9 +62,11 @@ struct LayerRoute
 	{
 		int z_offset = 0;
 		for( int i=0; i<ref_layers.size(); ++i ){
-			float *layer_in = layers[ref_layers[i]]->gpu_out;
+			float *layer_gpu_in = layers[ref_layers[i]]->gpu_out;
+			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
+
 			int size = layer_in.size.b * layer_in.size.z * layer_in.size.y * layer_in.size.x;
-			gpu_cuda::routeForwardGPU( layer_in, gpu_out, layer_in.size.x,  layer_in.size.y, layer_in.size.z, size, z_offset );
+			gpu_cuda::routeForwardGPU( layer_gpu_in, gpu_out, layer_in.size.x,  layer_in.size.y, layer_in.size.z, size, z_offset );
 			z_offset = layer_in.size.z;
 		}
 	}
@@ -79,10 +81,10 @@ struct LayerRoute
 
 		int z_offset = 0;
 		for( int i=0; i<ref_layers.size(); ++i ){
-			float* layer_dz = layers[ref_layers[i]]->gpu_dz_in;
+			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
+			float* layer_gpu_dz = layers[ref_layers[i]]->gpu_dz_in;
 			int size = layer_dz.size.b * layer_dz.size.z * layer_dz.size.y * layer_dz.size.x;
-			gpu_cuda::routeBackwardGPU(  gpu_dz_in, layer_dz, layer_dz.size.x, layer_dz.size.y, layer_dz.size.z, z_offset )
-
+			gpu_cuda::routeBackwardGPU(  gpu_dz_in, layer_gpu_dz, size, layer_dz.size.x, layer_dz.size.y, layer_dz.size.z, z_offset );
 			z_offset = layer_dz.size.z;
 		}
 	}
