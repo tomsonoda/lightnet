@@ -4,6 +4,9 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_array, int N);
+	void routeForwardGPU(float *in, float *out, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset );
+	void routeBackwardaAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N );
+	void routeBackwardGPU(  float *dz_in, float *dz, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset )
 }
 #endif
 
@@ -21,6 +24,7 @@ struct LayerRoute
 	float *gpu_out;
 	float *gpu_dz_in;
 
+	int d_size;
 	unsigned data_size;
 	vector<LayerObject*> layers;
 	vector<int> ref_layers;
@@ -35,6 +39,15 @@ struct LayerRoute
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z * sizeof(float);
 		this->layers = layers;
 		this->ref_layers = ref_layers;
+
+		#ifdef GPU_CUDA
+				int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
+				gpu_cuda::cudaMakeArray(gpu_dz, d_size);
+				gpu_cuda::cudaMakeArray(gpu_in, d_size);
+				gpu_cuda::cudaMakeArray(gpu_out, d_size);
+				gpu_cuda::cudaMakeArray(gpu_dz_in, d_size);
+		#endif
+
 	}
 
 #ifdef GPU_CUDA
@@ -47,24 +60,13 @@ struct LayerRoute
 
 	void forwardGPU()
 	{
-		/*
 		int z_offset = 0;
-		// printf("layers=%ld out_b_size=%d, out_x_size=%d, out_y_size=%d, out_z_size=%d, \n", ref_layers.size(), out.size.b, out.size.x, out.size.y, out.size.z);
 		for( int i=0; i<ref_layers.size(); ++i ){
-			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
-			// printf("          lin_b_size=%d, lin_x_size=%d, lin_y_size=%d, lin_z_size=%d, \n", layer_in.size.b, layer_in.size.x, layer_in.size.y, layer_in.size.z);
-			for ( int b = 0; b < layer_in.size.b; ++b ){
-				for ( int z = 0; z < layer_in.size.z; ++z ){
-					for ( int y = 0; y < layer_in.size.y; y++ ){
-						for ( int x = 0; x < layer_in.size.x; x++ ){
-							out( b, x, y, z_offset+z ) = layer_in( b, x, y, z );
-						}
-					}
-				}
-			}
+			float *layer_in = layers[ref_layers[i]]->gpu_out;
+			int size = layer_in.size.b * layer_in.size.z * layer_in.size.y * layer_in.size.x;
+			gpu_cuda::routeForwardGPU( layer_in, gpu_out, layer_in.size.x,  layer_in.size.y, layer_in.size.z, size, z_offset );
 			z_offset = layer_in.size.z;
 		}
-		*/
 	}
 
 	void updateWeightsGPU()
@@ -73,28 +75,16 @@ struct LayerRoute
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		/*
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
+		gpu_cuda::routeBackwardaAddFirstArrayToSecondArrayGPU( dz_next_layer, gpu_dz_in, d_size );
 
 		int z_offset = 0;
-		// printf("layers=%ld dz_in=%d, dz_in=%d, dz_in=%d, dz_in=%d, \n", ref_layers.size(), dz_in.size.b, dz_in.size.x, dz_in.size.y, dz_in.size.z);
 		for( int i=0; i<ref_layers.size(); ++i ){
-			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
-			// printf("  layer:%d: lin_b_size=%d, lin_x_size=%d, lin_y_size=%d, lin_z_size=%d, \n",ref_layers[i], layer_dz.size.b, layer_dz.size.x, layer_dz.size.y, layer_dz.size.z);
-			for ( int b = 0; b < layer_dz.size.b; ++b ){
-				for ( int z = 0; z < layer_dz.size.z; ++z ){
-					for ( int y = 0; y < layer_dz.size.y; y++ ){
-						for ( int x = 0; x < layer_dz.size.x; x++ ){
-							layer_dz( b, x, y, z ) += dz_in( b, x, y, z_offset+z );
-						}
-					}
-				}
-			}
+			float* layer_dz = layers[ref_layers[i]]->gpu_dz_in;
+			int size = layer_dz.size.b * layer_dz.size.z * layer_dz.size.y * layer_dz.size.x;
+			gpu_cuda::routeBackwardGPU(  gpu_dz_in, layer_dz, layer_dz.size.x, layer_dz.size.y, layer_dz.size.z, z_offset )
+
 			z_offset = layer_dz.size.z;
 		}
-		*/
 	}
 
 #else
