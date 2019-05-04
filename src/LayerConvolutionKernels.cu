@@ -89,6 +89,49 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
   }*/
 }
 
+__global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, int momentum, int decay, int learning_rate )
+{
+  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  int id_out = id;
+  int i = id % in_size_z;
+  id /= in_size_z;
+  int j = id % kernel_size;
+  id /= kernel_size;
+  int z = id % kernel_size;
+  id /= kernel_size;
+  int filter = id;
+
+  int filter_size = 1 * kernel_size * kernel_size * in_size_z;
+  int filter_grad_index = (filter * filter_size + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
+
+  float grad = filter_grads[ filter_grad_index ];
+  float grad_prev = filter_grads[ filter_grad_index+1 ];
+  float m = ( grad + grad_prev * momentum );
+
+  filter_grads[ filter_grad_index + 1 ] = m;
+
+  float w = filters[ id_out ];
+  w -= learning_rate * ( m + (decay * w));
+  filters[ id_out ] = w;
+
+  /* original code
+  int filters_size = filters.size();
+  for ( int a = 0; a < filters_size; ++a ){
+    for ( int z = 0; z < in.size.z; ++z ){
+      for ( int j = 0; j < kernel_size; ++j ){
+        for ( int i = 0; i < kernel_size; ++i ){
+          GradientObject& grad = filter_grads[a].get( 0, i, j, z );
+          float m = (grad.grad + grad.grad_prev * momentum);
+          grad.grad_prev = m;
+          float& w = filters[a].get( 0, i, j, z );
+          w -= lr * ( m + (decay * w));
+        }
+      }
+    }
+  }
+  */
+}
+
 __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -163,49 +206,6 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
   */
 }
 
-__global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, int momentum, int decay, int learning_rate )
-{
-  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_out = id;
-  int i = id % in_size_z;
-  id /= in_size_z;
-  int j = id % kernel_size;
-  id /= kernel_size;
-  int z = id % kernel_size;
-  id /= kernel_size;
-  int filter = id;
-
-  int filter_size = 1 * kernel_size * kernel_size * in_size_z;
-  int filter_grad_index = (filter * filter_size + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
-
-  float grad = filter_grads[ filter_grad_index ];
-  float grad_prev = filter_grads[ filter_grad_index+1 ];
-  float m = ( grad + grad_prev * momentum );
-
-  filter_grads[ filter_grad_index + 1 ] = m;
-
-  float w = filters[ id_out ];
-  w -= learning_rate * ( m + (decay * w));
-  filters[ id_out ] = w;
-
-  /* original code
-  int filters_size = filters.size();
-  for ( int a = 0; a < filters_size; ++a ){
-    for ( int z = 0; z < in.size.z; ++z ){
-      for ( int j = 0; j < kernel_size; ++j ){
-        for ( int i = 0; i < kernel_size; ++i ){
-          GradientObject& grad = filter_grads[a].get( 0, i, j, z );
-          float m = (grad.grad + grad.grad_prev * momentum);
-          grad.grad_prev = m;
-          float& w = filters[a].get( 0, i, j, z );
-          w -= lr * ( m + (decay * w));
-        }
-      }
-    }
-  }
-  */
-}
-
 void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size )
 {
   int in_size = batch_size * in_size_x * in_size_y * in_size_z;
@@ -218,6 +218,14 @@ void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filt
   calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, out_size_x, out_size_y, out_size_z, kernel_size, stride, filter_size);
 }
 
+void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate)
+{
+  CudaObject cuda = CudaObject();
+  int N = number_filters * kernel_size * kernel_size * in_size_z;
+  dim3 grid = cuda.cudaGridSize(N);
+  calcConvolutionUpdateWeightsGPU<<<grid, BLOCK>>>( filters, filter_grads, in_size_z, number_filters, kernel_size, momentum, decay, learning_rate );
+}
+
 void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
 {
   CudaObject cuda = CudaObject();
@@ -228,14 +236,6 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
   int dz_N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   dim3 grid_dz = cuda.cudaGridSize(dz_N);
   calcConvolutionBackwardGPU<<<grid_dz, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size );
-}
-
-void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate)
-{
-  CudaObject cuda = CudaObject();
-  int N = number_filters * kernel_size * kernel_size * in_size_z;
-  dim3 grid = cuda.cudaGridSize(N);
-  calcConvolutionUpdateWeightsGPU<<<grid, BLOCK>>>( filters, filter_grads, in_size_z, number_filters, kernel_size, momentum, decay, learning_rate );
 }
 
 } // namespace gpu
