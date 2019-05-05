@@ -66,7 +66,7 @@ void routeForwardGPU(float *in, float *out, int N, int in_size_x, int in_size_y,
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcReluForwardGPU<<<grid, BLOCK>>>(in, out, in_size_x, in_size_y, in_size_z, z_offset );
+  calcRouteForwardGPU<<<grid, BLOCK>>>(in, out, in_size_x, in_size_y, in_size_z, z_offset );
 }
 
 void routeBackwardAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N )
@@ -80,7 +80,7 @@ void routeBackwardGPU(  float *dz_in, float *dz, int N, int in_size_x, int in_si
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcReluBackwardGPU<<<grid, BLOCK>>>(  dz_in, dz, in_size_x, in_size_y, in_size_z, z_offset );
+  calcRouteBackwardGPU<<<grid, BLOCK>>>(  dz_in, dz, in_size_x, in_size_y, in_size_z, z_offset );
 }
 
 } // namespace gpu
