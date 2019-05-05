@@ -8,7 +8,7 @@ __global__ void calcBatchNormalizationForwardGPU( float *in, float *out, float *
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  scale = 1.0f / (batch_size * in_size_x * in_size_y);
+  float scale = 1.0f / (batch_size * in_size_x * in_size_y);
   float sum = 0;
 
   for ( int b = 0; b < batch_size; ++b ){
@@ -107,7 +107,7 @@ __global__ void calcBatchNormalizationUpdateWeightsGPU( float *gamma, float *bet
   */
 }
 
-__global__ void calcBatchNormalizationBackwardGPU( float *dz_in, float *dz, float *xmu, float *xhat, float *gamma, float *beta, float *dxhat, float *dx1, float *dgamma, float *dbeta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
+__global__ void calcBatchNormalizationBackwardGPU( float *dz_in, float *dz, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, float *dxhat, float *dx1, float *dgamma, float *dbeta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
@@ -134,7 +134,7 @@ __global__ void calcBatchNormalizationBackwardGPU( float *dz_in, float *dz, floa
 
   float divar = 0.0;
   float gmm = gamma[id];
-  for ( int b = 0; b < in_size_b; ++b ){
+  for ( int b = 0; b < batch_size; ++b ){
     for ( int j = 0; j < in_size_y; ++j ){
       for ( int i = 0; i < in_size_x; ++i ){
         int in_index = b * (in_size_x * in_size_y * in_size_z) + id * (in_size_x * in_size_y) + j * (in_size_x) + i;
@@ -262,7 +262,7 @@ void batchNormalizationUpdateWeightsGPU( float *gamma, float *beta, float *dgamm
   calcBatchNormalizationUpdateWeightsGPU<<<grid, BLOCK>>>( gamma, beta, dgamma, dbeta, learning_rate );
 }
 
-void batchNormalizationBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *xmu, float *xhat, float *gamma, float *beta, float *dxhat, float *dx1, float *dgamma, float *dbeta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
+void batchNormalizationBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, float *dxhat, float *dx1, float *dgamma, float *dbeta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
 {
   CudaObject cuda = CudaObject();
   int in_N = batch_size * in_size_x * in_size_y * in_size_z;
@@ -271,7 +271,7 @@ void batchNormalizationBackwardGPU( float *dz_next_layer, float *dz_in, float *d
 
   int N = in_size_z;
   dim3 grid = cuda.cudaGridSize(N);
-  calcBatchNormalizationBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, xmu, xhat, gamma, beta, dxhat, dx1, dgamma, dbeta, batch_size, in_size_x, in_size_y, in_size_z );
+  calcBatchNormalizationBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, xmu, variance, inv_variance, xhat, gamma, beta, dxhat, dx1, dgamma, dbeta, batch_size, in_size_x, in_size_y, in_size_z );
 }
 
 } // namespace gpu
