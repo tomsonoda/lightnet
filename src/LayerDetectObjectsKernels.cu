@@ -41,7 +41,7 @@ __global__ void calcDetectObjectsForwardGPU(float *in, float *out, int in_size_x
   */
 }
 
-__global__ void calcDetectObjectsBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int max_bounding_boxes, int max_classes )
+__global__ void calcDetectObjectsBackwardGPU( float *dz_in, float *dz, float *in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int max_bounding_boxes, int max_classes )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
@@ -91,7 +91,7 @@ void detectObjectsBackwardGPU( float *dz_in, float *dz, float *in, int batch_siz
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(batch_size);
-  calcDetectObjectsBackwardGPU<<<grid, BLOCK>>>( dz_next_layer, dz_in, dz, in, batch_size, in_size_x, in_size_y, int in_size_z, max_bounding_boxes, max_classes );
+  calcDetectObjectsBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in, batch_size, in_size_x, in_size_y, in_size_z, max_bounding_boxes, max_classes );
 }
 
 } // namespace gpu
