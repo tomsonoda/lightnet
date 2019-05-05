@@ -11,6 +11,9 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_array, int N);
+	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
+	void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum );
+	void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float momentum, float decay );
 }
 #endif
 
@@ -23,23 +26,30 @@ struct LayerDense
 	TensorObject<float> out;
 	TensorObject<float> dz_in;
 
+	TensorObject<float> weights;
+	TensorObject<float> dW;
+	TensorObject<float> biases;
+	TensorObject<float> dB;
+	std::vector<GradientObject> gradients;
+
+	unsigned weigts_data_num;
+	unsigned dw_data_size;
+	unsigned dz_data_size;
+
+	float lr;
+	float _decay;
+	float _momentum;
+
 	float *gpu_dz;
 	float *gpu_in;
 	float *gpu_out;
 	float *gpu_dz_in;
 
-	TensorObject<float> weights;
-	TensorObject<float> dW;
-	TensorObject<float> biases;
-	TensorObject<float> dB;
-
-	unsigned weigts_data_num;
-	unsigned dw_data_size;
-	unsigned dz_data_size;
-	std::vector<GradientObject> gradients;
-	float lr;
-	float _decay;
-	float _momentum;
+	float *gpu_weights;
+	float *gpu_dW;
+	float *gpu_biases;
+	float *gpu_dB;
+	float *gpu_gradients;
 
 	LayerDense( TensorSize in_size, int out_size, float learning_rate, float decay, float momentum)
 		:
@@ -77,6 +87,22 @@ struct LayerDense
 			gradients[i].grad = 0;
 			gradients[i].grad_prev = 0;
 		}
+
+#ifdef GPU_CUDA
+		int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		gpu_cuda::cudaMakeArray(gpu_dz, d_size);
+		gpu_cuda::cudaMakeArray(gpu_in, d_size);
+		int o_size = in_size.b * out_size;
+		gpu_cuda::cudaMakeArray(gpu_out, o_size);
+		gpu_cuda::cudaMakeArray(gpu_dz_in, o_size);
+
+		gpu_cuda::cudaMakeArray(gpu_weights, weigts_data_num);
+		gpu_cuda::cudaMakeArray(gpu_dW, weigts_data_num);
+		gpu_cuda::cudaMakeArray(gpu_biases, out_size);
+		gpu_cuda::cudaMakeArray(gpu_dB, out_size);
+		gpu_cuda::cudaMakeArray(gpu_gradients, out_size * in_size.b * 2);
+#endif
+
 	}
 
 	int map( TensorCoordinate d )
@@ -94,14 +120,17 @@ struct LayerDense
 
 	void forwardGPU()
 	{
+		gpu_cuda::denseForwardGPU( gpu_in, gpu_out, gpu_weights, gpu_biases, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z );
 	}
 
 	void updateWeightsGPU()
 	{
+		gpu_cuda::denseUpdateWeightsGPU( gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, lr, _momentum );
 	}
 
 	void backwardGPU( float* dz_next_layer )
 	{
+		gpu_cuda::denseBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, _momentum, _decay );
 	}
 
 #else
@@ -155,6 +184,7 @@ struct LayerDense
 		std::vector< std::future<int> > results;
 
 		memset( dW.data, 0, dw_data_size );
+		memset( dB.data, 0, out.size.x );
 		for ( int n = 0; n < out.size.x; ++n ){
 			results.emplace_back( thread_pool.enqueue([&, n] {
 
@@ -167,17 +197,20 @@ struct LayerDense
 								GradientObject& grad = gradients[ n*in.size.b + b ];
 								float dzin = dz_in( b, n, 0, 0 );
 								float w = weights(0, m, n, 0);
-								float bias = biases( 0, 0, n, 0 );
 								grad.grad = dzin;
-								dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * _momentum) + (_decay * w);
 								dz( b, i, j, z ) += dzin * w;
-								dB( 0, 0, n, 0 ) += dz( b, i, j, z ) * (grad.grad + grad.grad_prev * _momentum) + (_decay * bias);
+								dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * _momentum) + (_decay * w);
 							}
 						}
 					}
 				}
 
+				for( int b = 0; b < in.size.b; ++b ){
+					dB( 0, 0, n, 0 ) += dz_in( b, n, 0, 0 );
+				}
+				
 				return 0;
+
 			}));
 		}
 

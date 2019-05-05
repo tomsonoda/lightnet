@@ -245,8 +245,8 @@ struct LayerConvolution
 							out( b, x, y, filter ) = sum;
 						}
 					}
-
 					return 0;
+					
 				}));
 
 			}

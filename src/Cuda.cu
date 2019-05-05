@@ -26,7 +26,8 @@ void cudaGetArray( float *cpu_array, float *gpu_array, int N )
   cudaMemcpy(cpu_array, gpu_array, N*sizeof(float), cudaMemcpyDeviceToHost);
 }
 
-void cudaClearArray( float *gpu_array, int N ){
+void cudaClearArray( float *gpu_array, int N )
+{
   cudaMemset(&gpu_array, 0, N*sizeof(float));
 }
 

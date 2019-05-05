@@ -35,6 +35,15 @@ struct LayerDetectObjects
 	{
 		_max_classes = max_classes;
 		_max_bounding_boxes = max_bounding_boxes;
+
+#ifdef GPU_CUDA
+		int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		gpu_cuda::cudaMakeArray(gpu_dz, d_size);
+		gpu_cuda::cudaMakeArray(gpu_in, d_size);
+		gpu_cuda::cudaMakeArray(gpu_out, d_size);
+		gpu_cuda::cudaMakeArray(gpu_dz_in, d_size);
+#endif
+
 	}
 
 #ifdef GPU_CUDA
