@@ -131,7 +131,7 @@ struct LayerDense
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		gpu_cuda::cudaClearArray( gpu_dW, in.size.x * in.size.y * in.size.z * out_size );
+		gpu_cuda::cudaClearArray( gpu_dW, in.size.x * in.size.y * in.size.z * out.size.x );
 		gpu_cuda::cudaClearArray( gpu_dB, out.size.x );
 		gpu_cuda::denseBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, _momentum, _decay );
 	}
