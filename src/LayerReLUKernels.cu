@@ -5,7 +5,6 @@ namespace gpu_cuda {
 
 __global__ void calcReluForwardGPU(float *in, float *out)
 {
-  // int i = blockIdx.x*blockDim.x + threadIdx.x;
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   float v = in[id];
   if ( v < 0 ){

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "CudaObject.h"
+#include "CudaCommon.cuh"
 
 namespace gpu_cuda {
 
@@ -68,7 +69,7 @@ void routeForwardGPU(float *in, float *out, int N, int in_size_x, int in_size_y,
   calcReluForwardGPU<<<grid, BLOCK>>>(in, out, in_size_x, in_size_y, in_size_z, z_offset );
 }
 
-void routeBackwardaAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N )
+void routeBackwardAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N )
 {
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(N);

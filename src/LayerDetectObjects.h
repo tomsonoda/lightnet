@@ -4,6 +4,9 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_array, int N);
+	void detectObjectsForwardGPU(float *in, float *out, int batch_size, int in_size_x, int in_size_y, int in_size_z, int max_bounding_boxes, int max_classes );
+	void detectObjectsBackwardAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N );
+	void detectObjectsBackwardGPU( float *dz_in, float *dz, float *in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int max_bounding_boxes, int max_classes );
 }
 #endif
 
@@ -44,19 +47,7 @@ struct LayerDetectObjects
 
 	void forwardGPU()
 	{
-		/*
-		for(int b = 0; b < in.size.b; ++b ){
-			for( int i = 0; i < _max_bounding_boxes; i=i+(4+_max_classes)){
-				out( b, i  , 0, 0 ) = 1.0f / (1.0f + exp( -in( b, i  , 0, 0 ) )); // x: sigmoid
-				out( b, i+1, 0, 0 ) = 1.0f / (1.0f + exp( -in( b, i+1, 0, 0 ) )); // y: sigmoid
-				out( b, i+2, 0, 0 ) = exp( in( b, i+2, 0, 0 ) ); // w: exp
-				out( b, i+3, 0, 0 ) = exp( in( b, i+3, 0, 0 ) ); // h: exp
-				for( int c = 0; c < _max_classes; ++c){
-					out( b, i+4+c, 0, 0 ) = 1.0f / (1.0f + exp( -in( b, i+4+c , 0, 0 ) )); // id: sigmoid
-				}
-			}
-		}
-		*/
+		gpu_cuda::detectObjectsForwardGPU( gpu_in, gpu_out, in.size.b, in.size.x, in.size.y, in.size.z, _max_bounding_boxes, _max_classes );
 	}
 
 	void updateWeightsGPU()
@@ -65,23 +56,9 @@ struct LayerDetectObjects
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		/*
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
-
-		for(int b = 0; b < dz_in.size.b; ++b ){
-			for( int i = 0; i < _max_bounding_boxes; i=i+(4+_max_classes)){
-				dz( b, i  , 0, 0 ) = activator_derivative( in( b, i  , 0, 0 ) ) * dz_in( b, i  , 0, 0 ); // x: sigmoid derivative * grads
-				dz( b, i+1, 0, 0 ) = activator_derivative( in( b, i+1 , 0, 0 ) ) * dz_in( b, i+1, 0, 0 ); // y: sigmoid derivative * grads
-				dz( b, i+2, 0, 0 ) = exp( in( b, i+2, 0, 0 ) ) * dz_in( b, i+2, 0, 0 ); // w: exp * grads
-				dz( b, i+3, 0, 0 ) = exp( in( b, i+3, 0, 0 ) ) * dz_in( b, i+3, 0, 0 ); // h: exp * grads
-				for( int c = 0; c <_max_classes; ++c){
-					dz( b, i+4+c, 0, 0 ) = activator_derivative( in( b, i+4+c , 0, 0 ) ) * dz_in( b, i+4+c , 0, 0 ); // id: sigmoid derivative * grads
-				}
-			}
-		}
-		*/
+		int data_size = in.size.b * in.size.x * in.size.y * in.size.z;
+		gpu_cuda::detectObjectsBackwardAddFirstArrayToSecondArrayGPU( dz_next_layer, gpu_dz_in, data_size);
+		gpu_cuda::detectObjectsBackwardGPU( gpu_dz_in, gpu_dz, gpu_in, in.size.b, in.size.x, in.size.y, in.size.z, _max_bounding_boxes, _max_classes );
 	}
 
 #else
