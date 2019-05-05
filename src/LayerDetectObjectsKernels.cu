@@ -87,7 +87,7 @@ void detectObjectsBackwardAddFirstArrayToSecondArrayGPU( float *dz_next_layer, f
   cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
 }
 
-void detectObjectsBackwardGPU( float *dz_in, float *dz, float *in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int max_bounding_boxes, int max_classes );
+void detectObjectsBackwardGPU( float *dz_in, float *dz, float *in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int max_bounding_boxes, int max_classes )
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(batch_size);
