@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "CudaObject.h"
+#include "CudaCommon.cuh"
 
 namespace gpu_cuda {
 
@@ -11,16 +12,11 @@ __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, floa
 
   int n = id % out_size_x;
   id /= out_size_x;
-  int y = id % out_size_y;
+  // int y = id % out_size_y;
   id /= out_size_y;
-  int z = id % out_size_z;
+  // int z = id % out_size_z;
   id /= out_size_z;
   int b = id;
-
-  int w_size_b = 1;
-  int w_size_x = in_size_x*in_size_y*in_size_z;
-  int w_size_y = out_size_x;
-  int w_size_z = 1;
 
   float sum = 0;
   for ( int k = 0; k < in_size_z; ++k ){
@@ -101,6 +97,9 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
   id /= in_size_z;
   int b = id;
 
+  int w_size_x = in_size_x*in_size_y*in_size_z;
+  int w_size_y = out_size_x;
+
   int m = z * (in_size_x * in_size_y) + j * (in_size_x) + i;
 
   for ( int n = 0; n < out_size_x; ++n ){
@@ -170,9 +169,6 @@ void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, flo
 
 void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float momentum, float decay  )
 {
-  cudaClearArray( dW, in_size_x * in_size_y * in_size_z * out_size );
-  cudaClearArray( dB, out_size );
-
   int out_N = batch_size * out_size_x * out_size_y * out_size_z;
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(out_N);
@@ -180,7 +176,7 @@ void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in,
 
   int in_N = batch_size * in_size_x * in_size_y * in_size_z;
   dim3 grid = cuda.cudaGridSize(in_N);
-  calcDenseBarckwardGPU<<<grid, BLOCK>>>( dz_in, dz, in, weights, biases, gradients, dW, dB, int batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, momentum, decay );
+  calcDenseBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in, weights, biases, gradients, dW, dB, int batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, momentum, decay );
 
   int in_B = out_size_x;
   dim3 grid = cuda.cudaGridSize(in_B);

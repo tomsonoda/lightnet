@@ -11,6 +11,7 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	void cudaMakeArray(float *gpu_array, int N);
+	void cudaClearArray( float *gpu_array, int N );
 	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
 	void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum );
 	void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float momentum, float decay );
@@ -130,6 +131,8 @@ struct LayerDense
 
 	void backwardGPU( float* dz_next_layer )
 	{
+		gpu_cuda::cudaClearArray( gpu_dW, in.size.x * in.size.y * in.size.z * out_size );
+		gpu_cuda::cudaClearArray( gpu_dB, out.size.x );
 		gpu_cuda::denseBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, _momentum, _decay );
 	}
 
@@ -208,7 +211,7 @@ struct LayerDense
 				for( int b = 0; b < in.size.b; ++b ){
 					dB( 0, 0, n, 0 ) += dz_in( b, n, 0, 0 );
 				}
-				
+
 				return 0;
 
 			}));
