@@ -70,7 +70,7 @@ struct LayerDense
 		}
 
 		for(int i=0; i<out_size; ++i){
-			biases( 0, 0, i, 0 ) = (2.19722f / maxval) * rand() / float( RAND_MAX );
+			biases( 0, 0, i, 0 ) = 0.0;
 		}
 
 		for(int i=0; i<out_size * in_size.b; ++i){
@@ -136,13 +136,13 @@ struct LayerDense
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
 		}
 
-		for (int i=0; i<out_size; ++i){
+		for (int i=0; i<out.size.x; ++i){
 			biases.data[i] = biases.data[i] - lr * 	dB.data[i];
 		}
 
 		for ( int i = 0; i < out.size.x * in.size.b; ++i ){
 				GradientObject& grad = gradients[ i ];
-				grad.grad_prev = (grad.grad + grad.grad_prev * MOMENTUM);
+				grad.grad_prev = (grad.grad + grad.grad_prev * _momentum);
 		}
 	}
 

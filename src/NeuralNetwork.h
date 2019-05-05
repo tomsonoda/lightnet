@@ -500,11 +500,12 @@ static float trainNetwork(
 		loss /= (float)expected.size.b;
 
 		if ( step % parameter_object->train_output_span == 0 ){
-			printf("----GT----\n");
+			printf("train: ----GT-------- loss=%lf, batches=%lf\n", loss, (float)expected.size.b);
 			printTensor(expected);
-			printf("----output----\n");
+			printf("train: ----output----\n");
 			printTensor(layers[layers.size()-1]->out);
 		}
+
 		return loss;
 	}
 }

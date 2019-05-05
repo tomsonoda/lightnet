@@ -47,7 +47,7 @@ float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& da
 		}
 	}
 	cout << "  test IOU : " << best_iou << endl;
-	
+
 	return loss_value;
 }
 
@@ -101,10 +101,6 @@ void objectDetection(int argc, char **argv)
 	int out_size = t.out.size.x * t.out.size.y * t.out.size.z;
 	int data_float_size = t.data.size.x * t.data.size.y * t.data.size.z * sizeof(float);
 	int out_float_size = t.out.size.x * t.out.size.y * t.out.size.z * sizeof(float);
-	float train_amse = 0;
-	float test_amse = 0;
-	int train_increment = 0;
-	int test_increment = 0;
 
 	ThreadPool thread_pool(parameter_object->threads);
 
@@ -124,8 +120,6 @@ void objectDetection(int argc, char **argv)
 		// printTensor(batch_cases.out);
 
 		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object);
-		train_amse += train_err;
-		train_increment++;
 		step++;
 
 		if (step % parameter_object->save_span == 0){
@@ -142,7 +136,7 @@ void objectDetection(int argc, char **argv)
 			auto finish = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double> elapsed = finish - start;
 			cout << "step " << step << endl;
-			cout << "  train error=" << train_amse/train_increment << ", Elapsed time: " << elapsed.count() << " s\n";
+			cout << "  train error=" << train_err << ", Elapsed time: " << elapsed.count() << " s\n";
 			start = finish;
 
 			if( test_case_paths.size()-parameter_object->batch_size >0 ){
@@ -160,9 +154,7 @@ void objectDetection(int argc, char **argv)
 			}
 
 			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens, parameter_object);
-			test_amse += test_err;
-			test_increment++;
-			cout << "  test error =" << test_amse/test_increment << "\n";
+			cout << "  test error =" << test_err << "\n";
 		}
 	}
 
