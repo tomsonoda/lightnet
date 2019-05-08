@@ -27,7 +27,7 @@ ifeq ($(GPU_CUDA), 1)
 COMMON+= -DGPU_CUDA -I/usr/local/cuda/include/
 CFLAGS+= -DGPU_CUDA
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
-EXECOBJA+= Cuda.o LayerBatchNormalizationKernels.o LayerConvolutionKernels.o LayerDenseKernels.o LayerDetectObjectsKernels.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o LayerReLUKernels.o LayerRouteKernels.o
+EXECOBJA+= Cuda.o LayerBatchNormalizationKernels.o LayerConvolutionKernels.o LayerDenseKernels.o LayerDetectObjectsKernels.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o LayerReLUKernels.o LayerRouteKernels.o LayerSoftmaxKernels.o
 endif
 
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
