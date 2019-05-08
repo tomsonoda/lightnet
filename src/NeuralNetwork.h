@@ -213,8 +213,11 @@ static float trainNetworkGPU(
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
+	printTensor(output_data);
+
 	TensorObject<float> grads = output_data - expected;
 
+	printf("----Cuda output----\n");
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
@@ -775,7 +778,7 @@ static vector<LayerObject*> loadModel(
     }else if(type=="relu"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
-      printf("%d: relu : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
+      printf("%d: relu               : ( %d x %d x %d ) -> ( %d x %d x %d ) \n", i, in_size.x, in_size.y, in_size.z, in_size.x, in_size.y, in_size.z);
       LayerReLU *layer = new LayerReLU( layers[layers.size()-1]->out.size );
       layers.push_back( (LayerObject*)layer );
 
