@@ -51,7 +51,7 @@ struct LayerSoftmax
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		int in_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		int in_size = in.size.b * in.size.x * in.size.y * in.size.z;
 		gpu_cuda::softmaxBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, in_size );
 	}
 
