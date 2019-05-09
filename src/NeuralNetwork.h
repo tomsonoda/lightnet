@@ -276,6 +276,7 @@ static float testNetworkGPU(
 {
 	int in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
 	float *gpu_array = nullptr;
+	printTensor( data );
 	gpu_array = gpu_cuda::cudaMakeArray( in_size );
 	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
 
@@ -290,6 +291,7 @@ static float testNetworkGPU(
 			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
 	}
+	exit(0);
 
 	int out_size = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
