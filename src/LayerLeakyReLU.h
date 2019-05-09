@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float *gpu_o, int N);
+	float *cudaMakeArray( int N );
 	void leakyReluForwardGPU(float *in, float *out, int N);
 	void leakyReluBackwardGPU( float *gpu_dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *gpu_in, int data_size );
 } //namespace gpu
@@ -36,10 +36,10 @@ struct LayerLeakyReLU
 		data_size = in_size.b * in_size.x * in_size.y * in_size.z;
 
 #ifdef GPU_CUDA
-		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
-		gpu_cuda::cudaMakeArray(gpu_in, data_size);
-		gpu_cuda::cudaMakeArray(gpu_out, data_size);
-		gpu_cuda::cudaMakeArray(gpu_dz_in, data_size);
+		gpu_dz = gpu_cuda::cudaMakeArray( data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( data_size );
+		gpu_out = gpu_cuda::cudaMakeArray( data_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( data_size );
 #endif
 
 	}

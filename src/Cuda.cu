@@ -10,10 +10,12 @@ __device__ unsigned int Rand(unsigned int randx)
   return randx&2147483647;
 }
 
-void cudaMakeArray(float *gpu_array, int N )
+float *cudaMakeArray( int N )
 {
-  cudaMalloc(&gpu_array, N*sizeof(float));
+  float *gpu_array;
+  cudaMalloc((void **)&gpu_array, N*sizeof(float));
   cudaMemset(&gpu_array, 0, N*sizeof(float));
+  return gpu_array;
 }
 
 void cudaPutArray( float *gpu_array, float *cpu_array, int N )

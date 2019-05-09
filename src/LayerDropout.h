@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float *gpu_array, int N);
+	float *cudaMakeArray( int N );
 }
 #endif
 

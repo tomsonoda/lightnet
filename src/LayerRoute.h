@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float *gpu_array, int N);
+	float *cudaMakeArray( int N );
 	void routeForwardGPU(float *in, float *out, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset );
 	void routeBackwardAddFirstArrayToSecondArrayGPU( float *dz_next_layer, float *dz_in, int N );
 	void routeBackwardGPU(  float *dz_in, float *dz, int N, int in_size_x, int in_size_y, int in_size_z, int z_offset );
@@ -42,10 +42,10 @@ struct LayerRoute
 
 		#ifdef GPU_CUDA
 				int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-				gpu_cuda::cudaMakeArray(gpu_dz, d_size);
-				gpu_cuda::cudaMakeArray(gpu_in, d_size);
-				gpu_cuda::cudaMakeArray(gpu_out, d_size);
-				gpu_cuda::cudaMakeArray(gpu_dz_in, d_size);
+				gpu_dz = gpu_cuda::cudaMakeArray( d_size );
+				gpu_in = gpu_cuda::cudaMakeArray( d_size );
+				gpu_out = gpu_cuda::cudaMakeArray( d_size );
+				gpu_dz_in = gpu_cuda::cudaMakeArray( d_size );
 		#endif
 
 	}

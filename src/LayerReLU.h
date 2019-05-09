@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray(float *gpu_array, int N);
+	float *cudaMakeArray( int N );
 	void reluForwardGPU( float *gpu_in, float *gpu_out, int N);
 	void reluBackwardGPU( float *dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *in, int N );
 }
@@ -36,10 +36,10 @@ struct LayerReLU
 
 #ifdef GPU_CUDA
 		unsigned dz_in_size = dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z;
-		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
-		gpu_cuda::cudaMakeArray(gpu_in, data_size);
-		gpu_cuda::cudaMakeArray(gpu_out, dz_in_size);
-		gpu_cuda::cudaMakeArray(gpu_dz_in, dz_in_size);
+		gpu_dz = gpu_cuda::cudaMakeArray( data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( data_size );
+		gpu_out = gpu_cuda::cudaMakeArray( dz_in_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in_size );
 #endif
 
 	}

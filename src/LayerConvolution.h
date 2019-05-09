@@ -7,7 +7,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray( float *gpu_array, int N );
+	float *cudaMakeArray( int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void cudaMakeRandomArray(float *gpu_array, int N, int maxval );
 	void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size );
@@ -108,22 +108,22 @@ struct LayerConvolution
 #ifdef GPU_CUDA
 
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_cuda::cudaMakeArray( gpu_dz, data_size );
-		gpu_cuda::cudaMakeArray( gpu_in, data_size );
+		gpu_dz = gpu_cuda::cudaMakeArray( data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( data_size );
 
 		int dz_in_size = in_size.b *
 		( (in_size.x - kernel_size + 2*padding) / stride + 1 ) *
 		( (in_size.y - kernel_size + 2*padding) / stride + 1 ) *
 		number_filters;
 
-		gpu_cuda::cudaMakeArray( gpu_out, dz_in_size );
-		gpu_cuda::cudaMakeArray( gpu_dz_in, dz_in_size );
+		gpu_out = gpu_cuda::cudaMakeArray( dz_in_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in_size );
 
 		int padded_in_size = in_size.b * (in_size.x + 2*padding) * (in_size.y + 2*padding) * in_size.z;
-		gpu_cuda::cudaMakeArray( gpu_padded_in, padded_in_size );
+		gpu_padded_in = gpu_cuda::cudaMakeArray( padded_in_size );
 
 		gpu_cuda::cudaMakeRandomArray( gpu_filters, filter_size * number_filters, filter_size );
-		gpu_cuda::cudaMakeArray( gpu_filter_grads, filter_size * 2 * number_filters );
+		gpu_filter_grads = gpu_cuda::cudaMakeArray( filter_size * 2 * number_filters );
 
 #endif
 
@@ -246,7 +246,7 @@ struct LayerConvolution
 						}
 					}
 					return 0;
-					
+
 				}));
 
 			}

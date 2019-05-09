@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaMakeArray( float *gpu_array, int N );
+	float *cudaMakeArray( int N );
 	void maxPoolForwardGPU(float *in, float *out, int in_size_x, int in_size_y, int in_size_z, int out_size_b, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride );
 	void maxPoolBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *out, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int kernel_size, int stride );
 } //namespace gpu
@@ -50,11 +50,11 @@ struct LayerMaxPool
 
 #ifdef GPU_CUDA
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_cuda::cudaMakeArray(gpu_dz, data_size);
-		gpu_cuda::cudaMakeArray(gpu_in, data_size);
+		gpu_dz = gpu_cuda::cudaMakeArray( data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( data_size );
 		int dz_in_size = dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z;
-		gpu_cuda::cudaMakeArray(gpu_out, dz_in_size);
-		gpu_cuda::cudaMakeArray(gpu_dz_in, dz_in_size);
+		gpu_out = gpu_cuda::cudaMakeArray( dz_in_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in_size );
 #endif
 
 		assert( (float( in_size.x - kernel_size ) / stride + 1)
