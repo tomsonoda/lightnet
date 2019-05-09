@@ -283,6 +283,10 @@ static float testNetworkGPU(
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_array );
 		}else{
+			int out_size = layers[i-1]->gpu_out.size.b * layers[i-1]->gpu_out.size.x * layers[i-1]->gpu_out.size.y * layers[i-1]->gpu_out.size.z;
+			TensorObject<float> gpu_output_data = TensorObject<float>(out_size.size.b, out_size.size.x, out_size.size.y, out_size.size.z);
+			gpu_cuda::cudaGetArray( gpu_output_data.data, layers.back()->gpu_out, out_size );
+			printTensor( gpu_output_data );
 			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
 	}
