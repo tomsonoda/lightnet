@@ -213,12 +213,11 @@ static float trainNetworkGPU(
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
-	printTensor(output_data);
+	// printTensor(output_data);
 
 	TensorObject<float> grads = output_data - expected;
-
 	// printf("----Cuda output----\n");
-	// gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
+	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
 		// printf("clear memory [%d] size:%d\n", i, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z * sizeof( float ));
