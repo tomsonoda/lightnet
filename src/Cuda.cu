@@ -14,7 +14,7 @@ float *cudaMakeArray( int N )
 {
   float *gpu_array;
   cudaMalloc((void **)&gpu_array, N*sizeof(float));
-  cudaMemset(&gpu_array, 0, N*sizeof(float));
+  // cudaMemset(&gpu_array, 0, N*sizeof(float));
   return gpu_array;
 }
 
