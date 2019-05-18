@@ -223,6 +223,8 @@ static float trainNetworkGPU(
 	}
 
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
+	printf("----Cuda train get output----\n");
+
 	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
 	printf("----Cuda train output----\n");
