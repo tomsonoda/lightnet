@@ -197,10 +197,23 @@ static float trainNetworkGPU(
 
 	float *gpu_in_array = nullptr;
 	float *gpu_out_array = nullptr;
+
 	gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 
+	printf("train data begin ---\n");
+	printTensor( data );
+	printf("train data end   ---\n");
+
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
+
+	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
+	gpu_cuda::cudaGetArray( output_data.data, gpu_in_array, in_size );
+
+	printf("train data begin2 ---\n");
+	printTensor( output_data );
+	printf("train data end2   ---\n");
+
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
@@ -210,7 +223,7 @@ static float trainNetworkGPU(
 		}
 	}
 
-	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
+	// TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
 	// printTensor(output_data);
