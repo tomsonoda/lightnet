@@ -205,7 +205,9 @@ static float trainNetworkGPU(
 	// printTensor( data );
 	// printf("train data end   ---\n");
 
+	printf("----Cuda train put gpu_in_array ----\n");
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
+	printf("----Cuda train put gpu_in_array finish ----\n");
 
 	// TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
 	// gpu_cuda::cudaGetArray( out_data.data, gpu_in_array, in_size );
