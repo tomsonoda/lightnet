@@ -3,30 +3,32 @@
 
 namespace gpu_cuda {
 
-__global__ void calcSoftmaxForwardGPU(float *in, float *out, int in_size_x)
+__global__ void calcSoftmaxForwardGPU(float *in, float *out, int in_size_x, int batch_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  float max_v = 0.0;
+  if(id<batch_size){
+    float max_v = 0.0;
 
-  for ( int i = 0; i < in_size_x; ++i ){
-    float v = in[id + i];
-    if(v>max_v){
-      max_v = v;
+    for ( int i = 0; i < in_size_x; ++i ){
+      float v = in[id + i];
+      if(v>max_v){
+        max_v = v;
+      }
     }
-  }
 
-  float sum = 0.0;
+    float sum = 0.0;
 
-  for ( int i = 0; i < in_size_x; ++i ){
-    float v = in[id + 1];
-    v = exp(v - max_v);
-    out[id + i] = v;
-    sum += v;
-  }
+    for ( int i = 0; i < in_size_x; ++i ){
+      float v = in[id + 1];
+      v = exp(v - max_v);
+      out[id + i] = v;
+      sum += v;
+    }
 
-  for ( int i = 0; i < in_size_x; ++i ){
-    out[id + i] = out[id + i] / sum;
+    for ( int i = 0; i < in_size_x; ++i ){
+      out[id + i] = out[id + i] / sum;
+    }
   }
 
 
@@ -80,7 +82,7 @@ void softmaxForwardGPU(float *in, float *out, int batch_size, int in_size_x )
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(batch_size);
-  calcSoftmaxForwardGPU<<<grid, BLOCK>>>(in, out, in_size_x);
+  calcSoftmaxForwardGPU<<<grid, BLOCK>>>(in, out, in_size_x, batch_size);
 }
 
 void softmaxBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, int N )
