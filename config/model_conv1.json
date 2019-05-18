@@ -13,7 +13,6 @@
     { "type":"convolutional", "filters":8, "size":5, "stride":1, "padding":2 },
     { "type":"relu" },
     { "type":"maxpool", "size":2, "stride":2 },
-    { "type":"dense", "out_size":10 },
-    { "type":"softmax" }
+    { "type":"dense", "out_size":10 }
   ]
 }
