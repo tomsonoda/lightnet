@@ -201,9 +201,9 @@ static float trainNetworkGPU(
 	gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 
-	printf("train data begin ---\n");
-	printTensor( data );
-	printf("train data end   ---\n");
+	// printf("train data begin ---\n");
+	// printTensor( data );
+	// printf("train data end   ---\n");
 
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
