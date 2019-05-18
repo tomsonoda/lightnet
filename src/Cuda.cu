@@ -27,19 +27,11 @@ void cudaCheckError(cudaError_t status)
     cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess){
         const char *s = cudaGetErrorString(status);
-        char buffer[256];
         printf("CUDA Error: %s\n", s);
-        assert(0);
-        snprintf(buffer, 256, "CUDA Error: %s", s);
-        error(buffer);
     }
     if (status2 != cudaSuccess){
         const char *s = cudaGetErrorString(status);
-        char buffer[256];
         printf("CUDA Error Prev: %s\n", s);
-        assert(0);
-        snprintf(buffer, 256, "CUDA Error Prev: %s", s);
-        error(buffer);
     }
 }
 
@@ -61,7 +53,7 @@ float *cudaMakeArray( float *cpu_array, int N )
   if(cpu_array){
       cudaMemcpy(gpu_array, cpu_array, size, cudaMemcpyHostToDevice);
   } else {
-      cudaFillGpuArray(N, 0, gpu_array, 1);
+      cudaFillGpuArray(N, 0, gpu_array);
   }
 
   cudaMemset(&gpu_array, 0, N*sizeof(float));
@@ -82,7 +74,7 @@ void cudaGetArray( float *cpu_array, float *gpu_array, int N )
 
 void cudaClearArray( float *gpu_array, int N )
 {
-  cudaFillGpuArray(N, 0, gpu_array, 1);
+  cudaFillGpuArray(N, 0, gpu_array);
   // cudaMemset(&gpu_array, 0, N*sizeof(float));
 }
 
