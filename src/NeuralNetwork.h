@@ -207,12 +207,12 @@ static float trainNetworkGPU(
 
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
-	TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
-	gpu_cuda::cudaGetArray( out_data.data, gpu_in_array, in_size );
+	// TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
+	// gpu_cuda::cudaGetArray( out_data.data, gpu_in_array, in_size );
 
-	printf("train data begin2 ---\n");
-	printTensor( out_data );
-	printf("train data end2   ---\n");
+	// printf("train data begin2 ---\n");
+	// printTensor( out_data );
+	// printf("train data end2   ---\n");
 
 
 	for( int i = 0; i < layers.size(); ++i ){
@@ -226,10 +226,12 @@ static float trainNetworkGPU(
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
-	// printTensor(output_data);
+	printf("----Cuda train output----\n");
+	printTensor(output_data);
+	printf("----Cuda train output----\n");
 
 	TensorObject<float> grads = output_data - expected;
-	// printf("----Cuda output----\n");
+
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
