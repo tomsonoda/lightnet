@@ -36,10 +36,10 @@ struct LayerReLU
 
 #ifdef GPU_CUDA
 		unsigned dz_in_size = dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z;
-		gpu_dz = gpu_cuda::cudaMakeArray( dz, data_size );
-		gpu_in = gpu_cuda::cudaMakeArray( in, data_size );
-		gpu_out = gpu_cuda::cudaMakeArray( out, dz_in_size );
-		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in, dz_in_size );
+		gpu_dz = gpu_cuda::cudaMakeArray( dz.data, data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( in.data, data_size );
+		gpu_out = gpu_cuda::cudaMakeArray( out.data, dz_in_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in.data, dz_in_size );
 #endif
 
 	}

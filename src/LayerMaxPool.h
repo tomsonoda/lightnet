@@ -50,11 +50,11 @@ struct LayerMaxPool
 
 #ifdef GPU_CUDA
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_dz = gpu_cuda::cudaMakeArray( dz, data_size );
-		gpu_in = gpu_cuda::cudaMakeArray( in, data_size );
+		gpu_dz = gpu_cuda::cudaMakeArray( dz.data, data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( in.data, data_size );
 		int dz_in_size = dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z;
-		gpu_out = gpu_cuda::cudaMakeArray( out, dz_in_size );
-		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in, dz_in_size );
+		gpu_out = gpu_cuda::cudaMakeArray( out.data, dz_in_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in.data, dz_in_size );
 #endif
 
 		assert( (float( in_size.x - kernel_size ) / stride + 1)

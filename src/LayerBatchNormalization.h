@@ -6,7 +6,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	float *cudaMakeArray( float *cpu_array, int N );
+	float *cudaMakeArray( int N );
 	void batchNormalizationForwardGPU( float *in, float *out, float *mean, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, int batch_size, int in_size_x, int in_size_y, int in_size_z );
 	void batchNormalizationUpdateWeightsGPU( float *gamma, float *beta, float *dgamma, float *dbeta, float learning_rate, int in_size_z );
 	void batchNormalizationBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, float *dxhat, float *dx1, float *dgamma, float *dbeta, int batch_size, int in_size_x, int in_size_y, int in_size_z );
@@ -82,22 +82,22 @@ struct LayerBatchNormalization
 
 #ifdef GPU_CUDA
 		int data_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_dz = gpu_cuda::cudaMakeArray( dz, data_size );
-		gpu_in = gpu_cuda::cudaMakeArray( in, data_size);
-		gpu_out = gpu_cuda::cudaMakeArray( out, data_size );
-		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in, data_size );
+		gpu_dz = gpu_cuda::cudaMakeArray( dz.data, data_size );
+		gpu_in = gpu_cuda::cudaMakeArray( in.data, data_size);
+		gpu_out = gpu_cuda::cudaMakeArray( out.data, data_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in.data, data_size );
 
-		gpu_gamma = gpu_cuda::cudaMakeArray( gamma, in_size.z );
-		gpu_dgamma = gpu_cuda::cudaMakeArray( dgamma, in_size.z );
-		gpu_beta = gpu_cuda::cudaMakeArray( beta, in_size.z );
-		gpu_dbeta = gpu_cuda::cudaMakeArray( dbeta, in_size.z );
-		gpu_mean = gpu_cuda::cudaMakeArray( mean, in_size.z );
-		gpu_xmu = gpu_cuda::cudaMakeArray( xmu, data_size );
-		gpu_variance = gpu_cuda::cudaMakeArray( variance, in_size.z );
-		gpu_inv_variance = gpu_cuda::cudaMakeArray( inv_variance, in_size.z );
-		gpu_xhat = gpu_cuda::cudaMakeArray( xhat, data_size );
-		gpu_dxhat = gpu_cuda::cudaMakeArray( dxhat, data_size );
-		gpu_dx1 = gpu_cuda::cudaMakeArray( dx1, data_size );
+		gpu_gamma = gpu_cuda::cudaMakeArray( gamma.data, in_size.z );
+		gpu_dgamma = gpu_cuda::cudaMakeArray( dgamma.data, in_size.z );
+		gpu_beta = gpu_cuda::cudaMakeArray( beta.data, in_size.z );
+		gpu_dbeta = gpu_cuda::cudaMakeArray( dbeta.data, in_size.z );
+		gpu_mean = gpu_cuda::cudaMakeArray( mean.data, in_size.z );
+		gpu_xmu = gpu_cuda::cudaMakeArray( xmu.data, data_size );
+		gpu_variance = gpu_cuda::cudaMakeArray( variance.data, in_size.z );
+		gpu_inv_variance = gpu_cuda::cudaMakeArray( inv_variance.data, in_size.z );
+		gpu_xhat = gpu_cuda::cudaMakeArray( xhat.data, data_size );
+		gpu_dxhat = gpu_cuda::cudaMakeArray( dxhat.data, data_size );
+		gpu_dx1 = gpu_cuda::cudaMakeArray( dx1.data, data_size );
 #endif
 
 	}
