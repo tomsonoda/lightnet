@@ -23,7 +23,7 @@
 #ifdef GPU_CUDA
 
 namespace gpu_cuda {
-	float *cudaMakeArray( int N );
+	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaPutArray( float *gpu_array, float *cpu_array, int N );
 	void cudaGetArray( float *cpu_array, float *gpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
@@ -197,8 +197,8 @@ static float trainNetworkGPU(
 
 	float *gpu_in_array = nullptr;
 	float *gpu_out_array = nullptr;
-	gpu_in_array = gpu_cuda::cudaMakeArray( in_size );
-	gpu_out_array = gpu_cuda::cudaMakeArray( out_size );
+	gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
+	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
@@ -281,7 +281,7 @@ static float testNetworkGPU(
 	printTensor( data );
 	printf("test data end   ---\n");
 
-	gpu_array = gpu_cuda::cudaMakeArray( in_size );
+	gpu_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
 
 	TensorObject<float> gpu_output_d = TensorObject<float>( data.size.b, data.size.x, data.size.y, data.size.z );

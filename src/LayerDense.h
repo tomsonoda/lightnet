@@ -10,7 +10,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	float *cudaMakeArray( int N );
+	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
 	void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum );
@@ -91,17 +91,17 @@ struct LayerDense
 
 #ifdef GPU_CUDA
 		int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_dz = gpu_cuda::cudaMakeArray( d_size );
-		gpu_in = gpu_cuda::cudaMakeArray( d_size );
+		gpu_dz = gpu_cuda::cudaMakeArray( dz, d_size );
+		gpu_in = gpu_cuda::cudaMakeArray( in, d_size );
 		int o_size = in_size.b * out_size;
-		gpu_out = gpu_cuda::cudaMakeArray( o_size );
-		gpu_dz_in = gpu_cuda::cudaMakeArray( o_size );
+		gpu_out = gpu_cuda::cudaMakeArray( out, o_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in, o_size );
 
-		gpu_weights = gpu_cuda::cudaMakeArray( weigts_data_num );
-		gpu_dW = gpu_cuda::cudaMakeArray( weigts_data_num );
-		gpu_biases = gpu_cuda::cudaMakeArray( out_size );
-		gpu_dB = gpu_cuda::cudaMakeArray( out_size );
-		gpu_gradients = gpu_cuda::cudaMakeArray( out_size * in_size.b * 2);
+		gpu_weights = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
+		gpu_dW = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
+		gpu_biases = gpu_cuda::cudaMakeArray( NULL, out_size );
+		gpu_dB = gpu_cuda::cudaMakeArray( NULL, out_size );
+		gpu_gradients = gpu_cuda::cudaMakeArray( NULL, out_size * in_size.b * 2);
 #endif
 
 	}

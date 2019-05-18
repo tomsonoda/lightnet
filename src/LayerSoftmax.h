@@ -3,7 +3,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	float *cudaMakeArray( int N );
+	float *cudaMakeArray( float *cpu_array, int N );
 	void softmaxForwardGPU(float *in, float *out, int batch_size, int in_size );
 	void softmaxBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, int N );
 }
@@ -32,10 +32,10 @@ struct LayerSoftmax
 	{
 		#ifdef GPU_CUDA
 				int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-				gpu_dz = gpu_cuda::cudaMakeArray( d_size );
-				gpu_in = gpu_cuda::cudaMakeArray( d_size );
-				gpu_out = gpu_cuda::cudaMakeArray( d_size );
-				gpu_dz_in = gpu_cuda::cudaMakeArray( d_size );
+				gpu_dz = gpu_cuda::cudaMakeArray( dz, d_size );
+				gpu_in = gpu_cuda::cudaMakeArray( in, d_size );
+				gpu_out = gpu_cuda::cudaMakeArray( out, d_size );
+				gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in, d_size );
 		#endif
  	}
 #ifdef GPU_CUDA
