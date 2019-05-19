@@ -11,7 +11,7 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
     float max_v = 0.0;
     for ( int i = 0; i < in_size_x; ++i ){
       float v = in[id + i];
-      if(v>max_v){
+      if( v > max_v ){
         max_v = v;
       }
     }
@@ -20,8 +20,8 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
 
     for ( int i = 0; i < in_size_x; ++i ){
       float v = in[id + i];
-      v = (float)exp(v - max_v);
-      out[id + i] = v;
+      v = exp(v - max_v);
+      // out[id + i] = v;
       sum += v;
     }
 
