@@ -16,11 +16,11 @@ __global__ void cudaFillArray(int N, float val, float *gpu_array)
     if(i < N) gpu_array[i] = val;
 }
 
-__global__ void setRandom(float *gpu_array, int maxval, int N )
+__global__ void setRandom(float *gpu_array, int N, int maxval )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   if( id < N ){
-    gpu_array[id] = 1.0f / maxval * Rand(id) / float( RAND_MAX );    
+    gpu_array[id] = 1.0f / maxval * Rand(id) / float( RAND_MAX );
   }
 }
 
@@ -86,7 +86,7 @@ void cudaMakeRandomArray(float *gpu_array, int N, int maxval )
   cudaMemset(&gpu_array, 0, N*sizeof(float));
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  setRandom<<<grid, BLOCK>>>( gpu_array, maxval, int N );
+  setRandom<<<grid, BLOCK>>>( gpu_array, N, maxval );
 }
 
 } // namespace gpu
