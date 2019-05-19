@@ -10,10 +10,12 @@ __device__ unsigned int Rand(unsigned int randx)
   return randx&2147483647;
 }
 
-__global__ void cudaFillArray(int N, float val, float *gpu_array)
+__global__ void cudaFillArray( int N, float val, float *gpu_array )
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-    if(i < N) gpu_array[i] = val;
+    if( i < N ){
+      gpu_array[i] = val;
+    }
 }
 
 __global__ void setRandom(float *gpu_array, int N, int maxval )
