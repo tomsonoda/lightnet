@@ -60,9 +60,12 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
     for ( int z = 0; z < padded_in_size_z; ++z ){
       for ( int j = 0; j < kernel_size; ++j ){
         for ( int i = 0; i < kernel_size; ++i ){
-          int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
           int padded_in_index = b * (padded_in_size_x * padded_in_size_y * padded_in_size_z) + z * (padded_in_size_x * padded_in_size_y) + (mapped_y + j) * (padded_in_size_x) + (mapped_x + i);
-          sum += filters[filter * filter_size + filter_index] * padded_in[padded_in_index];
+
+          if ( padded_in_index < batch_size * padded_in_size_x * padded_in_size_y * padded_in_size_z ){
+            int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
+            sum += filters[filter * filter_size + filter_index] * padded_in[padded_in_index];            
+          }
         }
       }
     }
