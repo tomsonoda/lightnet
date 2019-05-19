@@ -9,7 +9,6 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
-  printf("calcConvolutionForwardPaddedInGPU  threadIdx.x=%d of blockDim.x=%d, id=%d\n", threadIdx.x, blockDim.x, id);
 
   int x = id % in_size_x;
   id /= in_size_x;
