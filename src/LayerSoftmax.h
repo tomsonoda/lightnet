@@ -33,9 +33,9 @@ struct LayerSoftmax
 	{
 		#ifdef GPU_CUDA
 				int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-				gpu_dz = gpu_cuda::cudaMakeArray( NULL, d_size );
-				gpu_in = gpu_cuda::cudaMakeArray( NULL, d_size );
-				gpu_out = gpu_cuda::cudaMakeArray( NULL, d_size );
+				gpu_dz    = gpu_cuda::cudaMakeArray( NULL, d_size );
+				gpu_in    = gpu_cuda::cudaMakeArray( NULL, d_size );
+				gpu_out   = gpu_cuda::cudaMakeArray( NULL, d_size );
 				gpu_dz_in = gpu_cuda::cudaMakeArray( NULL, d_size );
 		#endif
  	}
