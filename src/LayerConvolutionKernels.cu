@@ -219,7 +219,7 @@ void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filt
 
   int out_size = batch_size * out_size_x * out_size_y * out_size_z;
   dim3 grid_out = cuda.cudaGridSize(out_size);
-  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, bacth_size, out_size_x, out_size_y, out_size_z, kernel_size, stride, filter_size);
+  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, batch_size, out_size_x, out_size_y, out_size_z, kernel_size, stride, filter_size);
 }
 
 void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate)
