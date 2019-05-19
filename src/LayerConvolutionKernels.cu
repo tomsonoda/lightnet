@@ -39,33 +39,36 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in, 
   */
 }
 
-__global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride, int filter_size)
+__global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *filters, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int batch_size, int out_size_x, int out_size_y, int out_size_z, int kernel_size, int stride, int filter_size)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
 
-  int x = id % out_size_x;
-  id /= out_size_x;
-  int y = id % out_size_y;
-  id /= out_size_y;
-  int filter = id % out_size_z;
-  id /= out_size_z;
-  int b = id;
+  if (id_out < batch_size * out_size_x * out_size_y * out_size_z) {
+    int x = id % out_size_x;
+    id /= out_size_x;
+    int y = id % out_size_y;
+    id /= out_size_y;
+    int filter = id % out_size_z;
+    id /= out_size_z;
+    int b = id;
 
-  int mapped_x = x * stride;
-  int mapped_y = y * stride;
+    int mapped_x = x * stride;
+    int mapped_y = y * stride;
 
-  float sum = 0.0;
-  for ( int z = 0; z < padded_in_size_z; ++z ){
-    for ( int j = 0; j < kernel_size; ++j ){
-      for ( int i = 0; i < kernel_size; ++i ){
-        int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
-        int padded_in_index = b * (padded_in_size_x * padded_in_size_y * padded_in_size_z) + z * (padded_in_size_x * padded_in_size_y) + (mapped_y + j) * (padded_in_size_x) + (mapped_x + i);
-        sum += filters[filter * filter_size + filter_index] * padded_in[padded_in_index];
+    float sum = 0.0;
+    for ( int z = 0; z < padded_in_size_z; ++z ){
+      for ( int j = 0; j < kernel_size; ++j ){
+        for ( int i = 0; i < kernel_size; ++i ){
+          int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
+          int padded_in_index = b * (padded_in_size_x * padded_in_size_y * padded_in_size_z) + z * (padded_in_size_x * padded_in_size_y) + (mapped_y + j) * (padded_in_size_x) + (mapped_x + i);
+          sum += filters[filter * filter_size + filter_index] * padded_in[padded_in_index];
+        }
       }
     }
+    out[id_out] = sum;
   }
-  out[id_out] = sum;
+
 
   /*
   for ( int b = 0; b < in.size.b; ++b ){
@@ -216,7 +219,7 @@ void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filt
 
   int out_size = batch_size * out_size_x * out_size_y * out_size_z;
   dim3 grid_out = cuda.cudaGridSize(out_size);
-  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, out_size_x, out_size_y, out_size_z, kernel_size, stride, filter_size);
+  calcConvolutionForwardGPU<<<grid_out, BLOCK>>>( out, padded_in, filters, padded_in_size_x, padded_in_size_y, padded_in_size_z, bacth_size, out_size_x, out_size_y, out_size_z, kernel_size, stride, filter_size);
 }
 
 void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate)
