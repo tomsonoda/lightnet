@@ -33,7 +33,7 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
       // out[id + i] = out[id + i] / sum;
       out[i] = out[i] / sum;
     }
-  }
+  // }
 
 
   /* original
