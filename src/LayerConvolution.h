@@ -8,8 +8,8 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	float *cudaMakeArray( float *cpu_array, int N );
+	float *cudaMakeRandomArray( int N, int maxval );
 	void cudaClearArray( float *gpu_array, int N );
-	void cudaMakeRandomArray(float *gpu_array, int N, int maxval );
 	void convolutionForwardGPU( float *in, float *out, float *padded_in, float *filters, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int filter_size );
 	void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size );
 	void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, float momentum, float decay, float learning_rate);
@@ -122,7 +122,7 @@ struct LayerConvolution
 		int padded_in_size = in_size.b * (in_size.x + 2*padding) * (in_size.y + 2*padding) * in_size.z;
 		gpu_padded_in = gpu_cuda::cudaMakeArray( padded_in.data, padded_in_size );
 
-		gpu_cuda::cudaMakeRandomArray( gpu_filters, filter_size * number_filters, filter_size );
+		gpu_filters = gpu_cuda::cudaMakeRandomArray( filter_size * number_filters, filter_size );
 		gpu_filter_grads = gpu_cuda::cudaMakeArray( NULL, filter_size * 2 * number_filters );
 
 #endif
