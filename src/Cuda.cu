@@ -77,7 +77,7 @@ void cudaGetArray( float *cpu_array, float *gpu_array, int N )
 
 void cudaClearArray( float *gpu_array, int N )
 {
-  // cudaFillGpuArray(N, 0, gpu_array);
+  cudaFillGpuArray(N, 0, gpu_array);
   // cudaMemset(&gpu_array, 0, N*sizeof(float));
 }
 
