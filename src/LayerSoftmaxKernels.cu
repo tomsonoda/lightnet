@@ -81,6 +81,7 @@ __global__ void calcSoftmaxBackwardGPU( float *dz_next_layer, float *dz_in, floa
 
 void softmaxForwardGPU(float *in, float *out, int batch_size, int in_size_x )
 {
+  printf("softmaxForwardGPU ### \n");
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(batch_size);
   calcSoftmaxForwardGPU<<<grid, BLOCK>>>(in, out, batch_size, in_size_x);
