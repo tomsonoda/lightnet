@@ -55,9 +55,9 @@ float *cudaMakeArray( float *cpu_array, int N )
   cudaCheckError(status);
 
   if(cpu_array){
-      cudaMemcpy(gpu_array, cpu_array, size, cudaMemcpyHostToDevice);
+      cudaMemcpy( gpu_array, cpu_array, size, cudaMemcpyHostToDevice );
   } else {
-      cudaFillGpuArray(N, 0, gpu_array);
+      cudaFillGpuArray( N, 0, gpu_array );
   }
 
   return gpu_array;
@@ -77,7 +77,7 @@ void cudaGetArray( float *cpu_array, float *gpu_array, int N )
 
 void cudaClearArray( float *gpu_array, int N )
 {
-  cudaFillGpuArray(N, 0, gpu_array);
+  // cudaFillGpuArray(N, 0, gpu_array);
   // cudaMemset(&gpu_array, 0, N*sizeof(float));
 }
 
