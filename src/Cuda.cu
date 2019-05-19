@@ -58,7 +58,6 @@ float *cudaMakeArray( float *cpu_array, int N )
       cudaFillGpuArray(N, 0, gpu_array);
   }
 
-  cudaMemset(&gpu_array, 0, N*sizeof(float));
   return gpu_array;
 }
 
