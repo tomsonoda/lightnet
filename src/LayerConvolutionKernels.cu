@@ -18,7 +18,7 @@ __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in,
   id /= in_size_z;
   int b = id;
 
-  if( (x - padding ) > 0 && ( y - padding ) > 0){
+  if( (x - padding ) > 0 && ( y - padding ) > 0 && x < in_size_x && y < in_size_y && z < in_size_z ){
     int in_index = (b * (in_size_z * in_size_x * in_size_y) +
     z * (in_size_x * in_size_y) +
     (y - padding) * (in_size_x) +
