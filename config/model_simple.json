@@ -1,0 +1,16 @@
+{
+  "net" : {
+    "batch_size":1,
+    "threads":1,
+    "momentum":0.6,
+    "decay":0.001,
+    "learning_rate":0.01,
+    "optimization":"cross_entropy",
+    "train_output_span":2000
+  },
+
+  "layers":[
+    { "type":"dense", "out_size":10 },
+    { "type":"softmax" }
+  ]
+}
