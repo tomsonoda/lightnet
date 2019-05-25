@@ -9,9 +9,8 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
   // int nBlocks  = gridDim.x;
   // int threadID = threadIdx.x;
   // int nThrads  = blockDim.x;
-
+  /*
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-
   if(id<batch_size){
     float max_v = 0.0;
 
@@ -26,7 +25,7 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
       float v = in[id + i];
       v = exp(v - max_v);
       out[id + i] = v;
-      // sum += v;
+      sum += v;
     }
     if (sum > 0.0){
       for ( int i = 0; i < in_size_x; ++i ){
@@ -34,7 +33,44 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
       }
     }
   }
+  */
+  for ( int b = 0; b < batch_size; ++b ){
+    float max_v = 0.0;
+    for ( int i = 0; i < in_size_x; ++i ){
+      int index = batch_size * (in_size_x) +
+			1 * (in_size_x) +
+			1 * (in_size_x) +
+		  i;
 
+
+      float v = in[index];
+      if(v>max_v){
+        max_v = v;
+      }
+    }
+    float sum = 0.0;
+    for ( int i = 0; i < in_size_x; ++i ){
+      int index = batch_size * (in_size_x) +
+      1 * (in_size_x) +
+      1 * (in_size_x) +
+      i;
+
+      float v = in[index];
+      v = exp(v - max_v);
+      out[index] = v;
+      sum += v;
+    }
+    if (sum > 0.0){
+      for ( int i = 0; i < in_size_x; ++i ){
+        int index = batch_size * (in_size_x) +
+        1 * (in_size_x) +
+        1 * (in_size_x) +
+        i;
+
+        out[index] = out[index] / sum;
+      }
+    }
+  }
 
   /* original
   for ( int b = 0; b < in.size.b; ++b ){
@@ -84,9 +120,10 @@ __global__ void calcSoftmaxBackwardGPU( float *dz_next_layer, float *dz_in, floa
 
 void softmaxForwardGPU( float *in, float *out, int batch_size, int in_size_x )
 {
-  CudaObject cuda = CudaObject();
-  dim3 grid = cuda.cudaGridSize( batch_size );
-  calcSoftmaxForwardGPU<<<grid, BLOCK>>>( in, out, batch_size, in_size_x );
+  // CudaObject cuda = CudaObject();
+  // dim3 grid = cuda.cudaGridSize( batch_size );
+  // calcSoftmaxForwardGPU<<<grid, BLOCK>>>( in, out, batch_size, in_size_x );
+  calcSoftmaxForwardGPU<<<1, 1>>>( in, out, batch_size, in_size_x );
 }
 
 void softmaxBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, int N )
