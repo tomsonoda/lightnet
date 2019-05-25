@@ -121,9 +121,7 @@ struct LayerDense
 
 	void forwardGPU()
 	{
-		printf("dense forward gpu\n");
 		gpu_cuda::denseForwardGPU( gpu_in, gpu_out, gpu_weights, gpu_biases, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z );
-		printf("dense forward gpu finish\n");
 	}
 
 	void updateWeightsGPU()

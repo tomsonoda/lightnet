@@ -10,7 +10,6 @@ __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, floa
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
 
-
   if ( id_out < batch_size * out_size_x * out_size_y * out_size_z ){
     int n = id % out_size_x;
     id /= out_size_x;
