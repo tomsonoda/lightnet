@@ -5,18 +5,19 @@ namespace gpu_cuda {
 
 __global__ void calcSoftmaxMaxForwardGPU(float *in, float *odata, int batch_size, int in_size_x)
 {
-  /*
-  extern __shared__ float sdata[ 1024 ];
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+
+  int stride;
+  int j;
+  extern __shared__ float sdata[ 1024 ];
   unsigned int tid = threadIdx.x;
   sdata[tid] = (id < batch_size * in_size_x) ? in[id] : 0;
-
+  int j;
   if(id<batch_size * in_size_x){
     __syncthreads();
-    for (unsigned int s=1; s<=blockDim.x && tid+s<(batch_size * in_size_x); s*=2) {
-      if (tid % (2*s) == 0) {
-        sdata[tid] =  sdata[tid] > sdata[tid + s] ? sdata[tid] : sdata[tid + s];
-      }
+    for (unsigned int stride=1; stride<=blockDim.x/2; stride<<=1) {
+      j = 2*stride * tx;
+      sdata[j] =  sdata[j] > sdata[j + stride] ? sdata[j] : sdata[j + stride];
       __syncthreads();
     }
   }
@@ -24,22 +25,7 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *odata, int batch_size
   if (tid == 0){
     odata[blockIdx.x] = sdata[0];
   }
-  */
 
-  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  if(id<batch_size * in_size_x){
-    float max = 0.0;
-    __syncthreads();
-    for( int i = 0; i < batch_size * in_size_x-1; ++i ){
-        if( in[ id + i] > in[ id + i + 1] ){
-          max = in[id + i];
-        }else{
-          max = in[id + i + 1];
-        }
-        __syncthreads();
-    }
-  }
-  odata[0] = max;
   /* original
   for ( int b = 0; b < in.size.b; ++b ){
     float max_v = 0.0;
