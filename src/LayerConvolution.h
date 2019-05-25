@@ -111,7 +111,8 @@ struct LayerConvolution
 		gpu_dz = gpu_cuda::cudaMakeArray( dz.data, data_size );
 		gpu_in = gpu_cuda::cudaMakeArray( in.data, data_size );
 
-		int dz_in_size = in_size.b *
+		int dz_in_size =
+		in_size.b *
 		( (in_size.x - kernel_size + 2*padding) / stride + 1 ) *
 		( (in_size.y - kernel_size + 2*padding) / stride + 1 ) *
 		number_filters;

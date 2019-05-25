@@ -5,6 +5,11 @@ namespace gpu_cuda {
 
 __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int in_size_x)
 {
+  // int blockID  = blockIdx.x;
+  // int nBlocks  = gridDim.x;
+  // int threadID = threadIdx.x;
+  // int nThrads  = blockDim.x;
+
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
   if(id<batch_size){
@@ -25,11 +30,10 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
       out[id + i] = v;
       sum += v;
     }
-
+    */
     for ( int i = 0; i < in_size_x; ++i ){
       out[id + i] = out[id + i] / sum;
     }
-    */
   }
 
 
