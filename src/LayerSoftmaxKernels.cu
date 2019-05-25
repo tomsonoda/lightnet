@@ -7,7 +7,6 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *odata, int batch_size
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  int j;
   extern __shared__ float sdata[ 1024 ];
   unsigned int tid = threadIdx.x;
   sdata[tid] = (id < batch_size * in_size_x) ? in[id] : 0;
