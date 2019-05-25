@@ -12,7 +12,7 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *odata, int batch_size
 
   if(id<batch_size * in_size_x){
     __syncthreads();
-    for (unsigned int s=1; s<blockDim.x; s*=2) {
+    for (unsigned int s=1; s<blockDim.x && s<(batch_size * in_size_x); s*=2) {
       if (tid % (2*s) == 0) {
         sdata[tid] =  sdata[tid] > sdata[tid + s] ? sdata[tid] : sdata[tid + s];
       }
@@ -50,7 +50,7 @@ __global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *odata, in
 
   if(id<batch_size * in_size_x){
     __syncthreads();
-    for (unsigned int s=1; s<blockDim.x; s*=2) {
+    for (unsigned int s=1; s<blockDim.x && s<(batch_size * in_size_x); s*=2) {
       if (tid % (2*s) == 0) {
         sdata[tid] += expf( sdata[tid + s] - odata[0] );
       }
