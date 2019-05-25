@@ -9,65 +9,27 @@ __global__ void calcSoftmaxForwardGPU(float *in, float *out, int batch_size, int
   // int nBlocks  = gridDim.x;
   // int threadID = threadIdx.x;
   // int nThrads  = blockDim.x;
-  /*
+
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   if(id<batch_size){
     float max_v = 0.0;
 
     for ( int i = 0; i < in_size_x; ++i ){
-      float v = in[id + i];
+      float v = in[id + i * sizeof(float)];
       if(v>max_v){
         max_v = v;
       }
     }
     float sum = 0.0;
     for ( int i = 0; i < in_size_x; ++i ){
-      float v = in[id + i];
+      float v = in[id + i * sizeof(float)];
       v = exp(v - max_v);
-      out[id + i] = v;
+      out[id + i * sizeof(float)] = v;
       sum += v;
     }
     if (sum > 0.0){
       for ( int i = 0; i < in_size_x; ++i ){
-        out[id + i] = out[id + i] / sum;
-      }
-    }
-  }
-  */
-  for ( int b = 0; b < batch_size; ++b ){
-    float max_v = 0.0;
-    for ( int i = 0; i < in_size_x; ++i ){
-      int index = batch_size * (in_size_x) +
-			1 * (in_size_x) +
-			1 * (in_size_x) +
-		  i;
-
-
-      float v = in[index*sizeof(float)];
-      if(v>max_v){
-        max_v = v;
-      }
-    }
-    float sum = 0.0;
-    for ( int i = 0; i < in_size_x; ++i ){
-      int index = batch_size * (in_size_x) +
-      1 * (in_size_x) +
-      1 * (in_size_x) +
-      i;
-
-      float v = in[index*sizeof(float)];
-      v = expf(v - max_v);
-      out[index*sizeof(float)] = v;
-      sum += v;
-    }
-    if (sum > 0.0){
-      for ( int i = 0; i < in_size_x; ++i ){
-        int index = batch_size * (in_size_x) +
-        1 * (in_size_x) +
-        1 * (in_size_x) +
-        i;
-
-        out[index*sizeof(float)] = out[index*sizeof(float)] / sum;
+        out[id + i * sizeof(float)] = out[id + i * sizeof(float)] / sum;
       }
     }
   }
