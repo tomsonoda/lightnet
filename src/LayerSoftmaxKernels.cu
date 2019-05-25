@@ -169,12 +169,12 @@ void softmaxForwardGPU( float *in, float *out, int batch_size, int in_size_x )
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize( batch_size * in_size_x );
 
-  float *odata
+  float *odata;
   cudaMalloc( (void **)&odata, sizeof(float));
   calcSoftmaxMaxForwardGPU<<<grid, BLOCK>>>( in, odata, batch_size, in_size_x );
   calcSoftmaxSumForwardGPU<<<grid, BLOCK>>>( in, out, odata, batch_size, in_size_x );
   calcSoftmaxDivForwardGPU<<<grid, BLOCK>>>( out, odata, batch_size, in_size_x );
-  
+
   // calcSoftmaxForwardGPU<<<grid, BLOCK>>>( in, out, batch_size, in_size_x );
 }
 
