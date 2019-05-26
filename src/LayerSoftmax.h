@@ -43,14 +43,13 @@ struct LayerSoftmax
 
 	void forwardGPU( float* in )
 	{
-		// this->gpu_in = in;
+		this->gpu_in = in;
 		forwardGPU();
 	}
 
 	void forwardGPU()
 	{
 		printf("softmax forward gpu\n");
-		// gpu_cuda::cudaGetArray( out.data, gpu_out, in.size.b * in.size.x * in.size.y * in.size.z );
 		gpu_cuda::softmaxForwardGPU( gpu_in, gpu_out, in.size.b, in.size.x );
 		printf("softmax forward gpu finish\n");
 	}
