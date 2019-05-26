@@ -295,7 +295,7 @@ static float testNetworkGPU(
 	string optimizer
 	)
 {
-	int in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
+	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
 	float *gpu_array = nullptr;
 
 	printf("test data begin ---\n");
@@ -317,7 +317,7 @@ static float testNetworkGPU(
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_array );
 		}else{
-			int out_size = layers[i-1]->out.size.b * layers[i-1]->out.size.x * layers[i-1]->out.size.y * layers[i-1]->out.size.z;
+			size_t out_size = layers[i-1]->out.size.b * layers[i-1]->out.size.x * layers[i-1]->out.size.y * layers[i-1]->out.size.z;
 			TensorObject<float> gpu_output_data = TensorObject<float>(layers[i-1]->out.size.b, layers[i-1]->out.size.x, layers[i-1]->out.size.y, layers[i-1]->out.size.z);
 			gpu_cuda::cudaGetArray( gpu_output_data.data, layers.back()->gpu_out, out_size );
 			printTensor( gpu_output_data );
