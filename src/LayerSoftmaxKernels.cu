@@ -18,10 +18,10 @@ __device__ float atomicMaxf(float* address, float val)
 __global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int batch_size, int in_size_x)
 {
   extern __shared__ float shared[];
-
+  int elements = batch_size * in_size_x;
   int tid = threadIdx.x;
   int gid = (blockDim.x * blockIdx.x) + tid;
-  shared[tid] = -FLOAT_MAX;  // 1
+  shared[tid] = -FLT_MAX;  // 1
 
   if (gid < elements)
     shared[tid] = in[gid];
