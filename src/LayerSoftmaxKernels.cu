@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <float.h>
 #include "CudaObject.h"
 
 namespace gpu_cuda {
