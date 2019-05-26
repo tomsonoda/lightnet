@@ -192,8 +192,8 @@ static float trainNetworkGPU(
 	ParameterObject *parameter_object
 	)
 {
-	int in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
-	int out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
+	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
+	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
 
 	float *gpu_in_array = nullptr;
 	float *gpu_out_array = nullptr;
