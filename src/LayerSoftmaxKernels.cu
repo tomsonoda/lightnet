@@ -3,26 +3,43 @@
 
 namespace gpu_cuda {
 
-__global__ void calcSoftmaxMaxForwardGPU(float *in, float *odata, int batch_size, int in_size_x)
+__device__ float atomicMaxf(float* address, float val)
 {
-  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  int *address_as_int =(int*)address;
+  int old = *address_as_int, assumed;
+  while (val > __int_as_float(old)) {
+      assumed = old;
+      old = atomicCAS(address_as_int, assumed,
+                      __float_as_int(val));
+      }
+  return __int_as_float(old);
+}
 
-  extern __shared__ float sdata[];
-  unsigned int tid = threadIdx.x;
-  sdata[tid] = (id < batch_size * in_size_x) ? in[id] : 0;
-  int j;
-  if(id<batch_size * in_size_x){
+__global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int batch_size, int in_size_x)
+{
+  extern __shared__ float shared[];
+
+  int tid = threadIdx.x;
+  int gid = (blockDim.x * blockIdx.x) + tid;
+  shared[tid] = -FLOAT_MAX;  // 1
+
+  if (gid < elements)
+    shared[tid] = in[gid];
     __syncthreads();
-    for (unsigned int stride=1; stride<=blockDim.x/2; stride<<=1) {
-      j = 2*stride * tid;
-      sdata[j] =  sdata[j] > sdata[j + stride] ? sdata[j] : sdata[j + stride];
-      __syncthreads();
-    }
-  }
 
-  if (tid == 0){
-    odata[blockIdx.x] = sdata[0];
-  }
+    for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
+      if (tid < s && gid < elements)
+          shared[tid] = max(shared[tid], shared[tid + s]);  // 2
+          __syncthreads();
+      }
+
+ // what to do now?
+ // option 1: save block result and launch another kernel
+ if (tid == 0)
+    d_max[blockIdx.x] = shared[tid]; // 3
+ // option 2: use atomics
+ if (tid == 0)
+   atomicMaxf(d_max, shared[0]);
 
   /* original
   for ( int b = 0; b < in.size.b; ++b ){
@@ -37,35 +54,14 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *odata, int batch_size
   */
 }
 
-__global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *odata, int batch_size, int in_size_x)
+__global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *d_max, int batch_size, int in_size_x)
 {
   // int blockID  = blockIdx.x;
   // int nBlocks  = gridDim.x;
   // int threadID = threadIdx.x;
   // int nThrads  = blockDim.x;
 
-  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  extern __shared__ float sdata[ 1024 ];
-  unsigned int tid = threadIdx.x;
-  sdata[tid] = (id < batch_size * in_size_x) ? in[id] : 0;
-
-  if(id<batch_size * in_size_x){
-    __syncthreads();
-    for (unsigned int s=1; s<=blockDim.x && tid+s<(batch_size * in_size_x); s*=2) {
-      if (tid % (2*s) == 0) {
-        sdata[tid] += expf( sdata[tid + s] - odata[0] );
-      }
-      __syncthreads();
-    }
-  }
-
-  out[id] = expf( in[id] - odata[0] );
-
-  // sum.
-  if (tid == 0){
-    odata[blockIdx.x] = sdata[0];
-  }
 
   /* original
   float sum = 0.0;
