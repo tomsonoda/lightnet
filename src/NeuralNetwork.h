@@ -239,8 +239,8 @@ static float trainNetworkGPU(
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
-		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z);
-		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz, layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z);
+		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z);
+		gpu_cuda::cudaClearArray( layers[i]->gpu_dz, layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z);
 	}
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
