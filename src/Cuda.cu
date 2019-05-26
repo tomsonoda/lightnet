@@ -39,7 +39,7 @@ void cudaCheckError(cudaError_t status)
     }
 }
 
-void cudaFillGpuArray(int N, float val, float * array)
+void cudaFillGpuArray( float * array, float val, int N )
 {
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(N);
@@ -57,7 +57,7 @@ float *cudaMakeArray( float *cpu_array, int N )
   if(cpu_array){
       cudaMemcpy( gpu_array, cpu_array, size, cudaMemcpyHostToDevice );
   } else {
-      cudaFillGpuArray( N, 0, gpu_array );
+      cudaFillGpuArray( gpu_array,  0, N );
   }
 
   return gpu_array;
@@ -77,7 +77,7 @@ void cudaGetArray( float *cpu_array, float *gpu_array, int N )
 
 void cudaClearArray( float *gpu_array, int N )
 {
-  cudaFillGpuArray(N, 0, gpu_array);
+  cudaFillGpuArray( gpu_array, 0, N);
   // cudaMemset(&gpu_array, 0, N*sizeof(float));
 }
 
