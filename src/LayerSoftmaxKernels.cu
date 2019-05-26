@@ -16,10 +16,9 @@ __device__ float atomicMaxf(float* address, float val)
   return __int_as_float(old);
 }
 
-__global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int batch_size, int in_size_x)
+__global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int elements)
 {
-  const int elements = batch_size * in_size_x;
-  extern __shared__ float shared[elements];
+  extern __shared__ float shared[];
   int tid = threadIdx.x;
   int gid = (blockDim.x * blockIdx.x) + tid;
   shared[tid] = -FLT_MAX;  // 1
@@ -55,7 +54,7 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int batch_size
   */
 }
 
-__global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *d_max, int batch_size, int in_size_x)
+__global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *d_max, int elements)
 {
   // int blockID  = blockIdx.x;
   // int nBlocks  = gridDim.x;
@@ -113,8 +112,8 @@ void softmaxForwardGPU( float *in, float *out, int batch_size, int in_size_x )
 
   float *odata;
   cudaMalloc( (void **)&odata, sizeof(float));
-  calcSoftmaxMaxForwardGPU<<<grid, BLOCK>>>( in, odata, batch_size, in_size_x );
-  calcSoftmaxSumForwardGPU<<<grid, BLOCK>>>( in, out, odata, batch_size, in_size_x );
+  calcSoftmaxMaxForwardGPU<<<grid, BLOCK>>>( in, odata, batch_size * in_size_x );
+  calcSoftmaxSumForwardGPU<<<grid, BLOCK>>>( in, out, odata, batch_size * in_size_x );
   calcSoftmaxDivForwardGPU<<<grid, BLOCK>>>( out, odata, batch_size, in_size_x );
   cudaFree(odata);
 }
