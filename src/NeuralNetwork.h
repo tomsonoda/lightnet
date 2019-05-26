@@ -239,8 +239,11 @@ static float trainNetworkGPU(
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
-		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z);
-		gpu_cuda::cudaClearArray( layers[i]->gpu_dz, layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z);
+		int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
+		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
+		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size);
+		gpu_cuda::cudaClearArray( layers[i]->gpu_dz, dz_size);
+		printf("neural network layer %d clearing memory dz_size %d, dz_in_size %d\n", i, dz_size, dz_in_size );
 	}
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){

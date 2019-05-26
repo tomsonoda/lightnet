@@ -10,7 +10,7 @@ __device__ unsigned int Rand(unsigned int randx)
   return randx&2147483647;
 }
 
-__global__ void cudaFillArray( int N, float val, float *gpu_array )
+__global__ void cudaFillArray( float *gpu_array, float val, int N )
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
     if( i < N ){
@@ -43,7 +43,7 @@ void cudaFillGpuArray( float * array, float val, int N )
 {
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(N);
-  cudaFillArray<<<grid_in, BLOCK>>>( N, val, array );
+  cudaFillArray<<<grid_in, BLOCK>>>( array, val, N );
   cudaCheckError(cudaPeekAtLastError());
 }
 
