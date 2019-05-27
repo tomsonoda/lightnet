@@ -215,7 +215,6 @@ static float trainNetworkGPU(
 	// printTensor( out_data );
 	// printf("train data end2   ---\n");
 
-
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_in_array );
