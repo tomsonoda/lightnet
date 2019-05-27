@@ -39,7 +39,7 @@ void cudaCheckError(cudaError_t status)
     }
 }
 
-void cudaFillGpuArray( float * array, float val, int N )
+void cudaFillGpuArray( float *array, float val, int N )
 {
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(N);
