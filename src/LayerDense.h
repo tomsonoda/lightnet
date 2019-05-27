@@ -98,6 +98,8 @@ struct LayerDense
 		gpu_out   = gpu_cuda::cudaMakeArray( NULL, o_size );
 		gpu_dz_in = gpu_cuda::cudaMakeArray( NULL, o_size );
 
+		printf("dz_size = %d, gpu_dz_size= %d, gpu_dz_in_size\n", d_size, sizeof(gpu_dz), sizeof(gpu_dz_in));
+
 		gpu_weights = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
 		gpu_dW = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
 		gpu_biases = gpu_cuda::cudaMakeArray( NULL, out_size );
