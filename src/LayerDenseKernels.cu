@@ -7,6 +7,7 @@ namespace gpu_cuda {
 
 __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z )
 {
+  /*
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
 
@@ -35,7 +36,7 @@ __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, floa
     int bias_index = n;
     out[id_out] = sum + biases[bias_index];
   }
-
+*/
   /*
   for ( int b = 0; b < in.size.b; ++b ){
     for ( int n = 0; n < out.size.x; ++n ){
