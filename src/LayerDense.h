@@ -91,11 +91,12 @@ struct LayerDense
 
 #ifdef GPU_CUDA
 		int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_dz = gpu_cuda::cudaMakeArray( dz.data, d_size );
-		gpu_in = gpu_cuda::cudaMakeArray( in.data, d_size );
+		gpu_dz = gpu_cuda::cudaMakeArray( NULL, d_size );
+		gpu_in = gpu_cuda::cudaMakeArray( NULL, d_size );
+
 		int o_size = in_size.b * out_size;
-		gpu_out = gpu_cuda::cudaMakeArray( out.data, o_size );
-		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in.data, o_size );
+		gpu_out   = gpu_cuda::cudaMakeArray( NULL, o_size );
+		gpu_dz_in = gpu_cuda::cudaMakeArray( NULL, o_size );
 
 		gpu_weights = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
 		gpu_dW = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
@@ -121,7 +122,7 @@ struct LayerDense
 
 	void forwardGPU()
 	{
-		// gpu_cuda::denseForwardGPU( gpu_in, gpu_out, gpu_weights, gpu_biases, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z );
+		gpu_cuda::denseForwardGPU( gpu_in, gpu_out, gpu_weights, gpu_biases, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z );
 	}
 
 	void updateWeightsGPU()
