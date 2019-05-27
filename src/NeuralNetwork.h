@@ -242,6 +242,7 @@ static float trainNetworkGPU(
 		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
 		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
 		gpu_cuda::cudaClearArray( layers[i]->gpu_dz, dz_size );
+		printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
 		printf("neural network layer %d clearing memory dz_size %d, dz_in_size %d\n", i, dz_size, dz_in_size );
 	}
 
@@ -258,7 +259,7 @@ static float trainNetworkGPU(
 	}
 
 	exit(0);
-	
+
 	if(optimizer=="mse"){
 
 		float err = 0;
