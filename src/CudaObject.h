@@ -11,7 +11,7 @@ struct CudaObject
         x = ceil(sqrt(k));
         y = (n-1)/(x*BLOCK) + 1;
     }
-    dim3 d  (x, y, 1);
+    dim3 d(x, y, 1);
     return d;
   }
 };
