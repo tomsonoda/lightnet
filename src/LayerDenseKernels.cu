@@ -159,7 +159,7 @@ void denseForwardGPU( float *in, float *out, float *weights, float *biases, int 
   int N = batch_size * out_size_x * out_size_y * out_size_z;
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  // calcDenseForwardGPU<<<grid, BLOCK>>>(in, out, weights, biases, batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z );
+  calcDenseForwardGPU<<<grid, BLOCK>>>(in, out, weights, biases, batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z );
 }
 
 void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum )

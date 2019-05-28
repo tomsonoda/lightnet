@@ -209,11 +209,11 @@ static float trainNetworkGPU(
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 	printf("----Cuda train put gpu_in_array finish ----\n");
 
-	// printf("train data begin2 ---\n");
-	// TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
-	// gpu_cuda::cudaGetArray( out_data.data, gpu_in_array, in_size );
-	// printTensor( out_data );
-	// printf("train data end2   ---\n");
+	printf("train data begin2 ---\n");
+	TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
+	gpu_cuda::cudaGetArray( out_data.data, gpu_in_array, in_size );
+	printTensor( out_data );
+	printf("train data end2   ---\n");
 
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
