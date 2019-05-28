@@ -317,8 +317,7 @@ static float trainNetworkGPU(
 		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
 		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz, dz_size );
 		clearArrayGPU( layers[i] );
-		printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
-		printf("neural network layer %d clearing memory dz_size %d, dz_in_size %d\n", i, dz_size, dz_in_size );
+		// printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
 	}
 
 	exit(0);
