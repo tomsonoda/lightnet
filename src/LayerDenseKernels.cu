@@ -92,28 +92,30 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_in = id;
 
-  int i = id % in_size_x;
-  id /= in_size_x;
-  int j = id % in_size_y;
-  id /= in_size_y;
-  int z = id % in_size_z;
-  id /= in_size_z;
-  int b = id;
+  if( id_in < batch_size * in_size_x * in_size_y * in_size_z){
+    int i = id % in_size_x;
+    id /= in_size_x;
+    int j = id % in_size_y;
+    id /= in_size_y;
+    int z = id % in_size_z;
+    id /= in_size_z;
+    int b = id;
 
-  int w_size_x = in_size_x*in_size_y*in_size_z;
-  int w_size_y = out_size_x;
+    int w_size_x = in_size_x*in_size_y*in_size_z;
+    int w_size_y = out_size_x;
 
-  int m = z * (in_size_x * in_size_y) + j * (in_size_x) + i;
+    int m = z * (in_size_x * in_size_y) + j * (in_size_x) + i;
 
-  for ( int n = 0; n < out_size_x; ++n ){
-    float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
-    gradients[ n*batch_size + b ] = dzin;
+    for ( int n = 0; n < out_size_x; ++n ){
+      float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
+      gradients[ n*batch_size + b ] = dzin;
 
-    int w_index = n * (w_size_x * w_size_y) + m;
-    float w = weights[w_index];
+      int w_index = n * (w_size_x * w_size_y) + m;
+      float w = weights[w_index];
 
-    dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
-    dz[id_in] += dzin * w;
+      dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
+      dz[id_in] += dzin * w;
+    }
   }
 
   /*
