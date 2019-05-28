@@ -211,7 +211,8 @@ static TensorObject<float> getGPUOut(LayerObject* layer){
 		default:
 			printf("layer type=%d\n", layer->type);
 			assert( false );
-			return NULL;
+			TensorObject<float> out_data = TensorObject<float>(1, 1, 1, 1);
+			return out_data;
 	}
 }
 
