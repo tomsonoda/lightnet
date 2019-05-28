@@ -183,6 +183,38 @@ static void forwardGPU( LayerObject* layer, float* in)
 	}
 }
 
+static TensorObject<float> getGPUOut(LayerObject* layer){
+	switch ( layer->type )
+	{
+		// case LayerType::batch_normalization:
+		// 	return ((LayerBatchNormalization*)layer)->getGPUOut();
+		// case LayerType::conv:
+		// 	return ((LayerConvolution*)layer)->getGPUOut();
+		case LayerType::dense:
+			return ((LayerDense*)layer)->getGPUOut();
+		// case LayerType::detect_objects:
+		// 	return ((LayerDetectObjects*)layer)->getGPUOut();
+		// case LayerType::dropout:
+		// 	return ((LayerDropout*)layer)->getGPUOut();
+		// case LayerType::leaky_relu:
+		// 	return ((LayerLeakyReLU*)layer)->getGPUOut();
+		// case LayerType::max_pool:
+		// 	return ((LayerMaxPool*)layer)->getGPUOut();
+		// case LayerType::relu:
+		// 	return ((LayerReLU*)layer)->getGPUOut();
+		// case LayerType::route:
+		// 	return ((LayerRoute*)layer)->getGPUOut();
+		// case LayerType::sigmoid:
+		// 	return ((LayerSigmoid*)layer)->getGPUOut();
+		// case LayerType::softmax:
+		// 	return ((LayerSoftmax*)layer)->getGPUOut();
+		default:
+			printf("layer type=%d\n", layer->type);
+			assert( false );
+			return NULL;
+	}
+}
+
 static float trainNetworkGPU(
 	int step,
 	vector<LayerObject*>& layers,
@@ -205,9 +237,7 @@ static float trainNetworkGPU(
 	// printTensor( data );
 	// printf("train data end   ---\n");
 
-	printf("----Cuda train put gpu_in_array ----\n");
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
-	printf("----Cuda train put gpu_in_array finish ----\n");
 
 	// printf("train data begin2 ---\n");
 	// TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
@@ -223,11 +253,11 @@ static float trainNetworkGPU(
 		}
 	}
 
-	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	printf("----Cuda train get output----\n");
-	int last_size = layers.back()->out.size.b * layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
-
-	printf("last size=%d, expected_size=%d\n", last_size, out_size);
+  TensorObject<float> output_data = getGPUOut(layers.back());
+	// TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
+	// int last_size = layers.back()->out.size.b * layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
+	// printf("last size=%d, expected_size=%d\n", last_size, out_size);
 	// gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
 	printf("----Cuda train output----\n");
