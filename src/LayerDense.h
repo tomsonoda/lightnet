@@ -95,7 +95,7 @@ struct LayerDense
 		gpu_in = gpu_cuda::cudaMakeArray( NULL, d_size );
 
 		int o_size = in_size.b * out_size;
-		gpu_out   = gpu_cuda::cudaMakeArray( NULL, o_size );
+		gpu_cuda::cudaMakeArrayVoid( gpu_out, o_size );
 		gpu_dz_in = gpu_cuda::cudaMakeArray( NULL, o_size );
 
 		gpu_weights = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
