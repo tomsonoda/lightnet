@@ -215,7 +215,6 @@ static float trainNetworkGPU(
 	// printTensor( out_data );
 	// printf("train data end2   ---\n");
 
-	/*
 	for( int i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_in_array );
@@ -223,7 +222,6 @@ static float trainNetworkGPU(
 			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
 	}
-	*/
 
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	printf("----Cuda train get output----\n");
