@@ -10,6 +10,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
+	void cudaGetArray( float *cpu_array, float *&gpu_array, size_t N );
 	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
@@ -123,6 +124,9 @@ struct LayerDense
 	void forwardGPU()
 	{
 		gpu_cuda::denseForwardGPU( gpu_in, gpu_out, gpu_weights, gpu_biases, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z );
+		printf("dense get array\n");
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		printf("dense get array - finish \n");
 	}
 
 	void updateWeightsGPU()
