@@ -107,8 +107,8 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
     int m = z * (in_size_x * in_size_y) + j * (in_size_x) + i;
 
     for ( int n = 0; n < out_size_x; ++n ){
-      // float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
-      // gradients[ n*batch_size + b ] = dzin;
+      float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
+      gradients[ n*batch_size + b ] = dzin;
       //
       // int w_index = n * (w_size_x * w_size_y) + m;
       // float w = weights[w_index];
