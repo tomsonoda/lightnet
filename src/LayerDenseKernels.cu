@@ -175,7 +175,7 @@ void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in,
   int out_N = batch_size * out_size_x * out_size_y * out_size_z;
   CudaObject cuda = CudaObject();
   dim3 grid_in = cuda.cudaGridSize(out_N);
-  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
+  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in, out_N );
 
   int in_N = batch_size * in_size_x * in_size_y * in_size_z;
   dim3 grid = cuda.cudaGridSize(in_N);

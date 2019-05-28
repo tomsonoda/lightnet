@@ -267,7 +267,7 @@ void batchNormalizationBackwardGPU( float *dz_next_layer, float *dz_in, float *d
   CudaObject cuda = CudaObject();
   int in_N = batch_size * in_size_x * in_size_y * in_size_z;
   dim3 grid_in = cuda.cudaGridSize(in_N);
-  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
+  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in, in_N );
 
   int N = in_size_z;
   dim3 grid = cuda.cudaGridSize(N);

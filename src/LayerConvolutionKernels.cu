@@ -49,7 +49,7 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
     id /= out_size_x;
     int y = id % out_size_y;
     id /= out_size_y;
-    
+
     int filter = id % out_size_z;
     id /= out_size_z;
     int b = id;
@@ -238,7 +238,7 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
   CudaObject cuda = CudaObject();
   int in_N = batch_size * dz_in_size_x * dz_in_size_y * dz_in_size_z;
   dim3 grid_in = cuda.cudaGridSize(in_N);
-  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in );
+  cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in, in_N );
 
   int dz_N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   dim3 grid_dz = cuda.cudaGridSize(dz_N);
