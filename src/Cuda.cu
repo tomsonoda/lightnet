@@ -50,7 +50,6 @@ void cudaFillGpuArray( float *array, float val, int N )
 
 void cudaMakeArrayVoid( float *&gpu_array, int N )
 {
-  float *gpu_array;
   size_t size = N * sizeof(float);
   cudaError_t status = cudaMalloc((void **)&gpu_array, size);
   cudaCheckError(status);
