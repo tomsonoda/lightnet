@@ -311,7 +311,7 @@ static float trainNetworkGPU(
 
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
-	for( int i = 0; i < layers.size(); ++i ){
+	for( unsigned i = 0; i < layers.size(); ++i ){
 		// int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
 		// int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
 		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
@@ -320,9 +320,7 @@ static float trainNetworkGPU(
 		// printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
 	}
 
-	exit(0);
-
-	for ( int i = layers.size() - 1; i >= 0; i-- ){
+	for ( unsigned i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
 			backwardGPU( layers[i], gpu_out_array );
 		}else{
@@ -333,6 +331,8 @@ static float trainNetworkGPU(
 	for ( int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );
 	}
+
+	exit(0);
 
 	if(optimizer=="mse"){
 
@@ -388,7 +388,7 @@ static float testNetworkGPU(
 	printTensor( gpu_output_d );
 	printf("test data end2   ---\n");
 
-	for( int i = 0; i < layers.size(); ++i ){
+	for( unsigned i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_array );
 		}else{
@@ -399,7 +399,6 @@ static float testNetworkGPU(
 			forwardGPU( layers[i], layers[i-1]->gpu_out );
 		}
 	}
-	exit(0);
 
 	int out_size = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
 	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
