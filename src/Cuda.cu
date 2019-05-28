@@ -47,7 +47,7 @@ void cudaFillGpuArray( float *array, float val, int N )
   cudaCheckError(cudaPeekAtLastError());
 }
 
-float *cudaMakeArray( float *cpu_array, int N )
+float *cudaMakeArray( float *&cpu_array, int N )
 {
   float *gpu_array;
   size_t size = N * sizeof(float);
