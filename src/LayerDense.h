@@ -11,6 +11,7 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	float *cudaMakeArray( float *cpu_array, int N );
+	void cudaMakeArrayVoid( float *&gpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
 	void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum );
