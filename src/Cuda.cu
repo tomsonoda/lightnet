@@ -80,7 +80,7 @@ void cudaPutArray( float *gpu_array, float *cpu_array, size_t N )
   cudaCheckError(status);
 }
 
-void cudaGetArray( float *cpu_array, float &*gpu_array, size_t N )
+void cudaGetArray( float *cpu_array, float *&gpu_array, size_t N )
 {
   size_t size = N * sizeof(float);
   cudaError_t status = cudaMemcpy(cpu_array, gpu_array, size, cudaMemcpyDeviceToHost);
