@@ -344,7 +344,7 @@ CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vec
     }
   }
 
-  for( int j=0; j<max_bounding_boxes && j<boxes.size(); ++j){
+  for( unsigned j=0; j<max_bounding_boxes && j<boxes.size(); ++j){
     int index = j * (4 + classes);
     c.out( 0, index, 0, 0 )   = boxes[j].x;
     c.out( 0, index+1, 0, 0 ) = boxes[j].y;

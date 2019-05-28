@@ -31,7 +31,6 @@ namespace gpu_cuda {
 
 #endif
 
-
 static void printTensor( TensorObject<float>& data )
 {
 	int mx = data.size.x;
@@ -183,36 +182,80 @@ static void forwardGPU( LayerObject* layer, float* in)
 	}
 }
 
-static TensorObject<float> getGPUOut(LayerObject* layer){
+static TensorObject<float> getOutGPU( LayerObject* layer )
+{
 	switch ( layer->type )
 	{
 		// case LayerType::batch_normalization:
-		// 	return ((LayerBatchNormalization*)layer)->getGPUOut();
+		// 	return ((LayerBatchNormalization*)layer)->getOutGPU();
 		// case LayerType::conv:
-		// 	return ((LayerConvolution*)layer)->getGPUOut();
+		// 	return ((LayerConvolution*)layer)->getOutGPU();
 		case LayerType::dense:
-			return ((LayerDense*)layer)->getGPUOut();
+			return ((LayerDense*)layer)->getOutGPU();
 		// case LayerType::detect_objects:
-		// 	return ((LayerDetectObjects*)layer)->getGPUOut();
+		// 	return ((LayerDetectObjects*)layer)->getOutGPU();
 		// case LayerType::dropout:
-		// 	return ((LayerDropout*)layer)->getGPUOut();
+		// 	return ((LayerDropout*)layer)->getOutGPU();
 		// case LayerType::leaky_relu:
-		// 	return ((LayerLeakyReLU*)layer)->getGPUOut();
+		// 	return ((LayerLeakyReLU*)layer)->getOutGPU();
 		// case LayerType::max_pool:
-		// 	return ((LayerMaxPool*)layer)->getGPUOut();
+		// 	return ((LayerMaxPool*)layer)->getOutGPU();
 		// case LayerType::relu:
-		// 	return ((LayerReLU*)layer)->getGPUOut();
+		// 	return ((LayerReLU*)layer)->getOutGPU();
 		// case LayerType::route:
-		// 	return ((LayerRoute*)layer)->getGPUOut();
+		// 	return ((LayerRoute*)layer)->getOutGPU();
 		// case LayerType::sigmoid:
-		// 	return ((LayerSigmoid*)layer)->getGPUOut();
+		// 	return ((LayerSigmoid*)layer)->getOutGPU();
 		// case LayerType::softmax:
-		// 	return ((LayerSoftmax*)layer)->getGPUOut();
+		// 	return ((LayerSoftmax*)layer)->getOutGPU();
 		default:
 			printf("layer type=%d\n", layer->type);
 			assert( false );
 			TensorObject<float> out_data = TensorObject<float>(1, 1, 1, 1);
 			return out_data;
+	}
+}
+
+static void clearArrayGPU( LayerObject* layer )
+{
+	switch ( layer->type )
+	{
+		// case LayerType::batch_normalization:
+		// 	((LayerBatchNormalization*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::conv:
+		// 	((LayerConvolution*)layer)->clearArrayGPU();
+		// 	return;
+		case LayerType::dense:
+			((LayerDense*)layer)->clearArrayGPU();
+			return;
+		// case LayerType::detect_objects:
+		// 	((LayerDetectObjects*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::dropout:
+		// 	((LayerDropout*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::leaky_relu:
+		// 	((LayerLeakyReLU*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::max_pool:
+		// 	((LayerMaxPool*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::relu:
+		// 	((LayerReLU*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::route:
+		// 	((LayerRoute*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::sigmoid:
+		// 	((LayerSigmoid*)layer)->clearArrayGPU();
+		// 	return;
+		// case LayerType::softmax:
+		// 	((LayerSoftmax*)layer)->clearArrayGPU();
+		// 	return;
+		default:
+			printf("layer type=%d\n", layer->type);
+			assert( false );
 	}
 }
 
@@ -255,7 +298,7 @@ static float trainNetworkGPU(
 	}
 
 	printf("----Cuda train get output----\n");
-  TensorObject<float> output_data = getGPUOut(layers.back());
+  TensorObject<float> output_data = getOutGPU(layers.back());
 	// TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	// int last_size = layers.back()->out.size.b * layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
 	// printf("last size=%d, expected_size=%d\n", last_size, out_size);
@@ -264,20 +307,21 @@ static float trainNetworkGPU(
 	printf("----Cuda train output----\n");
 	printTensor(output_data);
 
-	exit(0);
-
 	TensorObject<float> grads = output_data - expected;
 
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < layers.size(); ++i ){
-		int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
-		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
-		gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
-		gpu_cuda::cudaClearArray( layers[i]->gpu_dz, dz_size );
+		// int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
+		// int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
+		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
+		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz, dz_size );
+		clearArrayGPU( layers[i] );
 		printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
 		printf("neural network layer %d clearing memory dz_size %d, dz_in_size %d\n", i, dz_size, dz_in_size );
 	}
+
+	exit(0);
 
 	for ( int i = layers.size() - 1; i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){

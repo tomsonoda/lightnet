@@ -275,7 +275,7 @@ public:
 
   void showTokens(std::vector <json_token_t*> tokens)
   {
-    for(int i=0; i<tokens.size(); ++i){
+    for(unsigned i=0; i<tokens.size(); ++i){
       string type = "";
       string str = "";
       if (tokens[i]->type == JSON_TYPE_STRING){
