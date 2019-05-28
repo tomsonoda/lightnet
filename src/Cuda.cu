@@ -53,12 +53,7 @@ void cudaMakeArrayVoid( float *&gpu_array, int N )
   size_t size = N * sizeof(float);
   cudaError_t status = cudaMalloc((void **)&gpu_array, size);
   cudaCheckError(status);
-
-  if(cpu_array){
-      cudaMemcpy( gpu_array, cpu_array, size, cudaMemcpyHostToDevice );
-  } else {
-      cudaFillGpuArray( gpu_array,  0, N );
-  }
+  cudaFillGpuArray( gpu_array,  0, N );
 }
 
 
