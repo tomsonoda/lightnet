@@ -48,7 +48,7 @@ void cudaFillGpuArray( float *array, float val, int N )
 }
 
 
-void cudaMakeArrayVoid( float *&gpu_array, int N )
+void cudaMakeArrayVoid( float*& gpu_array, int N )
 {
   size_t size = N * sizeof(float);
   cudaError_t status = cudaMalloc((void **)&gpu_array, size);
@@ -80,7 +80,7 @@ void cudaPutArray( float *gpu_array, float *cpu_array, size_t N )
   cudaCheckError(status);
 }
 
-void cudaGetArray( float *cpu_array, float *gpu_array, size_t N )
+void cudaGetArray( float *cpu_array, float &*gpu_array, size_t N )
 {
   size_t size = N * sizeof(float);
   cudaError_t status = cudaMemcpy(cpu_array, gpu_array, size, cudaMemcpyDeviceToHost);
