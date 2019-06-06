@@ -332,8 +332,6 @@ static float trainNetworkGPU(
 		updateWeightsGPU( layers[i] );
 	}
 
-	exit(0);
-
 	if(optimizer=="mse"){
 
 		float err = 0;
