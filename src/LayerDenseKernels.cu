@@ -144,8 +144,10 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
 __global__ void calcDenseBarckwardNabraBGPU( float *dz_in, float *dB, int batch_size, int out_size_x ){
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  for( int b = 0; b < batch_size; ++b ){
-    dB[id] += dz_in[ b * (out_size_x) + id ];
+  if( id< batch_size * out_size_x ){
+    for( int b = 0; b < batch_size; ++b ){
+      dB[id] += dz_in[ b * (out_size_x) + id ];
+    }
   }
   /* original
   for ( int n = 0; n < out.size.x; ++n ){
