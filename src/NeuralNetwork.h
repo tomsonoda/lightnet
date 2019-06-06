@@ -303,9 +303,6 @@ static float trainNetworkGPU(
 	// printf("last size=%d, expected_size=%d\n", last_size, out_size);
 	// gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
 
-	printf("----Cuda train output----\n");
-	printTensor(output_data);
-
 	TensorObject<float> grads = output_data - expected;
 
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
