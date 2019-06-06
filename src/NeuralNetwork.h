@@ -311,7 +311,7 @@ static float trainNetworkGPU(
 
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
-	for( unsigned i = 0; i < layers.size(); ++i ){
+	for( int i = 0; i < (int)(layers.size()); ++i ){
 		// int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
 		// int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
 		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
@@ -320,7 +320,7 @@ static float trainNetworkGPU(
 		// printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
 	}
 
-	for ( unsigned i = layers.size() - 1; i >= 0; i-- ){
+	for ( int i = (int)(layers.size() - 1); i >= 0; i-- ){
 		if ( i == layers.size() - 1 ){
 			backwardGPU( layers[i], gpu_out_array );
 		}else{
