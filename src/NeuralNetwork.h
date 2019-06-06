@@ -297,7 +297,6 @@ static float trainNetworkGPU(
 		}
 	}
 
-	printf("----Cuda train get output----\n");
   TensorObject<float> output_data = getOutGPU(layers.back());
 	// TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	// int last_size = layers.back()->out.size.b * layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
@@ -371,10 +370,6 @@ static float testNetworkGPU(
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
 	float *gpu_array = nullptr;
 
-	printf("test data begin ---\n");
-	printTensor( data );
-	printf("test data end   ---\n");
-
 	gpu_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
 
@@ -382,11 +377,7 @@ static float testNetworkGPU(
 
 	gpu_cuda::cudaGetArray( gpu_output_d.data, gpu_array, in_size );
 
-	printf("test data begin2 ---\n");
-	printTensor( gpu_output_d );
-	printf("test data end2   ---\n");
-
-	for( unsigned i = 0; i < layers.size(); ++i ){
+	for( int i = 0; i < (int)(layers.size()); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_array );
 		}else{
