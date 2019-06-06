@@ -1,6 +1,6 @@
 #include <stdio.h>
 #pragma once
-__global__ inline void cudaAddFirstArrayToSecondArray( float * dz_next_layer, float *dz_in, int N)
+__device__ inline void cudaAddFirstArrayToSecondArray( float * dz_next_layer, float *dz_in, int N)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   if (id<N){
