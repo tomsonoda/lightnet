@@ -4,17 +4,17 @@
 
 namespace gpu_cuda {
 
-__device__ float atomicMaxf(float* address, float val)
-{
-  int *address_as_int =(int*)address;
-  int old = *address_as_int, assumed;
-  while (val > __int_as_float(old)) {
-      assumed = old;
-      old = atomicCAS(address_as_int, assumed,
-                      __float_as_int(val));
-      }
-  return __int_as_float(old);
-}
+// __device__ float atomicMaxf(float* address, float val)
+// {
+//   int *address_as_int =(int*)address;
+//   int old = *address_as_int, assumed;
+//   while (val > __int_as_float(old)) {
+//       assumed = old;
+//       old = atomicCAS(address_as_int, assumed,
+//                       __float_as_int(val));
+//       }
+//   return __int_as_float(old);
+// }
 
 __global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int elements)
 {
@@ -43,10 +43,10 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int elements)
    d_max[blockIdx.x] = shared[tid]; // 3
  }
  // option 2: use atomics
- if (tid == 0){
-   atomicMaxf(d_max, shared[0]);
- }
- 
+ // if (tid == 0){
+ //   atomicMaxf(d_max, shared[0]);
+ // }
+
   /* original
   for ( int b = 0; b < in.size.b; ++b ){
     float max_v = 0.0;

@@ -694,7 +694,7 @@ static void saveLayersWeights( long step, vector<LayerObject*>& layers, string f
 	fout.write(( char * ) &(ver_revision), sizeof( char ) );
 	fout.write(( char * ) &(step), sizeof( long ) );
 
-	for( int i = 0; i < layers.size(); ++i ){
+	for( int i = 0; i < (int)(layers.size()); ++i ){
 		saveWeights( layers[i], fout );
 	}
 	fout.close();
