@@ -10,6 +10,7 @@
   },
 
   "layers":[
-    { "type":"dense", "out_size":10 }
+    { "type":"dense", "out_size":10 },
+    { "type":"softmax" }
   ]
 }
