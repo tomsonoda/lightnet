@@ -319,14 +319,14 @@ static float trainNetworkGPU(
 	}
 
 	for ( int i = (int)(layers.size() - 1); i >= 0; i-- ){
-		if ( i == layers.size() - 1 ){
+		if ( i == (int)(layers.size()) - 1 ){
 			backwardGPU( layers[i], gpu_out_array );
 		}else{
 			backwardGPU( layers[i], layers[i+1]->gpu_dz );
 		}
 	}
 
-	for ( int i = 0; i < layers.size(); ++i ){
+	for ( int i = 0; i < (int)(layers.size()); ++i ){
 		updateWeightsGPU( layers[i] );
 	}
 

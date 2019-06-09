@@ -20,27 +20,33 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int elements)
 {
   extern __shared__ float shared[];
   int tid = threadIdx.x;
-  int gid = (blockDim.x * blockIdx.x) + tid;
+  // int gid = (blockDim.x * blockIdx.x) + tid;
   shared[tid] = -FLT_MAX;  // 1
+
+  int gid = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+
 
   if (gid < elements)
     shared[tid] = in[gid];
     __syncthreads();
 
     for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
-      if (tid < s && gid < elements)
-          shared[tid] = max(shared[tid], shared[tid + s]);  // 2
-          __syncthreads();
+      if (tid < s && gid < elements){
+        shared[tid] = max(shared[tid], shared[tid + s]);  // 2
       }
+      __syncthreads();
+    }
 
  // what to do now?
  // option 1: save block result and launch another kernel
- if (tid == 0)
-    d_max[blockIdx.x] = shared[tid]; // 3
+ if (tid == 0){
+   d_max[blockIdx.x] = shared[tid]; // 3
+ }
  // option 2: use atomics
- if (tid == 0)
+ if (tid == 0){
    atomicMaxf(d_max, shared[0]);
-
+ }
+ 
   /* original
   for ( int b = 0; b < in.size.b; ++b ){
     float max_v = 0.0;
@@ -113,7 +119,7 @@ void softmaxForwardGPU( float *in, float *out, int batch_size, int in_size_x )
 
   float *odata;
   cudaMalloc( (void **)&odata, sizeof(float));
-  calcSoftmaxMaxForwardGPU<< <1, elements, elements * sizeof(float) >>>( in, odata, elements );
+  calcSoftmaxMaxForwardGPU<<<1, elements, elements * sizeof(float) >>>( in, odata, elements );
   calcSoftmaxSumForwardGPU<<<1, elements, elements * sizeof(float) >>>( in, out, odata, elements );
   calcSoftmaxDivForwardGPU<<<grid, BLOCK>>>( out, odata, batch_size, in_size_x );
   cudaFree(odata);
