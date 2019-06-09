@@ -61,7 +61,7 @@ struct LayerRoute
 	void forwardGPU()
 	{
 		int z_offset = 0;
-		for( int i=0; i<ref_layers.size(); ++i ){
+		for( int i=0; i<(int)(ref_layers.size()); ++i ){
 			float *layer_gpu_in = layers[ref_layers[i]]->gpu_out;
 			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
 

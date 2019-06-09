@@ -206,8 +206,8 @@ static TensorObject<float> getOutGPU( LayerObject* layer )
 		// 	return ((LayerRoute*)layer)->getOutGPU();
 		// case LayerType::sigmoid:
 		// 	return ((LayerSigmoid*)layer)->getOutGPU();
-		// case LayerType::softmax:
-		// 	return ((LayerSoftmax*)layer)->getOutGPU();
+		case LayerType::softmax:
+			return ((LayerSoftmax*)layer)->getOutGPU();
 		default:
 			printf("layer type=%d\n", layer->type);
 			assert( false );
@@ -250,9 +250,9 @@ static void clearArrayGPU( LayerObject* layer )
 		// case LayerType::sigmoid:
 		// 	((LayerSigmoid*)layer)->clearArrayGPU();
 		// 	return;
-		// case LayerType::softmax:
-		// 	((LayerSoftmax*)layer)->clearArrayGPU();
-		// 	return;
+		case LayerType::softmax:
+			((LayerSoftmax*)layer)->clearArrayGPU();
+			return;
 		default:
 			printf("layer type=%d\n", layer->type);
 			assert( false );
