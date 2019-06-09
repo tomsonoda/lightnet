@@ -297,6 +297,8 @@ static float trainNetworkGPU(
 		}
 	}
 
+	exit(0);
+
   TensorObject<float> output_data = getOutGPU(layers.back());
 	// TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
 	// int last_size = layers.back()->out.size.b * layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
