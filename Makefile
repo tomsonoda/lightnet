@@ -45,7 +45,7 @@ EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
 # endif
 
 # all: $(TARGET) $(SLIB) $(ALIB)
-all: $(TARGET) obj
+all: obj $(TARGET)
 
 # $(TARGET): $(EXECOBJ) $(ALIB)
 # 		$(COMPILER) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(ALIB)
