@@ -52,7 +52,7 @@ __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, floa
   */
 }
 
-__global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, float learning_rate, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, int momentum )
+__global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
@@ -61,7 +61,9 @@ __global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float 
     int w_size_y = out_size_x;
 
     for( int h = 0; h < w_size_x; ++h ){
-        int index = id * (w_size_x * w_size_y) + h;
+        // int index = id * (w_size_x * w_size_y) + h;
+        int index = h * out_size_x + id;
+        // printf("index=%d, id=%d, w_size_x=%d, w_size_y=%d\n", index, id, w_size_x, w_size_y);
         weights[index] = weights[index] - learning_rate * 	dW[index];
     }
 
@@ -69,8 +71,8 @@ __global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float 
 
     for( int b = 0; b < batch_size; ++b ){
       int index = (b * out_size_x + id) * 2;
-      printf("index=%d\n", index);
-      // gradients[index+1] = gradients[index] + gradients[index+1] * momentum;
+      // printf("out_size_x=%d, index=%d, id=%d, b=%d\n", out_size_x, index, id, b);
+      gradients[index+1] = gradients[index] + gradients[index+1] * momentum;
     }
   }
 
@@ -113,11 +115,10 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
       float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
       gradients[ (n*batch_size + b)*2 ] = dzin;
 
-      int w_index = n * (w_size_x * w_size_y) + m;
+      int w_index = n * w_size_x + m;
       float w = weights[w_index];
-      //
-      // dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
-      // dz[id_in] += dzin * w;
+      dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
+      dz[id_in] += dzin * w;
     }
   }
 

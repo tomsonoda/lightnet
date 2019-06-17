@@ -102,6 +102,7 @@ struct LayerDense
 		gpu_biases = gpu_cuda::cudaMakeArray( NULL, out_size );
 		gpu_dB = gpu_cuda::cudaMakeArray( NULL, out_size );
 		gpu_gradients = gpu_cuda::cudaMakeArray( NULL, out_size * in_size.b * 2 );  // 2n:current, 2n+1:prev
+		printf("out_size=%d, in_size_b=%d\n", out_size, in_size.b);
 #endif
 
 	}

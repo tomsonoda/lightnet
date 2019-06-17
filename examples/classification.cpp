@@ -110,7 +110,7 @@ void classification(int argc, char **argv)
 
 		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays, dzArrays );
 		step++;
-		cout << "  train error=" << train_err;
+		cout << "  train error=" << train_err << endl;
 
 		if (step % parameter_object->save_span == 0){
 			string filename        = "checkpoints/" + data_model_name + "_" + to_string(step) + ".model";
