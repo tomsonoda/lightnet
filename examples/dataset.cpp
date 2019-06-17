@@ -290,7 +290,7 @@ vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<json_to
 
 	utils->listDir(image_dir_string,files,image_ext);
 
-	for (int j=0; j<files.size(); ++j){
+	for (int j=0; j<(int)files.size(); ++j){
 		std::string image_path = files[j];
 		std::string label_path = files[j];
 		image_path = image_dir_string + image_path;
@@ -344,7 +344,7 @@ CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vec
     }
   }
 
-  for( unsigned j=0; j<max_bounding_boxes && j<boxes.size(); ++j){
+  for( int j=0; j<(int)max_bounding_boxes && j<(int)boxes.size(); ++j){
     int index = j * (4 + classes);
     c.out( 0, index, 0, 0 )   = boxes[j].x;
     c.out( 0, index+1, 0, 0 ) = boxes[j].y;

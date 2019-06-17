@@ -9,9 +9,10 @@
 
 extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
-float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object ){
+float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays )
+{
 #ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object);
+	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays );
 #else
 	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
 #endif
@@ -75,6 +76,17 @@ void classification(int argc, char **argv)
 
 	ThreadPool thread_pool(parameter_object->threads);
 
+	std::vector<float *> outputArrays;
+
+#ifdef GPU_CUDA
+	for( unsigned int i = 0; i < (layers.size()); ++i ){
+		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
+		float *gpu_layer_output_array = gpu_cuda::cudaMakeArray( NULL, o_size );
+		layers[i]->gpu_out = gpu_layer_output_array;
+		outputArrays.push_back(gpu_layer_output_array);
+	}
+#endif
+
 	while( step < 1000000 ){
 		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
@@ -85,7 +97,7 @@ void classification(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 		}
 
-		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object );
+		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays );
 		step++;
 		cout << "  train error=" << train_err;
 

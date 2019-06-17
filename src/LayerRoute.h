@@ -80,7 +80,7 @@ struct LayerRoute
 		gpu_cuda::routeBackwardAddFirstArrayToSecondArrayGPU( dz_next_layer, gpu_dz_in, d_size );
 
 		int z_offset = 0;
-		for( int i=0; i<ref_layers.size(); ++i ){
+		for( unsigned int i=0; i<ref_layers.size(); ++i ){
 			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
 			float* layer_gpu_dz = layers[ref_layers[i]]->gpu_dz_in;
 			int size = layer_dz.size.b * layer_dz.size.z * layer_dz.size.y * layer_dz.size.x;

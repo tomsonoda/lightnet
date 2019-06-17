@@ -48,9 +48,7 @@ struct LayerSoftmax
 
 	void forwardGPU()
 	{
-		printf("softmax forward gpu\n");
 		gpu_cuda::softmaxForwardGPU( gpu_in, gpu_out, in.size.b, in.size.x );
-		printf("softmax forward gpu finish\n");
 	}
 
 	void updateWeightsGPU()

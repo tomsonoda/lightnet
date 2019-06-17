@@ -4,12 +4,10 @@
 
 namespace gpu_cuda {
 
-
 __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
-
   if ( id_out < batch_size * out_size_x * out_size_y * out_size_z ){
     int n = id % out_size_x;
     id /= out_size_x;
@@ -36,7 +34,7 @@ __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, floa
     out[id_out] = sum + biases[bias_index];
   }
 
-  /*
+  /* original
   for ( int b = 0; b < in.size.b; ++b ){
     for ( int n = 0; n < out.size.x; ++n ){
       float sum = 0;
@@ -62,21 +60,21 @@ __global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float 
     int w_size_x = in_size_x*in_size_y*in_size_z;
     int w_size_y = out_size_x;
 
-    for(int h=0; h<w_size_x; ++h){
+    for( int h = 0; h < w_size_x; ++h ){
         int index = id * (w_size_x * w_size_y) + h;
         weights[index] = weights[index] - learning_rate * 	dW[index];
     }
 
     biases[id] = biases[id] - learning_rate * dB[id];
 
-    for( int b=0; b<batch_size; b++ ){
+    for( int b = 0; b < batch_size; ++b ){
       int index = (b * out_size_x + id) * 2;
       gradients[index+1] = gradients[index] + gradients[index+1] * momentum;
     }
-    
+
   }
 
-  /*
+  /* original
   for (int i=0; i<weigts_data_num; ++i){
     weights.data[i] = weights.data[i] - lr * 	dW.data[i];
   }
@@ -113,7 +111,7 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
 
     for ( int n = 0; n < out_size_x; ++n ){
       float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
-      gradients[ n*batch_size + b ] = dzin;
+      gradients[ (n*batch_size + b)*2 ] = dzin;
 
       int w_index = n * (w_size_x * w_size_y) + m;
       float w = weights[w_index];
@@ -123,7 +121,7 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
     }
   }
 
-  /*
+  /* original
   for ( int n = 0; n < out.size.x; ++n ){
       for ( int z = 0; z < in.size.z; ++z ){
         for ( int j = 0; j < in.size.y; ++j ){
@@ -193,7 +191,6 @@ void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in,
   int in_B = out_size_x;
   dim3 grid_B = cuda.cudaGridSize(in_B);
   calcDenseBarckwardNabraBGPU<<<grid_B, BLOCK>>>( dz_in, dB, batch_size, out_size_x );
-
 }
 
 } // namespace gpu

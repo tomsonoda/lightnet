@@ -25,7 +25,7 @@
 namespace gpu_cuda {
 	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaPutArray( float *gpu_array, float *cpu_array, size_t N );
-	void cudaGetArray( float *cpu_array, float *&gpu_array, size_t N );
+	void cudaGetArray( float *cpu_array, float *gpu_array, size_t N );
 	void cudaClearArray( float *gpu_array, int N );
 }
 
@@ -43,7 +43,7 @@ static void printTensor( TensorObject<float>& data )
 		for ( int z = 0; z < mz; ++z ){
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
-					printf( "%.3f \t", (float)data( b, x, y, z ) );
+					printf( "%.2f \t", (float)data( b, x, y, z ) );
 				}
 				printf( "\n" );
 			}
@@ -53,6 +53,16 @@ static void printTensor( TensorObject<float>& data )
 }
 
 #ifdef GPU_CUDA
+
+// static void printGPUArray(float *gpu_array, int n)
+// {
+// 	float *array = (float *)malloc(n*sizeof(float));
+// 	gpu_cuda::cudaGetArray( array, gpu_array, n );
+// 	for( int i=0; i<n; ++i ){
+// 		printf("array[%d]=%.3f\n", i, array[i]);
+// 	}
+// 	free(array);
+// }
 
 static void backwardGPU( LayerObject* layer, float* dz_next_layer)
 {
@@ -138,7 +148,7 @@ static void updateWeightsGPU( LayerObject* layer )
 	}
 }
 
-static void forwardGPU( LayerObject* layer, float* in)
+static void forwardGPU( LayerObject* layer, float* in )
 {
 	switch ( layer->type )
 	{
@@ -160,7 +170,6 @@ static void forwardGPU( LayerObject* layer, float* in)
 		case LayerType::leaky_relu:
 			((LayerLeakyReLU*)layer)->forwardGPU( in );
 			return;
-
 		case LayerType::max_pool:
 			((LayerMaxPool*)layer)->forwardGPU( in );
 			return;
@@ -177,7 +186,50 @@ static void forwardGPU( LayerObject* layer, float* in)
 			((LayerSoftmax*)layer)->forwardGPU( in );
 			return;
 		default:
-			printf("layer type=%d\n", layer->type);
+			printf("layer type=%d\n", (int)layer->type);
+			assert( false );
+	}
+}
+
+static void forwardGPU( LayerObject* layer, float* in, float *out )
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->forwardGPU( in );
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->forwardGPU( in );
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->forwardGPU( in, out );
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->forwardGPU( in );
+			return;
+		case LayerType::dropout:
+			((LayerDropout*)layer)->forwardGPU( in );
+			return;
+		case LayerType::leaky_relu:
+			((LayerLeakyReLU*)layer)->forwardGPU( in );
+			return;
+		case LayerType::max_pool:
+			((LayerMaxPool*)layer)->forwardGPU( in );
+			return;
+		case LayerType::relu:
+			((LayerReLU*)layer)->forwardGPU( in );
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->forwardGPU( in );
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->forwardGPU( in );
+			return;
+		case LayerType::softmax:
+			((LayerSoftmax*)layer)->forwardGPU( in );
+			return;
+		default:
+			printf("layer type=%d\n", (int)layer->type);
 			assert( false );
 	}
 }
@@ -209,7 +261,7 @@ static TensorObject<float> getOutGPU( LayerObject* layer )
 		case LayerType::softmax:
 			return ((LayerSoftmax*)layer)->getOutGPU();
 		default:
-			printf("layer type=%d\n", layer->type);
+			printf("layer type=%d\n", (int)layer->type);
 			assert( false );
 			TensorObject<float> out_data = TensorObject<float>(1, 1, 1, 1);
 			return out_data;
@@ -254,7 +306,7 @@ static void clearArrayGPU( LayerObject* layer )
 			((LayerSoftmax*)layer)->clearArrayGPU();
 			return;
 		default:
-			printf("layer type=%d\n", layer->type);
+			printf("layer type=%d\n", (int)layer->type);
 			assert( false );
 	}
 }
@@ -265,7 +317,8 @@ static float trainNetworkGPU(
 	TensorObject<float>& data,
 	TensorObject<float>& expected,
 	string optimizer,
-	ParameterObject *parameter_object
+	ParameterObject *parameter_object,
+	vector<float *>& outputArrays
 	)
 {
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
@@ -275,50 +328,31 @@ static float trainNetworkGPU(
 	float *gpu_out_array = nullptr;
 
 	gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
-	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
-
-	// printf("train data begin ---\n");
-	// printTensor( data );
-	// printf("train data end   ---\n");
-
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
-	// printf("train data begin2 ---\n");
-	// TensorObject<float> out_data = TensorObject<float>(data.size.b, data.size.x, data.size.y, data.size.z);
-	// gpu_cuda::cudaGetArray( out_data.data, gpu_in_array, in_size );
-	// printTensor( out_data );
-	// printf("train data end2   ---\n");
-
-	for( int i = 0; i < (int)(layers.size()); ++i ){
+	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], gpu_in_array );
+			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
 		}else{
-			forwardGPU( layers[i], layers[i-1]->gpu_out );
+			forwardGPU( layers[i], layers[i-1]->gpu_out, outputArrays[i] );
+			// int o_size = layers[i-1]->out.size.b * layers[i-1]->out.size.x * layers[i-1]->out.size.y * layers[i-1]->out.size.z;
+			// printGPUArray(layers[i-1]->gpu_out, o_size);
 		}
+		TensorObject<float> output_data = getOutGPU(layers[i]);
+		printTensor(output_data);
 	}
 
-	exit(0);
-
   TensorObject<float> output_data = getOutGPU(layers.back());
-	// TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
-	// int last_size = layers.back()->out.size.b * layers.back()->out.size.x * layers.back()->out.size.y * layers.back()->out.size.z;
-	// printf("last size=%d, expected_size=%d\n", last_size, out_size);
-	// gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
-
 	TensorObject<float> grads = output_data - expected;
 
+	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < (int)(layers.size()); ++i ){
-		// int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
-		// int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
-		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz_in, dz_in_size );
-		// gpu_cuda::cudaClearArray( layers[i]->gpu_dz, dz_size );
 		clearArrayGPU( layers[i] );
-		// printf("sizes gpu_dz_in = size:%d, gpu_dz = size: %d \n", sizeof(layers[i]->gpu_dz_in), sizeof(layers[i]->gpu_dz));
 	}
 
-	for ( int i = (int)(layers.size() - 1); i >= 0; i-- ){
+	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
 		if ( i == (int)(layers.size()) - 1 ){
 			backwardGPU( layers[i], gpu_out_array );
 		}else{
@@ -326,7 +360,7 @@ static float trainNetworkGPU(
 		}
 	}
 
-	for ( int i = 0; i < (int)(layers.size()); ++i ){
+	for ( unsigned int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );
 	}
 
@@ -339,6 +373,7 @@ static float trainNetworkGPU(
 				err += abs(grads.data[i]);
 			}
 		}
+
 		return (err * 100)/(float)expected.size.b;
 
 	}else{
@@ -353,9 +388,12 @@ static float trainNetworkGPU(
 			printf("----GT----\n");
 			printTensor(expected);
 			printf("----output----\n");
-			printTensor(layers[layers.size()-1]->out);
+			printTensor(output_data);
 		}
+
+		// exit(0);
 		return loss;
+
 	}
 }
 
@@ -752,7 +790,7 @@ static long loadLayersWeights( vector<LayerObject*>& layers, string filename )
 	}
 	cout << "last step: " << to_string(step) << endl;
 
-	for( int i = 0; i < layers.size(); ++i ){
+	for( unsigned int i = 0; i < layers.size(); ++i ){
 		loadWeights( layers[i], fin );
 	}
 	fin.close();
@@ -773,10 +811,11 @@ static vector<LayerObject*> loadModel(
 
   std::vector<json_token_t*> json_layers = model_json->getArrayForToken(model_tokens[0], "layers");
 
-  for(int i=0; i<json_layers.size(); ++i){
+  for( unsigned int i=0; i<json_layers.size(); ++i ){
     std::string type = model_json->getChildValueForToken(json_layers[i], "type");
 
 		if(type=="batch_normalization"){
+
 			TensorSize in_size;
 			if(i==0){
 				in_size = case_object.data.size;
@@ -824,7 +863,21 @@ static vector<LayerObject*> loadModel(
 
       layers.push_back( (LayerObject*)layer );
 
+		}else if(type=="dense"){
+
+			TensorSize in_size = ( i==0 ? (case_object.data.size) : (layers[layers.size()-1]->out.size) );
+			int out_size=0;
+			if( i == (unsigned)(json_layers.size()-1) ){
+				out_size = case_object.out.size.x * case_object.out.size.y * case_object.out.size.z;
+			}else{
+				out_size = std::stoi( model_json->getChildValueForToken(json_layers[i], "out_size") );
+			}
+      printf("%d: dense              : ( %d x %d x %d ) -> ( %d ) \n",i, in_size.x, in_size.y, in_size.z, out_size);
+      LayerDense *layer = new LayerDense(in_size, out_size, learning_rate, decay, momentum);
+      layers.push_back( (LayerObject*)layer );
+
 		}else if(type=="detect_objects"){
+
 			int max_classes = 1;
 			int max_bounding_boxes = 1;
 			json_token_t* nueral_network = model_json->getChildForToken(model_tokens[0], "net");
@@ -841,19 +894,6 @@ static vector<LayerObject*> loadModel(
 			printf("%d: detect_objects     : max_classes=%d max_bounding_boxes=%d: ( %d ) -> ( %d )\n",i, max_classes, max_bounding_boxes, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
 			LayerDetectObjects *layer = new LayerDetectObjects( in_size, max_classes, max_bounding_boxes );
 			layers.push_back( (LayerObject*)layer );
-
-		}else if(type=="dense"){
-
-			TensorSize in_size = ( i==0 ? (case_object.data.size) : (layers[layers.size()-1]->out.size) );
-			int out_size=0;
-			if(i==json_layers.size()-1){
-				out_size = case_object.out.size.x * case_object.out.size.y * case_object.out.size.z;
-			}else{
-				out_size = std::stoi( model_json->getChildValueForToken(json_layers[i], "out_size") );
-			}
-      printf("%d: dense              : ( %d x %d x %d ) -> ( %d ) \n",i, in_size.x, in_size.y, in_size.z, out_size);
-      LayerDense *layer = new LayerDense(in_size, out_size, learning_rate, decay, momentum);
-      layers.push_back( (LayerObject*)layer );
 
 		}else if (type=="leaky_relu"){
 
@@ -891,7 +931,7 @@ static vector<LayerObject*> loadModel(
 			int y_val = 0;
 			int z_sum = 0;
 			printf("%d: route              : [", i);
-      for(int j=0; j<json_ref_layers.size(); ++j){
+      for(unsigned int j=0; j<json_ref_layers.size(); ++j){
         string value_str = model_json->getValueForToken(json_ref_layers[j]);
 				if(value_str.size()>0){
 					uint16_t ref_index = std::stoi( value_str ) + i;
@@ -906,7 +946,7 @@ static vector<LayerObject*> loadModel(
 			printf("] -> ( %d x %d x %d )\n", x_val, y_val, z_sum);
 
 			if(ref_layers.size()>0){
-				for(int j=0; j<ref_layers.size(); ++j){
+				for(unsigned int j=0; j<ref_layers.size(); ++j){
 					if(x_val != layers[ref_layers[j]]->out.size.x){
 						printf("reference layer x-sizes are different.\n");
 						exit(0);

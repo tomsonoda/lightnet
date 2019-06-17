@@ -181,7 +181,7 @@ public:
   {
     std::vector <json_token_t*> children;
     std::vector <json_token_t*> tokens = this->tokens;
-    for(int i=0; i<tokens.size(); ++i){
+    for(int i=0; i<(int)tokens.size(); ++i){
       if(tokens[i]->parent_token == parent->index){
         children.push_back(tokens[i]);
       }
@@ -199,12 +199,12 @@ public:
 
     std::vector <json_token_t*> tokens = this->tokens;
     bool is_hit = false;
-    for(int i=0; i<tokens.size(); ++i){
+    for( int i=0; i<(int)tokens.size(); ++i ){
       if(tokens[i]->parent_token == parent->index){
         if (tokens[i]->type == JSON_TYPE_STRING){
           string str = this->org_string.substr(tokens[i]->start, (tokens[i]->end-tokens[i]->start));
           if (str==key){
-            for(int j=i; j<tokens.size(); ++j){
+            for( int j=i; j<(int)tokens.size(); ++j ){
               if(tokens[i]->index == tokens[j]->parent_token){
                 child = tokens[j];
                 is_hit = true;
@@ -247,15 +247,15 @@ public:
     std::vector <json_token_t*> tokens = this->tokens;
     std::vector <json_token_t*> result;
     bool is_hit = false;
-    for(int i=0; i<tokens.size(); ++i){
+    for(int i=0; i<(int)tokens.size(); ++i){
       if(tokens[i]->parent_token == parent->index){
         if (tokens[i]->type == JSON_TYPE_STRING){
           string str = this->org_string.substr(tokens[i]->start, (tokens[i]->end-tokens[i]->start));
           if (str==key){
-            for(int j=i; j<tokens.size(); ++j){
+            for(int j=i; j<(int)tokens.size(); ++j){
               if( (tokens[i]->index == tokens[j]->parent_token) && (tokens[j]->type==JSON_TYPE_ARRAY)){
                 is_hit = true;
-                for(int k=j; k<tokens.size(); k++){
+                for(int k=j; k<(int)tokens.size(); k++){
                   if(tokens[j]->index == tokens[k]->parent_token){
                     result.push_back(tokens[k]);
                   }
@@ -325,7 +325,9 @@ private:
     size = ftell(fp);
     rewind(fp);
     buffer = new char[size + 1];
-    fread(buffer, size, 1, fp);
+    size_t tmp = fread(buffer, size, 1, fp);
+    if( tmp < 0 ){      
+    }
     buffer[size] = '\0';
     return buffer;
   }

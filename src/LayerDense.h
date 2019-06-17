@@ -10,7 +10,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
-	void cudaGetArray( float *cpu_array, float *&gpu_array, size_t N );
+	void cudaGetArray( float *cpu_array, float *gpu_array, size_t N );
 	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
@@ -32,7 +32,7 @@ struct LayerDense
 	TensorObject<float> dW;
 	TensorObject<float> biases;
 	TensorObject<float> dB;
-	std::vector<GradientObject> gradients;
+	vector<GradientObject> gradients;
 
 	unsigned weigts_data_num;
 	unsigned dw_data_size;
@@ -93,17 +93,15 @@ struct LayerDense
 #ifdef GPU_CUDA
 		int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
 		gpu_dz = gpu_cuda::cudaMakeArray( NULL, d_size );
-		gpu_in = gpu_cuda::cudaMakeArray( NULL, d_size );
-
+		// gpu_in = gpu_cuda::cudaMakeArray( NULL, d_size );
 		int o_size = in_size.b * out_size;
-		gpu_out   = gpu_cuda::cudaMakeArray( NULL, o_size );
+		// gpu_out   = gpu_cuda::cudaMakeArray( NULL, o_size );
 		gpu_dz_in = gpu_cuda::cudaMakeArray( NULL, o_size );
-
-		gpu_weights = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
+		gpu_weights = gpu_cuda::cudaMakeArray( weights.data, weigts_data_num );
 		gpu_dW = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
 		gpu_biases = gpu_cuda::cudaMakeArray( NULL, out_size );
 		gpu_dB = gpu_cuda::cudaMakeArray( NULL, out_size );
-		gpu_gradients = gpu_cuda::cudaMakeArray( NULL, out_size * in_size.b * 2);
+		gpu_gradients = gpu_cuda::cudaMakeArray( NULL, out_size * in_size.b * 2 );  // 2n:current, 2n+1:prev
 #endif
 
 	}
@@ -118,6 +116,13 @@ struct LayerDense
 	void forwardGPU( float *in )
 	{
 		gpu_in = in;
+		forwardGPU();
+	}
+
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
 		forwardGPU();
 	}
 
@@ -141,6 +146,14 @@ struct LayerDense
 	TensorObject<float> getOutGPU(){
 		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
 		return out;
+	}
+
+	void getOutputArrayGPU(float *out){
+		out = this->gpu_out;
+	}
+
+	void setOutputArrayGPU(float *out){
+		this->gpu_out = out;
 	}
 
 	void clearArrayGPU(){
@@ -249,7 +262,7 @@ struct LayerDense
 		int size = weigts_data_num * sizeof( float );
 		fout.write(( char * )(weights.data), size );
 		total_size += size;
-		// cout << "- LayerDense             : " << to_string(total_size) << " bytes wrote." << endl;
+		cout << "- LayerDense             : " << to_string(total_size) << " bytes wrote." << endl;
 	}
 
 	void loadWeights( ifstream& fin )
@@ -266,5 +279,6 @@ struct LayerDense
 		total_size += size;
 		cout << "- LayerDense             : " << to_string(total_size) << " bytes read." << endl;
 	}
+
 };
 #pragma pack(pop)

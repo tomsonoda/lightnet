@@ -4,49 +4,41 @@
 
 namespace gpu_cuda {
 
-// __device__ float atomicMaxf(float* address, float val)
-// {
-//   int *address_as_int =(int*)address;
-//   int old = *address_as_int, assumed;
-//   while (val > __int_as_float(old)) {
-//       assumed = old;
-//       old = atomicCAS(address_as_int, assumed,
-//                       __float_as_int(val));
-//       }
-//   return __int_as_float(old);
-// }
-
-__global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int elements)
+__global__ void calcSoftmaxMaxForwardGPU(float *array, float *max, int *mutex, unsigned n)
 {
-  extern __shared__ float shared[];
-  int tid = threadIdx.x;
-  // int gid = (blockDim.x * blockIdx.x) + tid;
-  shared[tid] = -FLT_MAX;  // 1
+  unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
+  unsigned int stride = gridDim.x * blockDim.x;
+  unsigned int offset = 0;
 
-  int gid = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  __shared__ float cache[256];
 
+  float temp = -1.0;
+  while(index + offset < n){
+    temp = fmaxf(temp, array[index + offset]);
+    offset += stride;
+  }
 
-  if (gid < elements)
-    shared[tid] = in[gid];
-    __syncthreads();
+  cache[threadIdx.x] = temp;
+  __syncthreads();
 
-    for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
-      if (tid < s && gid < elements){
-        shared[tid] = max(shared[tid], shared[tid + s]);  // 2
-      }
-      __syncthreads();
+  unsigned int prev_i = blockDim.x;
+  unsigned int i = blockDim.x / 2;
+  while ( i!=0 ){
+    if(threadIdx.x < i){
+        cache[threadIdx.x] = fmaxf(cache[threadIdx.x], cache[threadIdx.x + i]);
     }
+    if(prev_i%2 != 0){
+      cache[0] = fmaxf(cache[0], cache[prev_i-1]);
+    }
+    __syncthreads();
+    i /= 2;
+  }
 
- // what to do now?
- // option 1: save block result and launch another kernel
- if (tid == 0){
-   d_max[blockIdx.x] = shared[tid]; // 3
- }
- // option 2: use atomics
- // if (tid == 0){
- //   atomicMaxf(d_max, shared[0]);
- // }
-
+  if( threadIdx.x == 0 ){
+    while( atomicCAS(mutex, 0, 1) != 0 );
+    *max = fmaxf(*max, cache[0]);
+    atomicExch(mutex, 0);
+  }
   /* original
   for ( int b = 0; b < in.size.b; ++b ){
     float max_v = 0.0;
@@ -60,14 +52,45 @@ __global__ void calcSoftmaxMaxForwardGPU(float *in, float *d_max, int elements)
   */
 }
 
-__global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *d_max, int elements)
+__global__ void calcSoftmaxSumForwardGPU(float *array, float *out, float *max, float *sum, int *mutex, unsigned n)
 {
-  // int blockID  = blockIdx.x;
-  // int nBlocks  = gridDim.x;
-  // int threadID = threadIdx.x;
-  // int nThrads  = blockDim.x;
+  unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
+  unsigned int stride = gridDim.x * blockDim.x;
+  unsigned int offset = 0;
 
+  __shared__ float cache[512];
 
+  float temp = 0.0;
+  while(index + offset < n){
+    float v = exp(array[index + offset] - *max);
+    out[index + offset] = v;
+    temp = temp + v;
+    offset += stride;
+  }
+
+  cache[threadIdx.x] = temp;
+  __syncthreads();
+
+  unsigned int prev_i = blockDim.x;
+  unsigned int i = blockDim.x / 2;
+
+  while ( i!=0 ){
+    if(threadIdx.x < i){
+        cache[threadIdx.x] = cache[threadIdx.x] + cache[threadIdx.x + i];
+    }
+    if(prev_i%2 != 0){
+      cache[0] = cache[0] + cache[prev_i-1];
+    }
+    __syncthreads();
+    prev_i = i;
+    i /= 2;
+  }
+
+  if( threadIdx.x == 0 ){
+    while( atomicCAS(mutex, 0, 1) != 0 );
+    *sum = *sum + cache[0];
+    atomicExch(mutex, 0);
+  }
 
   /* original
   float sum = 0.0;
@@ -80,11 +103,11 @@ __global__ void calcSoftmaxSumForwardGPU(float *in, float *out, float *d_max, in
   */
 }
 
-__global__ void calcSoftmaxDivForwardGPU(float *out, float *odata, int batch_size, int in_size_x)
+__global__ void calcSoftmaxDivForwardGPU(float *out, float *sum, unsigned int n)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  if(id<batch_size * in_size_x && odata[0]>0.0){
-    out[id] = out[id] / odata[0];
+  if(id<n && *sum>0.0){
+    out[id] = out[id] / *sum;
   }
 
   /* original
@@ -94,11 +117,14 @@ __global__ void calcSoftmaxDivForwardGPU(float *out, float *odata, int batch_siz
   */
 }
 
-__global__ void calcSoftmaxBackwardGPU( float *dz_next_layer, float *dz_in, float *dz)
+__global__ void calcSoftmaxBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, unsigned int n )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  dz_in[id] += dz_next_layer[id];
-  dz[id] +=  dz_in[id];
+
+  if ( id < n ){
+    dz_in[id] += dz_next_layer[id];
+    dz[id] +=  dz_in[id];
+  }
 
   /* original
   for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
@@ -116,20 +142,33 @@ void softmaxForwardGPU( float *in, float *out, int batch_size, int in_size_x )
   CudaObject cuda = CudaObject();
   int elements = batch_size * in_size_x;
   dim3 grid = cuda.cudaGridSize( elements );
+  int *d_mutex;
 
-  float *odata;
-  cudaMalloc( (void **)&odata, sizeof(float));
-  calcSoftmaxMaxForwardGPU<<<1, elements, elements * sizeof(float) >>>( in, odata, elements );
-  calcSoftmaxSumForwardGPU<<<1, elements, elements * sizeof(float) >>>( in, out, odata, elements );
-  calcSoftmaxDivForwardGPU<<<grid, BLOCK>>>( out, odata, batch_size, in_size_x );
-  cudaFree(odata);
+  float *d_max;
+  float *d_sum;
+  cudaMalloc( (void **)&d_max, sizeof(float));
+  cudaMalloc( (void **)&d_sum, sizeof(float));
+  cudaMalloc((void**)&d_mutex, sizeof(int));
+
+  cudaMemset(d_max, 0, sizeof(float));
+  cudaMemset(d_sum, 0, sizeof(float));
+
+  cudaMemset(d_mutex, 0, sizeof(int));              // 0 means unlocked.
+  calcSoftmaxMaxForwardGPU<<<1, elements, elements * sizeof(float) >>>( in, d_max, d_mutex, elements );
+  cudaMemset(d_mutex, 0, sizeof(int));              // 0 means unlocked.
+  calcSoftmaxSumForwardGPU<<<1, elements, elements * sizeof(float) >>>( in, out, d_max, d_sum, d_mutex, elements );
+  calcSoftmaxDivForwardGPU<<<grid, BLOCK>>>( out, d_sum, elements );
+
+  cudaFree(d_max);
+  cudaFree(d_sum);
+  cudaFree(d_mutex);
 }
 
 void softmaxBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, int N )
 {
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcSoftmaxBackwardGPU<<<grid, BLOCK>>>( dz_next_layer, dz_in, dz );
+  calcSoftmaxBackwardGPU<<<grid, BLOCK>>>( dz_next_layer, dz_in, dz, N );
 }
 
 } // namespace gpu
