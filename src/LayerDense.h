@@ -91,8 +91,8 @@ struct LayerDense
 		}
 
 #ifdef GPU_CUDA
-		int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-		gpu_dz = gpu_cuda::cudaMakeArray( NULL, d_size );
+		// int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
+		// gpu_dz = gpu_cuda::cudaMakeArray( NULL, d_size );
 		// gpu_in = gpu_cuda::cudaMakeArray( NULL, d_size );
 		int o_size = in_size.b * out_size;
 		// gpu_out   = gpu_cuda::cudaMakeArray( NULL, o_size );
@@ -136,6 +136,12 @@ struct LayerDense
 		gpu_cuda::denseUpdateWeightsGPU( gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, lr, _momentum );
 	}
 
+	void backwardGPU( float* dz_next_layer, float *dz )
+	{
+		this->gpu_dz = dz;
+		backwardGPU( dz_next_layer );
+	}
+
 	void backwardGPU( float* dz_next_layer )
 	{
 		gpu_cuda::cudaClearArray( gpu_dW, in.size.x * in.size.y * in.size.z * out.size.x );
@@ -143,20 +149,25 @@ struct LayerDense
 		gpu_cuda::denseBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, _momentum, _decay );
 	}
 
-	TensorObject<float> getOutGPU(){
+	TensorObject<float> getOutFromGPU()
+	{
 		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
 		return out;
 	}
 
-	void getOutputArrayGPU(float *out){
+	void getOutputArrayGPU(float *out)
+	{
 		out = this->gpu_out;
 	}
 
-	void setOutputArrayGPU(float *out){
+	void setOutputArrayGPU(float *out)
+	{
 		this->gpu_out = out;
 	}
 
-	void clearArrayGPU(){
+	void clearArrayGPU(float *dz_)
+	{
+		this->gpu_dz = dz_;
 		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}

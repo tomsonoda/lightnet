@@ -106,6 +106,48 @@ static void backwardGPU( LayerObject* layer, float* dz_next_layer)
 	}
 }
 
+static void backwardGPU( LayerObject* layer, float* dz_next_layer, float* dz )
+{
+	switch ( layer->type )
+	{
+		case LayerType::batch_normalization:
+			((LayerBatchNormalization*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::conv:
+			((LayerConvolution*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::dense:
+			((LayerDense*)layer)->backwardGPU( dz_next_layer, dz );
+			return;
+		case LayerType::detect_objects:
+			((LayerDetectObjects*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::dropout:
+			((LayerDropout*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::leaky_relu:
+			((LayerLeakyReLU*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::max_pool:
+			((LayerMaxPool*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::relu:
+			((LayerReLU*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::route:
+			((LayerRoute*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::sigmoid:
+			((LayerSigmoid*)layer)->backwardGPU( dz_next_layer );
+			return;
+		case LayerType::softmax:
+			((LayerSoftmax*)layer)->backwardGPU( dz_next_layer, dz );
+			return;
+		default:
+			assert( false );
+	}
+}
+
 static void updateWeightsGPU( LayerObject* layer )
 {
 	switch ( layer->type )
@@ -234,32 +276,32 @@ static void forwardGPU( LayerObject* layer, float* in, float *out )
 	}
 }
 
-static TensorObject<float> getOutGPU( LayerObject* layer )
+static TensorObject<float> getOutFromGPU( LayerObject* layer )
 {
 	switch ( layer->type )
 	{
 		// case LayerType::batch_normalization:
-		// 	return ((LayerBatchNormalization*)layer)->getOutGPU();
+		// 	return ((LayerBatchNormalization*)layer)->getOutFromGPU();
 		// case LayerType::conv:
-		// 	return ((LayerConvolution*)layer)->getOutGPU();
+		// 	return ((LayerConvolution*)layer)->getOutFromGPU();
 		case LayerType::dense:
-			return ((LayerDense*)layer)->getOutGPU();
+			return ((LayerDense*)layer)->getOutFromGPU();
 		// case LayerType::detect_objects:
-		// 	return ((LayerDetectObjects*)layer)->getOutGPU();
+		// 	return ((LayerDetectObjects*)layer)->getOutFromGPU();
 		// case LayerType::dropout:
-		// 	return ((LayerDropout*)layer)->getOutGPU();
+		// 	return ((LayerDropout*)layer)->getOutFromGPU();
 		// case LayerType::leaky_relu:
-		// 	return ((LayerLeakyReLU*)layer)->getOutGPU();
+		// 	return ((LayerLeakyReLU*)layer)->getOutFromGPU();
 		// case LayerType::max_pool:
-		// 	return ((LayerMaxPool*)layer)->getOutGPU();
+		// 	return ((LayerMaxPool*)layer)->getOutFromGPU();
 		// case LayerType::relu:
-		// 	return ((LayerReLU*)layer)->getOutGPU();
+		// 	return ((LayerReLU*)layer)->getOutFromGPU();
 		// case LayerType::route:
-		// 	return ((LayerRoute*)layer)->getOutGPU();
+		// 	return ((LayerRoute*)layer)->getOutFromGPU();
 		// case LayerType::sigmoid:
-		// 	return ((LayerSigmoid*)layer)->getOutGPU();
+		// 	return ((LayerSigmoid*)layer)->getOutFromGPU();
 		case LayerType::softmax:
-			return ((LayerSoftmax*)layer)->getOutGPU();
+			return ((LayerSoftmax*)layer)->getOutFromGPU();
 		default:
 			printf("layer type=%d\n", (int)layer->type);
 			assert( false );
@@ -268,7 +310,7 @@ static TensorObject<float> getOutGPU( LayerObject* layer )
 	}
 }
 
-static void clearArrayGPU( LayerObject* layer )
+static void clearArrayGPU( LayerObject* layer, float *dz )
 {
 	switch ( layer->type )
 	{
@@ -279,7 +321,7 @@ static void clearArrayGPU( LayerObject* layer )
 		// 	((LayerConvolution*)layer)->clearArrayGPU();
 		// 	return;
 		case LayerType::dense:
-			((LayerDense*)layer)->clearArrayGPU();
+			((LayerDense*)layer)->clearArrayGPU(dz);
 			return;
 		// case LayerType::detect_objects:
 		// 	((LayerDetectObjects*)layer)->clearArrayGPU();
@@ -303,7 +345,7 @@ static void clearArrayGPU( LayerObject* layer )
 		// 	((LayerSigmoid*)layer)->clearArrayGPU();
 		// 	return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->clearArrayGPU();
+			((LayerSoftmax*)layer)->clearArrayGPU(dz);
 			return;
 		default:
 			printf("layer type=%d\n", (int)layer->type);
@@ -318,7 +360,8 @@ static float trainNetworkGPU(
 	TensorObject<float>& expected,
 	string optimizer,
 	ParameterObject *parameter_object,
-	vector<float *>& outputArrays
+	vector<float *>& outputArrays,
+	vector<float *>& dzArrays
 	)
 {
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
@@ -338,25 +381,23 @@ static float trainNetworkGPU(
 			// int o_size = layers[i-1]->out.size.b * layers[i-1]->out.size.x * layers[i-1]->out.size.y * layers[i-1]->out.size.z;
 			// printGPUArray(layers[i-1]->gpu_out, o_size);
 		}
-		TensorObject<float> output_data = getOutGPU(layers[i]);
-		printTensor(output_data);
 	}
 
-  TensorObject<float> output_data = getOutGPU(layers.back());
+  TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
 
 	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < (int)(layers.size()); ++i ){
-		clearArrayGPU( layers[i] );
+		clearArrayGPU( layers[i], dzArrays[i]  );
 	}
 
 	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
 		if ( i == (int)(layers.size()) - 1 ){
-			backwardGPU( layers[i], gpu_out_array );
+			backwardGPU( layers[i], gpu_out_array, dzArrays[i] );
 		}else{
-			backwardGPU( layers[i], layers[i+1]->gpu_dz );
+			backwardGPU( layers[i], layers[i+1]->gpu_dz, dzArrays[i] );
 		}
 	}
 
@@ -580,7 +621,7 @@ static void forward( LayerObject* layer, TensorObject<float>& in, ThreadPool& th
 			((LayerSoftmax*)layer)->forward( in );
 			return;
 		default:
-			printf("layer type=%d\n", layer->type);
+			printf("layer type=%d\n", (int)layer->type);
 			assert( false );
 	}
 }
@@ -595,7 +636,7 @@ static float trainNetwork(
 	ParameterObject *parameter_object
 	)
 {
-	for( int i = 0; i < layers.size(); ++i ){
+	for( unsigned i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forward( layers[i], data, thread_pool );
 		}else{
@@ -604,20 +645,20 @@ static float trainNetwork(
 	}
 
 	TensorObject<float> grads = layers.back()->out - expected;
-	for( int i = 0; i < layers.size(); ++i ){
+	for( unsigned i = 0; i < layers.size(); ++i ){
 		layers[i]->dz_in.clear();
 		layers[i]->dz.clear();
 	}
 
-	for ( int i = layers.size() - 1; i >= 0; i-- ){
-		if ( i == layers.size() - 1 ){
+	for ( int i = (int)layers.size() - 1; i >= 0; i-- ){
+		if ( i == (int)layers.size() - 1 ){
 			backward( layers[i], grads, thread_pool );
 		}else{
 			backward( layers[i], layers[i+1]->dz, thread_pool );
 		}
 	}
 
-	for ( int i = 0; i < layers.size(); ++i ){
+	for ( unsigned i = 0; i < layers.size(); ++i ){
 		updateWeights( layers[i] );
 	}
 
@@ -648,6 +689,7 @@ static float trainNetwork(
 		}
 
 		return loss;
+
 	}
 }
 
@@ -659,7 +701,7 @@ static float testNetwork(
 	ThreadPool& thread_pool
 	)
 	{
-	for( int i = 0; i < layers.size(); ++i ){
+	for( unsigned i = 0; i < layers.size(); ++i ){
 		if( i == 0 ){
 			forward( layers[i], data, thread_pool );
 		}else{

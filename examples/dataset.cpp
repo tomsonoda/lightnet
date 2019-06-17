@@ -393,5 +393,7 @@ vector<CaseObject> readCases(string data_json_path, string model_json_path, stri
 	}
 
 	delete data_json;
+  delete model_json;
+
 	return cases;
 }

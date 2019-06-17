@@ -77,6 +77,9 @@ struct TensorObject
 
 	~TensorObject()
 	{
-		delete[] data;
+		if(data!=NULL){
+			delete[] data;
+			data = NULL;
+		}
 	}
 };

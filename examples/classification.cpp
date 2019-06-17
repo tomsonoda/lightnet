@@ -9,10 +9,10 @@
 
 extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
-float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays )
+float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays )
 {
 #ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays );
+	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays, dzArrays );
 #else
 	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
 #endif
@@ -34,11 +34,13 @@ void classification(int argc, char **argv)
 	if(argc>=5){
  		checkpoint_path = argv[4];
 	}
-	Utils *utils = new Utils();
 
+	Utils *utils = new Utils();
 	string data_json_base = data_json_path.substr(data_json_path.find_last_of("/")+1);
 	string model_json_base = model_json_path.substr(model_json_path.find_last_of("/")+1);
 	string data_model_name = utils->stringReplace(data_json_base, ".json", "") + "-" + utils->stringReplace(model_json_base, ".json", "");
+	delete utils;
+
 	// dataset
 	// DatasetObject2 *dataset = new DatasetObject2();
 	vector<CaseObject> train_cases = readCases(data_json_path, model_json_path, "train");
@@ -77,27 +79,36 @@ void classification(int argc, char **argv)
 	ThreadPool thread_pool(parameter_object->threads);
 
 	std::vector<float *> outputArrays;
+	std::vector<float *> dzArrays;
 
 #ifdef GPU_CUDA
+
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
 		float *gpu_layer_output_array = gpu_cuda::cudaMakeArray( NULL, o_size );
 		layers[i]->gpu_out = gpu_layer_output_array;
 		outputArrays.push_back(gpu_layer_output_array);
+
+		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
+		float *gpu_layer_dz_array = gpu_cuda::cudaMakeArray( NULL, dz_size );
+		layers[i]->gpu_dz = gpu_layer_dz_array;
+		dzArrays.push_back(gpu_layer_dz_array);
 	}
+
 #endif
 
-	while( step < 1000000 ){
+	while( step < 2 ){
+
 		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
-			t = train_cases[j];
+			CaseObject tt = train_cases[j];
 			unsigned batch_index_in = (j-randi)*data_size;
 			unsigned batch_index_out = (j-randi)*out_size;
-			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
-			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
+			memcpy( &(batch_cases.data.data[batch_index_in]), tt.data.data, data_float_size );
+			memcpy( &(batch_cases.out.data[batch_index_out]), tt.out.data, out_float_size );
 		}
 
-		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays );
+		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays, dzArrays );
 		step++;
 		cout << "  train error=" << train_err;
 
@@ -131,4 +142,5 @@ void classification(int argc, char **argv)
 			cout << "  test error =" << test_err << "\n";
 		}
 	}
+
 }

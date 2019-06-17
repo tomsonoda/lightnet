@@ -89,8 +89,8 @@ void cudaGetArray( float *cpu_array, float *gpu_array, size_t N )
 
 void cudaClearArray( float *gpu_array, int N )
 {
-  cudaFillGpuArray( gpu_array, 0, N);
-  // cudaMemset(&gpu_array, 0, N*sizeof(float));
+  // cudaFillGpuArray( gpu_array, 0, N);
+  cudaMemset(gpu_array, 0, N*sizeof(float));
 }
 
 float *cudaMakeRandomArray(int N, int maxval )
@@ -100,6 +100,11 @@ float *cudaMakeRandomArray(int N, int maxval )
   dim3 grid = cuda.cudaGridSize(N);
   setRandom<<<grid, BLOCK>>>( gpu_array, N, maxval );
   return gpu_array;
+}
+
+void cudaFreeArray( float *array )
+{
+  cudaFree(array);
 }
 
 } // namespace gpu

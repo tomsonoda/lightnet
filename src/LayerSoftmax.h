@@ -32,9 +32,9 @@ struct LayerSoftmax
 	{
 		#ifdef GPU_CUDA
 				int d_size = in_size.b * in_size.x * in_size.y * in_size.z;
-				gpu_dz    = gpu_cuda::cudaMakeArray( NULL, d_size );
-				gpu_in    = gpu_cuda::cudaMakeArray( NULL, d_size );
-				gpu_out   = gpu_cuda::cudaMakeArray( NULL, d_size );
+				// gpu_dz    = gpu_cuda::cudaMakeArray( NULL, d_size );
+				// gpu_in    = gpu_cuda::cudaMakeArray( NULL, d_size );
+				// gpu_out   = gpu_cuda::cudaMakeArray( NULL, d_size );
 				gpu_dz_in = gpu_cuda::cudaMakeArray( NULL, d_size );
 		#endif
  	}
@@ -55,18 +55,26 @@ struct LayerSoftmax
 	{
 	}
 
+	void backwardGPU( float* dz_next_layer, float *dz )
+	{
+		this->gpu_dz = dz;
+		backwardGPU( dz_next_layer );
+	}
+
 	void backwardGPU( float* dz_next_layer )
 	{
 		int in_size = in.size.b * in.size.x * in.size.y * in.size.z;
 		gpu_cuda::softmaxBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, in_size );
 	}
 
-	TensorObject<float> getOutGPU(){
+	TensorObject<float> getOutFromGPU(){
 		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
 		return out;
 	}
 
-	void clearArrayGPU(){
+	void clearArrayGPU(float *dz_)
+	{
+		this->gpu_dz = dz_;
 		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}

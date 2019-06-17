@@ -14,10 +14,10 @@ extern vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<
 extern CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens );
 extern float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens );
 
-float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays )
+float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays )
 {
 #ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays );
+	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays, dzArrays );
 #else
 	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
 #endif
@@ -60,11 +60,13 @@ void objectDetection(int argc, char **argv)
 	if(argc>=5){
  		checkpoint_path = argv[4];
 	}
-	Utils *utils = new Utils();
 
+	Utils *utils = new Utils();
 	string data_json_base = data_json_path.substr(data_json_path.find_last_of("/")+1);
 	string model_json_base = model_json_path.substr(model_json_path.find_last_of("/")+1);
 	string data_model_name = utils->stringReplace(data_json_base, ".json", "") + "-" + utils->stringReplace(model_json_base, ".json", "");
+	delete utils;
+
 	JSONObject *data_json = new JSONObject();
 	JSONObject *model_json = new JSONObject();
 	vector <json_token_t*> data_tokens = data_json->load(data_json_path);
@@ -106,14 +108,22 @@ void objectDetection(int argc, char **argv)
 	ThreadPool thread_pool(parameter_object->threads);
 
 	std::vector<float *> outputArrays;
-	
+	std::vector<float *> dzArrays;
+
 #ifdef GPU_CUDA
+
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
 		float *gpu_layer_output_array = gpu_cuda::cudaMakeArray( NULL, o_size );
 		layers[i]->gpu_out = gpu_layer_output_array;
 		outputArrays.push_back(gpu_layer_output_array);
+
+		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
+		float *gpu_layer_dz_array = gpu_cuda::cudaMakeArray( NULL, dz_size );
+		layers[i]->gpu_dz = gpu_layer_dz_array;
+		dzArrays.push_back(gpu_layer_dz_array);
 	}
+
 #endif
 
 	while( step < 1000000 ){
@@ -131,7 +141,7 @@ void objectDetection(int argc, char **argv)
 
 		// printTensor(batch_cases.out);
 
-		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays);
+		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays, dzArrays );
 		step++;
 
 		if (step % parameter_object->save_span == 0){
@@ -157,12 +167,12 @@ void objectDetection(int argc, char **argv)
 				randi = rand();
 			}
 			for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
-				CaseObject t = readImageLabelCase( test_case_paths[j], model_json, model_tokens );
+				CaseObject tt = readImageLabelCase( test_case_paths[j], model_json, model_tokens );
 
 				unsigned batch_index_in = (j-randi)*(data_size);
 				unsigned batch_index_out = (j-randi)*(out_size);
-				memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
-				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
+				memcpy( &(batch_cases.data.data[batch_index_in]), tt.data.data, data_float_size );
+				memcpy( &(batch_cases.out.data[batch_index_out]), tt.out.data, out_float_size );
 			}
 
 			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens, parameter_object);

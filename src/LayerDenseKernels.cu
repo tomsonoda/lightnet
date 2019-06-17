@@ -69,9 +69,9 @@ __global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float 
 
     for( int b = 0; b < batch_size; ++b ){
       int index = (b * out_size_x + id) * 2;
-      gradients[index+1] = gradients[index] + gradients[index+1] * momentum;
+      printf("index=%d\n", index);
+      // gradients[index+1] = gradients[index] + gradients[index+1] * momentum;
     }
-
   }
 
   /* original
