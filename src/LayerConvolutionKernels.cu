@@ -96,30 +96,35 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
   }*/
 }
 
-__global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, int momentum, int decay, int learning_rate )
+__global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_grads, int in_size_z, int number_filters, int kernel_size, int momentum, int decay, int learning_rate, int elements )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_out = id;
-  int i = id % in_size_z;
-  id /= in_size_z;
-  int j = id % kernel_size;
-  id /= kernel_size;
-  int z = id % kernel_size;
-  id /= kernel_size;
-  int filter = id;
 
-  int filter_size = 1 * kernel_size * kernel_size * in_size_z;
-  int filter_grad_index = (filter * filter_size + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
+  // int N = number_filters * kernel_size * kernel_size * in_size_z;
+	// TensorObject<float> kernel( 1, kernel_size, kernel_size, in_size.z );
+  //
+  if ( id < elements ) {
+    int id_out = id;
+    int i = id % kernel_size;
+    id /= kernel_size;
+    int j = id % kernel_size;
+    id /= kernel_size;
+    int z = id % in_size_z;
+    id /= in_size_z;
+    int filter = id;
 
-  float grad = filter_grads[ filter_grad_index ];
-  float grad_prev = filter_grads[ filter_grad_index+1 ];
-  float m = ( grad + grad_prev * momentum );
+    int filter_size = 1 * kernel_size * kernel_size * in_size_z;
+    int filter_grad_index = (filter * filter_size + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
 
-  filter_grads[ filter_grad_index + 1 ] = m;
+    float grad = filter_grads[ filter_grad_index ];
+    float grad_prev = filter_grads[ filter_grad_index + 1 ];
+    float m = ( grad + grad_prev * momentum );
+    filter_grads[ filter_grad_index + 1 ] = m;
 
-  float w = filters[ id_out ];
-  w -= learning_rate * ( m + (decay * w));
-  filters[ id_out ] = w;
+    float w = filters[ id_out ];
+    w -= learning_rate * ( m + (decay * w));
+    filters[ id_out ] = w;
+  }
 
   /* original code
   int filters_size = filters.size();
@@ -139,45 +144,49 @@ __global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_g
   */
 }
 
-__global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
+__global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  int x = id % dz_size_x;
-  id /= dz_size_x;
-  int y = id % dz_size_y;
-  id /= dz_size_y;
-  int z = id % dz_size_z;
-  id /= dz_size_z;
-  int b = id;
+  if ( id < batch_size * dz_size_x * dz_size_y * dz_size_z ){
 
-  if( x>=padding && y>=padding && x-padding<dz_size_x && y-padding<dz_size_y ){
-    float sum_error = 0;
+    int x = id % dz_size_x;
+    id /= dz_size_x;
+    int y = id % dz_size_y;
+    id /= dz_size_y;
+    int z = id % dz_size_z;
+    id /= dz_size_z;
+    int b = id;
 
-    range_t rn = map_to_output( x, y, dz_in_size_x, dz_in_size_y, kernel_size, stride );
+    if( x>=padding && y>=padding && x-padding<dz_size_x && y-padding<dz_size_y ){
+      float sum_error = 0;
 
-    for ( int i = rn.min_x; i <= rn.max_x; i++ ){
-      int minx = i * stride;
-      for ( int j = rn.min_y; j <= rn.max_y; j++ ){
-        int miny = j * stride;
-        int x_minx = x - minx;
-        int y_miny = y - miny;
+      range_t rn = map_to_output( x, y, dz_in_size_x, dz_in_size_y, kernel_size, stride );
 
-        for ( int k = 0; k <number_filters; k++ ){
-          int dz_in_index = b * (dz_in_size_z * dz_in_size_x * dz_in_size_y) + k * (dz_in_size_x * dz_in_size_y) + j * dz_in_size_x + i ;
-          float d = dz_in[ dz_in_index ];
-          int filter_index = k * filter_size + (z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx);
-          sum_error += filters[filter_index] * d;
+      for ( int i = rn.min_x; i <= rn.max_x; i++ ){
+        int minx = i * stride;
+        for ( int j = rn.min_y; j <= rn.max_y; j++ ){
+          int miny = j * stride;
+          int x_minx = x - minx;
+          int y_miny = y - miny;
 
-          int filter_grad_index = (k * filter_size + z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx ) * 2; // grad=0, grad_prev=1
-          int padded_in_index = b * (padded_in_size_z * padded_in_size_x * padded_in_size_y) + z * (padded_in_size_x * padded_in_size_y) + y * padded_in_size_x + x;
-          filter_grads[filter_grad_index] += padded_in[padded_in_index] * d;
+          for ( int k = 0; k <number_filters; k++ ){
+            int dz_in_index = b * (dz_in_size_z * dz_in_size_x * dz_in_size_y) + k * (dz_in_size_x * dz_in_size_y) + j * dz_in_size_x + i ;
+            float d = dz_in[ dz_in_index ];
+            int filter_index = k * filter_size + (z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx);
+            sum_error += filters[filter_index] * d;
+
+            int filter_grad_index = (k * filter_size + z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx ) * 2; // grad=0, grad_prev=1
+            int padded_in_index = b * (padded_in_size_z * padded_in_size_x * padded_in_size_y) + z * (padded_in_size_x * padded_in_size_y) + y * padded_in_size_x + x;
+            filter_grads[filter_grad_index] += padded_in[padded_in_index] * d;
+          }
         }
       }
+
+      int dz_index = b * (dz_size_z * dz_size_x * dz_size_y) + z * (dz_size_x * dz_size_y) + (y - padding) * dz_size_x + (x - padding);
+      dz[dz_index] += sum_error;
     }
 
-    int dz_index = b * (dz_size_z * dz_size_x * dz_size_y) + z * (dz_size_x * dz_size_y) + (y - padding) * dz_size_x + (x - padding);
-    dz[dz_index] += sum_error;
   }
 
   /* original code
@@ -230,7 +239,7 @@ void convolutionUpdateWeightsGPU(float *filters, float *filter_grads, int in_siz
   CudaObject cuda = CudaObject();
   int N = number_filters * kernel_size * kernel_size * in_size_z;
   dim3 grid = cuda.cudaGridSize(N);
-  calcConvolutionUpdateWeightsGPU<<<grid, BLOCK>>>( filters, filter_grads, in_size_z, number_filters, kernel_size, momentum, decay, learning_rate );
+  calcConvolutionUpdateWeightsGPU<<<grid, BLOCK>>>( filters, filter_grads, in_size_z, number_filters, kernel_size, momentum, decay, learning_rate, N );
 }
 
 void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
@@ -242,7 +251,7 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
 
   int dz_N = batch_size * dz_size_x * dz_size_y * dz_size_z;
   dim3 grid_dz = cuda.cudaGridSize(dz_N);
-  calcConvolutionBackwardGPU<<<grid_dz, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size );
+  calcConvolutionBackwardGPU<<<grid_dz, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, batch_size, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size );
 }
 
 } // namespace gpu

@@ -23,10 +23,10 @@ float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject
 #endif
 }
 
-float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object ){
+float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays ){
 	float loss_value = 0.0;
 #ifdef GPU_CUDA
-	loss_value = testNetworkGPU( layers, data, expected, optimizer );
+	loss_value = testNetworkGPU( layers, data, expected, optimizer, outputArrays, dzArrays );
 #else
 	loss_value = testNetwork( layers, data, expected, optimizer, thread_pool );
 #endif
@@ -175,7 +175,7 @@ void objectDetection(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), tt.out.data, out_float_size );
 			}
 
-			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens, parameter_object);
+			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens, parameter_object, outputArrays, dzArrays);
 			cout << "  test error =" << test_err << "\n";
 		}
 	}

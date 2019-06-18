@@ -60,6 +60,12 @@ struct LayerDropout
 	{
 	}
 
+	void backwardGPU( float* dz_next_layer, float *dz )
+	{
+		this->gpu_dz = dz;
+		backwardGPU( dz_next_layer );
+	}
+
 	void backwardGPU( float* dz_next_layer )
 	{
 		/*
@@ -71,6 +77,13 @@ struct LayerDropout
 			dz.data[i] += hitmap.data[i] ? dz_in.data[i] : 0.0f;
 		}
 		*/
+	}
+
+	void clearArrayGPU(float *dz_)
+	{
+		this->gpu_dz = dz_;
+		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
+		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
 #else

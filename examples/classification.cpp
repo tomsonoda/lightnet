@@ -18,9 +18,9 @@ float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<
 #endif
 }
 
-float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool ){
+float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, vector<float *>& outputArrays, vector<float *>& dzArrays ){
 #ifdef GPU_CUDA
-	return testNetworkGPU( layers, data, expected, optimizer);
+	return testNetworkGPU( layers, data, expected, optimizer, outputArrays, dzArrays);
 #else
 	return testNetwork( layers, data, expected, optimizer, thread_pool );
 #endif
@@ -97,7 +97,7 @@ void classification(int argc, char **argv)
 
 #endif
 
-	while( step < 2000 ){
+	while( step < 200 ){
 
 		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
@@ -138,7 +138,7 @@ void classification(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 			}
 
-			float test_err = testClassification( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool );
+			float test_err = testClassification( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, outputArrays, dzArrays );
 			cout << "  test error =" << test_err << "\n";
 		}
 	}

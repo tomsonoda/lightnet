@@ -7,6 +7,7 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	float *cudaMakeArray( float *cpu_array, int N );
+	void cudaClearArray( float *gpu_array, int N );
 	void batchNormalizationForwardGPU( float *in, float *out, float *mean, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, int batch_size, int in_size_x, int in_size_y, int in_size_z );
 	void batchNormalizationUpdateWeightsGPU( float *gamma, float *beta, float *dgamma, float *dbeta, float learning_rate, int in_size_z );
 	void batchNormalizationBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, float *dxhat, float *dx1, float *dgamma, float *dbeta, int batch_size, int in_size_x, int in_size_y, int in_size_z );
@@ -120,9 +121,22 @@ struct LayerBatchNormalization
 		gpu_cuda::batchNormalizationUpdateWeightsGPU( gpu_gamma, gpu_beta, gpu_dgamma, gpu_dbeta, lr, in.size.z );
 	}
 
+	void backwardGPU( float* dz_next_layer, float *dz )
+	{
+		this->gpu_dz = dz;
+		backwardGPU( dz_next_layer );
+	}
+
 	void backwardGPU( float* dz_next_layer )
 	{
 		gpu_cuda::batchNormalizationBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_xmu, gpu_variance, gpu_inv_variance, gpu_xhat, gpu_gamma, gpu_beta, gpu_dxhat, gpu_dx1, gpu_dgamma, gpu_dbeta, in.size.b, in.size.x, in.size.y, in.size.z );
+	}
+
+	void clearArrayGPU(float *dz_)
+	{
+		this->gpu_dz = dz_;
+		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
+		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
 #else
