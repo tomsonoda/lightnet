@@ -62,7 +62,7 @@ struct LayerRoute
 	void forwardGPU()
 	{
 		int z_offset = 0;
-		for( int i=0; i<(int)(ref_layers.size()); ++i ){
+		for( unsigned i=0; i< ref_layers.size(); ++i ){
 			float *layer_gpu_in = layers[ref_layers[i]]->gpu_out;
 			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
 
@@ -87,7 +87,7 @@ struct LayerRoute
 		gpu_cuda::routeBackwardAddFirstArrayToSecondArrayGPU( dz_next_layer, gpu_dz_in, d_size );
 
 		int z_offset = 0;
-		for( unsigned int i=0; i<ref_layers.size(); ++i ){
+		for( unsigned i=0; i<ref_layers.size(); ++i ){
 			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
 			float* layer_gpu_dz = layers[ref_layers[i]]->gpu_dz_in;
 			int size = layer_dz.size.b * layer_dz.size.z * layer_dz.size.y * layer_dz.size.x;
@@ -119,7 +119,7 @@ struct LayerRoute
 	void forward()
 	{
 		int z_offset = 0;
-		for( int i=0; i<ref_layers.size(); ++i ){
+		for( unsigned i=0; i<ref_layers.size(); ++i ){
 			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
 			for ( int b = 0; b < layer_in.size.b; ++b ){
 				for ( int z = 0; z < layer_in.size.z; ++z ){
@@ -145,7 +145,7 @@ struct LayerRoute
 		}
 
 		int z_offset = 0;
-		for( int i=0; i<ref_layers.size(); ++i ){
+		for( unsigned i=0; i<ref_layers.size(); ++i ){
 			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
 			for ( int b = 0; b < layer_dz.size.b; ++b ){
 				for ( int z = 0; z < layer_dz.size.z; ++z ){

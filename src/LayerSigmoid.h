@@ -95,7 +95,7 @@ struct LayerSigmoid
 
 	void forward()
 	{
-		for ( int i = 0; i < in_total_size; ++i ){
+		for ( unsigned  i = 0; i < in_total_size; ++i ){
 			out.data[i] = activator_function(in.data[i]);
 		}
 	}
@@ -110,7 +110,7 @@ struct LayerSigmoid
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
-		for ( int i = 0; i < in_total_size; ++i ){
+		for ( unsigned  i = 0; i < in_total_size; ++i ){
 			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
 		}
 	}

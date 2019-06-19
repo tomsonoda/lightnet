@@ -184,11 +184,11 @@ struct LayerDense
 
 	void updateWeights()
 	{
-		for (int i=0; i<weigts_data_num; ++i){
+		for ( unsigned i=0; i<weigts_data_num; ++i){
 			weights.data[i] = weights.data[i] - lr * 	dW.data[i];
 		}
 
-		for (int i=0; i<out.size.x; ++i){
+		for ( int i=0; i<out.size.x; ++i){
 			biases.data[i] = biases.data[i] - lr * 	dB.data[i];
 		}
 

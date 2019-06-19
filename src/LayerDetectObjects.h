@@ -100,13 +100,13 @@ struct LayerDetectObjects
 
 	void forward()
 	{
-		for(int b = 0; b < in.size.b; ++b ){
-			for( int i = 0; i < _max_bounding_boxes; i=i+(4+_max_classes)){
+		for( int b = 0; b < in.size.b; ++b ){
+			for( unsigned  i = 0; i < _max_bounding_boxes; i=i+(4+_max_classes)){
 				out( b, i  , 0, 0 ) = 1.0f / (1.0f + exp( -in( b, i  , 0, 0 ) )); // x: sigmoid
 				out( b, i+1, 0, 0 ) = 1.0f / (1.0f + exp( -in( b, i+1, 0, 0 ) )); // y: sigmoid
 				out( b, i+2, 0, 0 ) = exp( in( b, i+2, 0, 0 ) ); // w: exp
 				out( b, i+3, 0, 0 ) = exp( in( b, i+3, 0, 0 ) ); // h: exp
-				for( int c = 0; c < _max_classes; ++c){
+				for( unsigned c = 0; c < _max_classes; ++c){
 					out( b, i+4+c, 0, 0 ) = 1.0f / (1.0f + exp( -in( b, i+4+c , 0, 0 ) )); // id: sigmoid
 				}
 			}
@@ -123,13 +123,13 @@ struct LayerDetectObjects
 			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
-		for(int b = 0; b < dz_in.size.b; ++b ){
-			for( int i = 0; i < _max_bounding_boxes; i=i+(4+_max_classes)){
+		for( int b = 0; b < dz_in.size.b; ++b ){
+			for( unsigned  i = 0; i < _max_bounding_boxes; i=i+(4+_max_classes)){
 				dz( b, i  , 0, 0 ) = activator_derivative( in( b, i  , 0, 0 ) ) * dz_in( b, i  , 0, 0 ); // x: sigmoid derivative * grads
 				dz( b, i+1, 0, 0 ) = activator_derivative( in( b, i+1 , 0, 0 ) ) * dz_in( b, i+1, 0, 0 ); // y: sigmoid derivative * grads
 				dz( b, i+2, 0, 0 ) = exp( in( b, i+2, 0, 0 ) ) * dz_in( b, i+2, 0, 0 ); // w: exp * grads
 				dz( b, i+3, 0, 0 ) = exp( in( b, i+3, 0, 0 ) ) * dz_in( b, i+3, 0, 0 ); // h: exp * grads
-				for( int c = 0; c < _max_classes; ++c){
+				for( unsigned c = 0; c < _max_classes; ++c){
 					dz( b, i+4+c, 0, 0 ) = activator_derivative( in( b, i+4+c , 0, 0 ) ) * dz_in( b, i+4+c , 0, 0 ); // id: sigmoid derivative * grads
 				}
 			}
