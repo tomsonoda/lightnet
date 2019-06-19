@@ -101,7 +101,7 @@ struct LayerDense
 		gpu_dW = gpu_cuda::cudaMakeArray( NULL, weigts_data_num );
 		gpu_biases = gpu_cuda::cudaMakeArray( NULL, out_size );
 		gpu_dB = gpu_cuda::cudaMakeArray( NULL, out_size );
-		gpu_gradients = gpu_cuda::cudaMakeArray( NULL, out_size * in_size.b * 2 );  // 2n:current, 2n+1:prev
+		gpu_gradients = gpu_cuda::cudaMakeArray( NULL, o_size * 2 );  // 2n:current, 2n+1:prev
 #endif
 
 	}

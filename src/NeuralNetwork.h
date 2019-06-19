@@ -347,7 +347,6 @@ static float trainNetworkGPU(
 			printTensor(output_data);
 		}
 
-		// exit(0);
 		return loss;
 
 	}

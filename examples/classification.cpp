@@ -42,7 +42,6 @@ void classification(int argc, char **argv)
 	delete utils;
 
 	// dataset
-	// DatasetObject2 *dataset = new DatasetObject2();
 	vector<CaseObject> train_cases = readCases(data_json_path, model_json_path, "train");
 	vector<CaseObject> test_cases = readCases(data_json_path, model_json_path, "test");
 
@@ -98,7 +97,7 @@ void classification(int argc, char **argv)
 
 #endif
 
-	while( step < 300000 ){
+	while( step < 10000 ){
 
 		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
@@ -111,7 +110,6 @@ void classification(int argc, char **argv)
 
 		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays, dzArrays );
 		step++;
-		// cout << "  train error=" << train_err << endl;
 
 		if (step % parameter_object->save_span == 0){
 			string filename        = "checkpoints/" + data_model_name + "_" + to_string(step) + ".model";

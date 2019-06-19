@@ -7,25 +7,35 @@ namespace gpu_cuda {
 __global__ void calcConvolutionForwardPaddedInGPU( float *in, float *padded_in, int batch_size, int in_size_x, int in_size_y, int in_size_z, int padding)
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_out = id;
 
-  int x = id % in_size_x;
-  id /= in_size_x;
-  int y = id % in_size_y;
-  id /= in_size_y;
-  int z = id % in_size_z;
-  id /= in_size_z;
-  int b = id;
+  if( id < batch_size * in_size_x * in_size_y * in_size_z ){
 
-  if( (x - padding ) > 0 && ( y - padding ) > 0 && x < in_size_x && y < in_size_y && z < in_size_z ){
-    int in_index = (b * (in_size_z * in_size_x * in_size_y) +
-    z * (in_size_x * in_size_y) +
-    (y - padding) * (in_size_x) +
-    (x - padding) );
-    if ( in_index < batch_size * in_size_x * in_size_y * in_size_z ){
-      padded_in[id_out] = in[in_index];
+    int x = id % in_size_x;
+    id /= in_size_x;
+    int y = id % in_size_y;
+    id /= in_size_y;
+    int z = id % in_size_z;
+    id /= in_size_z;
+    int b = id;
+
+    if( (x - padding ) > 0 && ( y - padding ) > 0 && x < in_size_x && y < in_size_y && z < in_size_z ){
+
+      int in_index = b * (in_size_z * in_size_x * in_size_y) +
+      z * (in_size_x * in_size_y) +
+      y * (in_size_x) +
+      x ;
+
+      int pad_index = b * (in_size_z * (in_size_x + 2*padding) * (in_size_y + 2*padding) ) +
+      z * ((in_size_x + 2*padding) * (in_size_y + 2*padding)) +
+      y * (in_size_x + 2*padding) +
+      x ;
+
+      //padded_in( in_size.b, in_size.x + 2*padding, in_size.y + 2*padding, in_size.z )
+
+      padded_in[pad_index] = in[in_index];
     }
   }
+
   /*
   for ( int b = 0; b < in.size.b; ++b ){
     for ( int z = 0; z < in.size.z; ++z ){
@@ -72,7 +82,6 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
     out[id_out] = sum;
   }
 
-
   /*
   for ( int b = 0; b < in.size.b; ++b ){
     int filters_size = filters.size();
@@ -102,7 +111,7 @@ __global__ void calcConvolutionUpdateWeightsGPU( float *filters, float *filter_g
 
   // int N = number_filters * kernel_size * kernel_size * in_size_z;
 	// TensorObject<float> kernel( 1, kernel_size, kernel_size, in_size.z );
-  //
+
   if ( id < elements ) {
     int id_out = id;
     int i = id % kernel_size;
@@ -148,12 +157,14 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
 
-  if ( id < batch_size * dz_size_x * dz_size_y * dz_size_z ){
+  // int N = batch_size * padded_in_size_x * padded_in_size_y * dz_size_z;
 
-    int x = id % dz_size_x;
-    id /= dz_size_x;
-    int y = id % dz_size_y;
-    id /= dz_size_y;
+  if ( id <  batch_size * padded_in_size_x * padded_in_size_y * dz_size_z ){
+
+    int x = id % padded_in_size_x;
+    id /= padded_in_size_x;
+    int y = id % padded_in_size_y;
+    id /= padded_in_size_y;
     int z = id % dz_size_z;
     id /= dz_size_z;
     int b = id;
@@ -194,6 +205,7 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
     for ( int x = 0; x < padded_in.size.x; x++ ){
       for ( int y = 0; y < padded_in.size.y; y++ ){
         tensor_range_t rn = map_to_output( x, y );
+
         for ( int z = 0; z < in.size.z; z++ ){
 
           float sum_error = 0;
@@ -214,6 +226,7 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
           if(x>=padding && y>=padding && x-padding<in.size.x && y-padding<in.size.y ){
             dz( b, x-padding, y-padding, z ) += sum_error;
           }
+
         }
 
       }
@@ -249,8 +262,8 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
   dim3 grid_in = cuda.cudaGridSize(in_N);
   cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in, in_N );
 
-  int dz_N = batch_size * dz_size_x * dz_size_y * dz_size_z;
-  dim3 grid_dz = cuda.cudaGridSize(dz_N);
+  int N = batch_size * padded_in_size_x * padded_in_size_y * dz_size_z;
+  dim3 grid_dz = cuda.cudaGridSize(N);
   calcConvolutionBackwardGPU<<<grid_dz, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, batch_size, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size );
 }
 
