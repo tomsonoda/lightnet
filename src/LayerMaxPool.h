@@ -125,6 +125,13 @@ struct LayerMaxPool
 		forwardGPU();
 	}
 
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
+		forwardGPU();
+	}
+
 	void forwardGPU()
 	{
 		gpu_cuda::maxPoolForwardGPU(gpu_in, gpu_out, in.size.x, in.size.y, in.size.z, out.size.b, out.size.x, out.size.y, out.size.z, kernel_size, stride);

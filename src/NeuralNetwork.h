@@ -64,48 +64,6 @@ static void printTensor( TensorObject<float>& data )
 // 	free(array);
 // }
 
-// static void backwardGPU( LayerObject* layer, float* dz_next_layer)
-// {
-// 	switch ( layer->type )
-// 	{
-// 		case LayerType::batch_normalization:
-// 			((LayerBatchNormalization*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::conv:
-// 			((LayerConvolution*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::dense:
-// 			((LayerDense*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::detect_objects:
-// 			((LayerDetectObjects*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::dropout:
-// 			((LayerDropout*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::leaky_relu:
-// 			((LayerLeakyReLU*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::max_pool:
-// 			((LayerMaxPool*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::relu:
-// 			((LayerReLU*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::route:
-// 			((LayerRoute*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::sigmoid:
-// 			((LayerSigmoid*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		case LayerType::softmax:
-// 			((LayerSoftmax*)layer)->backwardGPU( dz_next_layer );
-// 			return;
-// 		default:
-// 			assert( false );
-// 	}
-// }
-
 static void backwardGPU( LayerObject* layer, float* dz_next_layer, float* dz )
 {
 	switch ( layer->type )
@@ -190,85 +148,85 @@ static void updateWeightsGPU( LayerObject* layer )
 	}
 }
 
-static void forwardGPU( LayerObject* layer, float* in )
-{
-	switch ( layer->type )
-	{
-		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->forwardGPU( in );
-			return;
-		case LayerType::conv:
-			((LayerConvolution*)layer)->forwardGPU( in );
-			return;
-		case LayerType::dense:
-			((LayerDense*)layer)->forwardGPU( in );
-			return;
-		case LayerType::detect_objects:
-			((LayerDetectObjects*)layer)->forwardGPU( in );
-			return;
-		case LayerType::dropout:
-			((LayerDropout*)layer)->forwardGPU( in );
-			return;
-		case LayerType::leaky_relu:
-			((LayerLeakyReLU*)layer)->forwardGPU( in );
-			return;
-		case LayerType::max_pool:
-			((LayerMaxPool*)layer)->forwardGPU( in );
-			return;
-		case LayerType::relu:
-			((LayerReLU*)layer)->forwardGPU( in );
-			return;
-		case LayerType::route:
-			((LayerRoute*)layer)->forwardGPU( in );
-			return;
-		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->forwardGPU( in );
-			return;
-		case LayerType::softmax:
-			((LayerSoftmax*)layer)->forwardGPU( in );
-			return;
-		default:
-			printf("layer type=%d\n", (int)layer->type);
-			assert( false );
-	}
-}
+// static void forwardGPU( LayerObject* layer, float* in )
+// {
+// 	switch ( layer->type )
+// 	{
+// 		case LayerType::batch_normalization:
+// 			((LayerBatchNormalization*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::conv:
+// 			((LayerConvolution*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::dense:
+// 			((LayerDense*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::detect_objects:
+// 			((LayerDetectObjects*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::dropout:
+// 			((LayerDropout*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::leaky_relu:
+// 			((LayerLeakyReLU*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::max_pool:
+// 			((LayerMaxPool*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::relu:
+// 			((LayerReLU*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::route:
+// 			((LayerRoute*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::sigmoid:
+// 			((LayerSigmoid*)layer)->forwardGPU( in );
+// 			return;
+// 		case LayerType::softmax:
+// 			((LayerSoftmax*)layer)->forwardGPU( in );
+// 			return;
+// 		default:
+// 			printf("layer type=%d\n", (int)layer->type);
+// 			assert( false );
+// 	}
+// }
 
 static void forwardGPU( LayerObject* layer, float* in, float *out )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->forwardGPU( in );
+			((LayerBatchNormalization*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->forwardGPU( in );
+			((LayerConvolution*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::dense:
 			((LayerDense*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::detect_objects:
-			((LayerDetectObjects*)layer)->forwardGPU( in );
+			((LayerDetectObjects*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->forwardGPU( in );
+			((LayerDropout*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::leaky_relu:
-			((LayerLeakyReLU*)layer)->forwardGPU( in );
+			((LayerLeakyReLU*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::max_pool:
-			((LayerMaxPool*)layer)->forwardGPU( in );
+			((LayerMaxPool*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->forwardGPU( in );
+			((LayerReLU*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::route:
-			((LayerRoute*)layer)->forwardGPU( in );
+			((LayerRoute*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->forwardGPU( in );
+			((LayerSigmoid*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->forwardGPU( in );
+			((LayerSoftmax*)layer)->forwardGPU( in, out );
 			return;
 		default:
 			printf("layer type=%d\n", (int)layer->type);
@@ -448,24 +406,14 @@ static float testNetworkGPU(
 	)
 {
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
-	float *gpu_array = nullptr;
+	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
+	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
-	gpu_array = gpu_cuda::cudaMakeArray( NULL, in_size );
-	gpu_cuda::cudaPutArray( gpu_array, data.data, in_size );
-
-	TensorObject<float> gpu_output_d = TensorObject<float>( data.size.b, data.size.x, data.size.y, data.size.z );
-
-	gpu_cuda::cudaGetArray( gpu_output_d.data, gpu_array, in_size );
-
-	for( int i = 0; i < (int)(layers.size()); ++i ){
+	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], gpu_array );
+			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
 		}else{
-			size_t out_size = layers[i-1]->out.size.b * layers[i-1]->out.size.x * layers[i-1]->out.size.y * layers[i-1]->out.size.z;
-			TensorObject<float> gpu_output_data = TensorObject<float>(layers[i-1]->out.size.b, layers[i-1]->out.size.x, layers[i-1]->out.size.y, layers[i-1]->out.size.z);
-			gpu_cuda::cudaGetArray( gpu_output_data.data, layers.back()->gpu_out, out_size );
-			printTensor( gpu_output_data );
-			forwardGPU( layers[i], layers[i-1]->gpu_out );
+			forwardGPU( layers[i], layers[i-1]->gpu_out, outputArrays[i] );
 		}
 	}
 

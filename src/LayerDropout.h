@@ -43,6 +43,13 @@ struct LayerDropout
 		forwardGPU();
 	}
 
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
+		forwardGPU();
+	}
+
 	void forwardGPU()
 	{
 		/*

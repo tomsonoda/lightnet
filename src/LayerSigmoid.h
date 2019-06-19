@@ -34,6 +34,13 @@ struct LayerSigmoid
 
 #ifdef GPU_CUDA
 
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
+		forwardGPU();
+	}
+
 	void forwardGPU( float* in )
 	{
 		this->gpu_in = in;

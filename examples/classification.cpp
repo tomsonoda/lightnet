@@ -97,7 +97,7 @@ void classification(int argc, char **argv)
 
 #endif
 
-	while( step < 200 ){
+	while( step < 2000 ){
 
 		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){

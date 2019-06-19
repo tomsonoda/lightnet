@@ -57,6 +57,13 @@ struct LayerLeakyReLU
 		gpu_cuda::leakyReluForwardGPU( gpu_in, gpu_out, data_size );
 	}
 
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
+		forwardGPU();
+	}
+
 	void updateWeightsGPU()
 	{
 	}

@@ -55,6 +55,13 @@ struct LayerDetectObjects
 		forwardGPU();
 	}
 
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
+		forwardGPU();
+	}
+
 	void forwardGPU()
 	{
 		gpu_cuda::detectObjectsForwardGPU( gpu_in, gpu_out, in.size.b, in.size.x, in.size.y, in.size.z, _max_bounding_boxes, _max_classes );

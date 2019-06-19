@@ -51,6 +51,13 @@ struct LayerReLU
 		forwardGPU();
 	}
 
+	void forwardGPU( float *in, float *out )
+	{
+		gpu_in = in;
+		gpu_out = out;
+		forwardGPU();
+	}
+
 	void forwardGPU()
 	{
 		gpu_cuda::reluForwardGPU( gpu_in, gpu_out, data_size );
