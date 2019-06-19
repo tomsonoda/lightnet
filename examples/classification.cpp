@@ -82,6 +82,7 @@ void classification(int argc, char **argv)
 	std::vector<float *> dzArrays;
 
 #ifdef GPU_CUDA
+	printf("Preparing for GPU_CUDA...\n");
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
@@ -97,7 +98,7 @@ void classification(int argc, char **argv)
 
 #endif
 
-	while( step < 2000 ){
+	while( step < 300000 ){
 
 		int randi = rand() % (train_cases.size()-parameter_object->batch_size);
 		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){

@@ -257,7 +257,7 @@ struct LayerDense
 		int size = weigts_data_num * sizeof( float );
 		fout.write(( char * )(weights.data), size );
 		total_size += size;
-		cout << "- LayerDense             : " << to_string(total_size) << " bytes wrote." << endl;
+		// cout << "- LayerDense             : " << to_string(total_size) << " bytes wrote." << endl;
 	}
 
 	void loadWeights( ifstream& fin )
