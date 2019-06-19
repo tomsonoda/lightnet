@@ -119,12 +119,6 @@ struct LayerMaxPool
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU( float *in, float *out )
 	{
 		gpu_in = in;
@@ -150,6 +144,11 @@ struct LayerMaxPool
 	void backwardGPU( float *dz_next_layer )
 	{
 		gpu_cuda::maxPoolBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_out, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, kernel_size, stride );
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)

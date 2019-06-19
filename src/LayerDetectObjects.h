@@ -49,12 +49,6 @@ struct LayerDetectObjects
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU( float *in, float *out )
 	{
 		gpu_in = in;
@@ -82,6 +76,11 @@ struct LayerDetectObjects
 		int data_size = in.size.b * in.size.x * in.size.y * in.size.z;
 		gpu_cuda::detectObjectsBackwardAddFirstArrayToSecondArrayGPU( dz_next_layer, gpu_dz_in, data_size);
 		gpu_cuda::detectObjectsBackwardGPU( gpu_dz_in, gpu_dz, gpu_in, in.size.b, in.size.x, in.size.y, in.size.z, _max_bounding_boxes, _max_classes );
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)

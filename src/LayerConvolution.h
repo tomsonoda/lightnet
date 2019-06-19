@@ -188,12 +188,6 @@ struct LayerConvolution
 		forwardGPU();
 	}
 
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU()
 	{
 		gpu_cuda::convolutionForwardGPU( gpu_in, gpu_out, gpu_padded_in, gpu_filters, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, padded_in.size.x, padded_in.size.y, padded_in.size.z, padding, kernel_size, stride, filter_size );
@@ -215,6 +209,11 @@ struct LayerConvolution
 	{
 		gpu_cuda::cudaClearArray( gpu_filter_grads, filter_size * 2 * number_filters );
 		gpu_cuda::convolutionBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_padded_in, gpu_filters, gpu_filter_grads, dz.size.b, dz.size.x, dz.size.y, dz.size.z, dz_in.size.x, dz_in.size.y, dz_in.size.z, padded_in.size.x, padded_in.size.y, padded_in.size.z, padding, kernel_size, stride, number_filters, filter_size );
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)

@@ -46,12 +46,6 @@ struct LayerSoftmax
 		gpu_out = out;
 		forwardGPU();
 	}
-	
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
 
 	void forwardGPU()
 	{

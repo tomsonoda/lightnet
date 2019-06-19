@@ -41,12 +41,6 @@ struct LayerSigmoid
 		forwardGPU();
 	}
 
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU()
 	{
 		/*
@@ -77,6 +71,11 @@ struct LayerSigmoid
 			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
 		}
 		*/
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)

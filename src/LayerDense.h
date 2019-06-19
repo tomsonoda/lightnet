@@ -113,12 +113,6 @@ struct LayerDense
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( float *in )
-	{
-		gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU( float *in, float *out )
 	{
 		gpu_in = in;
@@ -153,16 +147,6 @@ struct LayerDense
 	{
 		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
 		return out;
-	}
-
-	void getOutputArrayGPU(float *out)
-	{
-		out = this->gpu_out;
-	}
-
-	void setOutputArrayGPU(float *out)
-	{
-		this->gpu_out = out;
 	}
 
 	void clearArrayGPU(float *dz_)

@@ -6,7 +6,7 @@
     "decay":0.001,
     "learning_rate":0.01,
     "optimization":"cross_entropy",
-    "train_output_span":2000
+    "train_output_span":100
   },
 
   "layers":[

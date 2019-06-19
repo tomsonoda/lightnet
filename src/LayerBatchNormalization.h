@@ -6,6 +6,7 @@
 
 #ifdef GPU_CUDA
 namespace gpu_cuda {
+	void cudaGetArray( float *cpu_array, float *gpu_array, size_t N );
 	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void batchNormalizationForwardGPU( float *in, float *out, float *mean, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, int batch_size, int in_size_x, int in_size_y, int in_size_z );
@@ -105,16 +106,10 @@ struct LayerBatchNormalization
 
 #ifdef GPU_CUDA
 
-void forwardGPU( float *in, float *out )
-{
-	gpu_in = in;
-	gpu_out = out;
-	forwardGPU();
-}
-
-	void forwardGPU( float* in )
+	void forwardGPU( float *in, float *out )
 	{
-		this->gpu_in = in;
+		gpu_in = in;
+		gpu_out = out;
 		forwardGPU();
 	}
 
@@ -139,6 +134,10 @@ void forwardGPU( float *in, float *out )
 		gpu_cuda::batchNormalizationBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_xmu, gpu_variance, gpu_inv_variance, gpu_xhat, gpu_gamma, gpu_beta, gpu_dxhat, gpu_dx1, gpu_dgamma, gpu_dbeta, in.size.b, in.size.x, in.size.y, in.size.z );
 	}
 
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
+	}
 	void clearArrayGPU(float *dz_)
 	{
 		this->gpu_dz = dz_;

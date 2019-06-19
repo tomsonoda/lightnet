@@ -59,12 +59,6 @@ struct LayerRoute
 		forwardGPU();
 	}
 
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU()
 	{
 		int z_offset = 0;
@@ -100,6 +94,11 @@ struct LayerRoute
 			gpu_cuda::routeBackwardGPU(  gpu_dz_in, layer_gpu_dz, size, layer_dz.size.x, layer_dz.size.y, layer_dz.size.z, z_offset );
 			z_offset = layer_dz.size.z;
 		}
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)

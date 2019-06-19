@@ -148,49 +148,6 @@ static void updateWeightsGPU( LayerObject* layer )
 	}
 }
 
-// static void forwardGPU( LayerObject* layer, float* in )
-// {
-// 	switch ( layer->type )
-// 	{
-// 		case LayerType::batch_normalization:
-// 			((LayerBatchNormalization*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::conv:
-// 			((LayerConvolution*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::dense:
-// 			((LayerDense*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::detect_objects:
-// 			((LayerDetectObjects*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::dropout:
-// 			((LayerDropout*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::leaky_relu:
-// 			((LayerLeakyReLU*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::max_pool:
-// 			((LayerMaxPool*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::relu:
-// 			((LayerReLU*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::route:
-// 			((LayerRoute*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::sigmoid:
-// 			((LayerSigmoid*)layer)->forwardGPU( in );
-// 			return;
-// 		case LayerType::softmax:
-// 			((LayerSoftmax*)layer)->forwardGPU( in );
-// 			return;
-// 		default:
-// 			printf("layer type=%d\n", (int)layer->type);
-// 			assert( false );
-// 	}
-// }
-
 static void forwardGPU( LayerObject* layer, float* in, float *out )
 {
 	switch ( layer->type )
@@ -238,26 +195,26 @@ static TensorObject<float> getOutFromGPU( LayerObject* layer )
 {
 	switch ( layer->type )
 	{
-		// case LayerType::batch_normalization:
-		// 	return ((LayerBatchNormalization*)layer)->getOutFromGPU();
-		// case LayerType::conv:
-		// 	return ((LayerConvolution*)layer)->getOutFromGPU();
+		case LayerType::batch_normalization:
+			return ((LayerBatchNormalization*)layer)->getOutFromGPU();
+		case LayerType::conv:
+			return ((LayerConvolution*)layer)->getOutFromGPU();
 		case LayerType::dense:
 			return ((LayerDense*)layer)->getOutFromGPU();
-		// case LayerType::detect_objects:
-		// 	return ((LayerDetectObjects*)layer)->getOutFromGPU();
-		// case LayerType::dropout:
-		// 	return ((LayerDropout*)layer)->getOutFromGPU();
-		// case LayerType::leaky_relu:
-		// 	return ((LayerLeakyReLU*)layer)->getOutFromGPU();
-		// case LayerType::max_pool:
-		// 	return ((LayerMaxPool*)layer)->getOutFromGPU();
-		// case LayerType::relu:
-		// 	return ((LayerReLU*)layer)->getOutFromGPU();
-		// case LayerType::route:
-		// 	return ((LayerRoute*)layer)->getOutFromGPU();
-		// case LayerType::sigmoid:
-		// 	return ((LayerSigmoid*)layer)->getOutFromGPU();
+		case LayerType::detect_objects:
+			return ((LayerDetectObjects*)layer)->getOutFromGPU();
+		case LayerType::dropout:
+			return ((LayerDropout*)layer)->getOutFromGPU();
+		case LayerType::leaky_relu:
+			return ((LayerLeakyReLU*)layer)->getOutFromGPU();
+		case LayerType::max_pool:
+			return ((LayerMaxPool*)layer)->getOutFromGPU();
+		case LayerType::relu:
+			return ((LayerReLU*)layer)->getOutFromGPU();
+		case LayerType::route:
+			return ((LayerRoute*)layer)->getOutFromGPU();
+		case LayerType::sigmoid:
+			return ((LayerSigmoid*)layer)->getOutFromGPU();
 		case LayerType::softmax:
 			return ((LayerSoftmax*)layer)->getOutFromGPU();
 		default:

@@ -46,22 +46,16 @@ struct LayerLeakyReLU
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( float* in )
+	void forwardGPU( float *in, float *out )
 	{
-		this->gpu_in = in;
+		gpu_in = in;
+		gpu_out = out;
 		forwardGPU();
 	}
 
 	void forwardGPU()
 	{
 		gpu_cuda::leakyReluForwardGPU( gpu_in, gpu_out, data_size );
-	}
-
-	void forwardGPU( float *in, float *out )
-	{
-		gpu_in = in;
-		gpu_out = out;
-		forwardGPU();
 	}
 
 	void updateWeightsGPU()
@@ -77,6 +71,11 @@ struct LayerLeakyReLU
 	void backwardGPU( float* dz_next_layer )
 	{
 		gpu_cuda::leakyReluBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, data_size );
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)

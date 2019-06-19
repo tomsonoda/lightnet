@@ -45,12 +45,6 @@ struct LayerReLU
 
 #ifdef GPU_CUDA
 
-	void forwardGPU( float* in )
-	{
-		this->gpu_in = in;
-		forwardGPU();
-	}
-
 	void forwardGPU( float *in, float *out )
 	{
 		gpu_in = in;
@@ -76,6 +70,11 @@ struct LayerReLU
 	void backwardGPU( float* dz_next_layer )
 	{
 		gpu_cuda::reluBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, data_size );
+	}
+
+	TensorObject<float> getOutFromGPU(){
+		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
+		return out;
 	}
 
 	void clearArrayGPU(float *dz_)
