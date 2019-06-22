@@ -115,11 +115,10 @@ struct LayerDense
 
 	void forwardGPU( float *in, float *out )
 	{
-		gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
-
+		// gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
+		// forward();
 		this->gpu_in = in;
 		this->gpu_out = out;
-		forward();
 		forwardGPU();
 	}
 
@@ -130,16 +129,14 @@ struct LayerDense
 
 	void updateWeightsGPU()
 	{
-		updateWeights();
-		// printf("momentum = %lf\n", _momentum);
+		// updateWeights();
 		gpu_cuda::denseUpdateWeightsGPU( gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, lr, _momentum );
 	}
 
 	void backwardGPU( float* dz_next_layer, float *dz )
 	{
-		gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
-		backward();
-
+		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		// backward();
 		this->gpu_dz = dz;
 		backwardGPU( dz_next_layer );
 	}
@@ -151,72 +148,17 @@ struct LayerDense
 		gpu_cuda::denseBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, _momentum, _decay );
 	}
 
-	TensorObject<float> getWeights()
+	void clearArrayGPU(float *dz_)
 	{
-		return weights;
-	}
-
-	TensorObject<float> getWeightsFromGPU()
-	{
-		gpu_cuda::cudaGetArray( weights.data, gpu_weights, weights.size.b * weights.size.x * weights.size.y * weights.size.z );
-		return weights;
-	}
-
-	TensorObject<float> getBiases()
-	{
-		return biases;
-	}
-
-	TensorObject<float> getBiasesFromGPU()
-	{
-		gpu_cuda::cudaGetArray( biases.data, gpu_biases, biases.size.b * biases.size.x * biases.size.y * biases.size.z );
-		return biases;
-	}
-
-	TensorObject<float> getDW()
-	{
-		return dW;
-	}
-
-	TensorObject<float> getDWFromGPU()
-	{
-		gpu_cuda::cudaGetArray( dW.data, gpu_dW, dW.size.b * dW.size.x * dW.size.y * dW.size.z );
-		return dW;
-	}
-
-	TensorObject<float> getDB()
-	{
-		return dB;
-	}
-
-	TensorObject<float> getDBFromGPU()
-	{
-		gpu_cuda::cudaGetArray( dB.data, gpu_dB, dB.size.b * dB.size.x * dB.size.y * dB.size.z );
-		return dB;
-	}
-
-	TensorObject<float> getDzInFromGPU()
-	{
-		gpu_cuda::cudaGetArray( dz_in.data, gpu_dz_in, dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z );
-		return dz_in;
+		this->gpu_dz = dz_;
+		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
+		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
 	TensorObject<float> getOutFromGPU()
 	{
 		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
 		return out;
-	}
-
-	TensorObject<float> getDzFromGPU(){
-		gpu_cuda::cudaGetArray( dz.data, gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
-		return dz;
-	}
-
-	void clearArrayGPU(float *dz_)
-	{
-		this->gpu_dz = dz_;
-		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
-		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
 #endif
@@ -375,6 +317,65 @@ struct LayerDense
 		total_size += size;
 		cout << "- LayerDense             : " << to_string(total_size) << " bytes read." << endl;
 	}
+
+#if DEBUG
+
+	TensorObject<float> getWeights()
+	{
+		return weights;
+	}
+
+	TensorObject<float> getWeightsFromGPU()
+	{
+		gpu_cuda::cudaGetArray( weights.data, gpu_weights, weights.size.b * weights.size.x * weights.size.y * weights.size.z );
+		return weights;
+	}
+
+	TensorObject<float> getBiases()
+	{
+		return biases;
+	}
+
+	TensorObject<float> getBiasesFromGPU()
+	{
+		gpu_cuda::cudaGetArray( biases.data, gpu_biases, biases.size.b * biases.size.x * biases.size.y * biases.size.z );
+		return biases;
+	}
+
+	TensorObject<float> getDW()
+	{
+		return dW;
+	}
+
+	TensorObject<float> getDWFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dW.data, gpu_dW, dW.size.b * dW.size.x * dW.size.y * dW.size.z );
+		return dW;
+	}
+
+	TensorObject<float> getDB()
+	{
+		return dB;
+	}
+
+	TensorObject<float> getDBFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dB.data, gpu_dB, dB.size.b * dB.size.x * dB.size.y * dB.size.z );
+		return dB;
+	}
+
+	TensorObject<float> getDzInFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dz_in.data, gpu_dz_in, dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z );
+		return dz_in;
+	}
+
+	TensorObject<float> getDzFromGPU(){
+		gpu_cuda::cudaGetArray( dz.data, gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
+		return dz;
+	}
+
+#endif
 
 };
 #pragma pack(pop)
