@@ -11,11 +11,14 @@ extern vector<CaseObject> readCases(string data_json_path, string model_json_pat
 
 float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays )
 {
+	float value = 0.0;
 #ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays, dzArrays );
+	value = trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays, dzArrays );
+// #endif
 #else
-	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
+	value = trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
 #endif
+	return value;
 }
 
 float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, vector<float *>& outputArrays, vector<float *>& dzArrays ){
@@ -63,7 +66,9 @@ void classification(int argc, char **argv)
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, parameter_object->learning_rate, parameter_object->weights_decay, parameter_object->momentum);
 	printf("\n");
 	long step = 0;
+
 	if(checkpoint_path.length()>0){
+		cout << checkpoint_path << endl;
 		step = loadLayersWeights( layers, checkpoint_path );
 	}
 
@@ -86,16 +91,20 @@ void classification(int argc, char **argv)
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
 		float *gpu_layer_output_array = gpu_cuda::cudaMakeArray( NULL, o_size );
-		layers[i]->gpu_out = gpu_layer_output_array;
+		// layers[i]->gpu_out = gpu_layer_output_array;
+		// ((LayerDense*)layers[0])->printParams();
 		outputArrays.push_back(gpu_layer_output_array);
 
 		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
 		float *gpu_layer_dz_array = gpu_cuda::cudaMakeArray( NULL, dz_size );
-		layers[i]->gpu_dz = gpu_layer_dz_array;
+		// layers[i]->gpu_dz = gpu_layer_dz_array;
 		dzArrays.push_back(gpu_layer_dz_array);
 	}
 
 #endif
+
+
+
 
 	while( step < 10000 ){
 
@@ -116,6 +125,7 @@ void classification(int argc, char **argv)
 			cout << "Saving weights to " << filename << " ..." << endl;
 			saveLayersWeights(step, layers, filename);
 		}
+
 		if (step % parameter_object->save_latest_span == 0){
 			string filename        = "checkpoints/" + data_model_name + "_latest.model";
 			saveLayersWeights(step, layers, filename);

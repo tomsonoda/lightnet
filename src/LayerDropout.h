@@ -92,7 +92,7 @@ struct LayerDropout
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
-#else
+#endif
 	// CPU
 	void forward( TensorObject<float>& in )
 	{
@@ -127,7 +127,7 @@ struct LayerDropout
 
 	}
 
-#endif
+// #endif
 
 };
 #pragma pack(pop)

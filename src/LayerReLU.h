@@ -84,7 +84,7 @@ struct LayerReLU
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
-#else
+#endif
 
 	void forward( TensorObject<float>& in )
 	{
@@ -115,7 +115,7 @@ struct LayerReLU
 		}
 	}
 
-#endif
+// #endif
 
 };
 

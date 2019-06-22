@@ -90,7 +90,7 @@ struct LayerDetectObjects
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
-#else
+#endif
 
 	void forward( TensorObject<float>& in )
 	{
@@ -136,7 +136,7 @@ struct LayerDetectObjects
 		}
 	}
 
-#endif
+// #endif
 
 	float activator_function( float x )
 	{

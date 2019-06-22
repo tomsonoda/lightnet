@@ -43,7 +43,7 @@ static void printTensor( TensorObject<float>& data )
 		for ( int z = 0; z < mz; ++z ){
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
-					printf( "%.2f \t", (float)data( b, x, y, z ) );
+					printf( "%.4f \t", (float)data( b, x, y, z ) );
 				}
 				printf( "\n" );
 			}
@@ -279,29 +279,40 @@ static float trainNetworkGPU(
 	vector<float *>& dzArrays
 	)
 {
+
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
-	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
-
-	float *gpu_in_array = nullptr;
-	float *gpu_out_array = nullptr;
-
-	gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
+	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
+
+	// printf("########---CPU in data\n");
+	// printTensor(data);
+	//
+	// printf("########---GPU in data\n");
+	// TensorObject<float> array( data.size.b, data.size.x, data.size.y, data.size.z );
+	// gpu_cuda::cudaGetArray( array.data, gpu_in_array, in_size );
+	// printTensor(array);
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
 		}else{
-			forwardGPU( layers[i], layers[i-1]->gpu_out, outputArrays[i] );
-			// int o_size = layers[i-1]->out.size.b * layers[i-1]->out.size.x * layers[i-1]->out.size.y * layers[i-1]->out.size.z;
-			// printGPUArray(layers[i-1]->gpu_out, o_size);
+			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i] );
 		}
 	}
+
+	// printf("########---CPU out\n");
+	// printTensor(layers[0]->out);
+	//
+	// printf("########   GPU out\n");
+	// TensorObject<float> gpu_output_data = ((LayerDense *)layers[0])->getOutFromGPU();
+	// printTensor(gpu_output_data);
 
   TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
 
-	gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
+
+	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
+	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < (int)(layers.size()); ++i ){
@@ -312,13 +323,59 @@ static float trainNetworkGPU(
 		if ( i == (int)(layers.size()) - 1 ){
 			backwardGPU( layers[i], gpu_out_array, dzArrays[i] );
 		}else{
-			backwardGPU( layers[i], layers[i+1]->gpu_dz, dzArrays[i] );
+			backwardGPU( layers[i], dzArrays[i+1], dzArrays[i] );
 		}
 	}
+
+	// printf("########---CPU dz\n");
+	// printTensor(layers[0]->dz);
+	//
+	// TensorObject<float> dz_data = getDzFromGPU(layers[0]);
+	// printf("########   GPU dz\n");
+	// printTensor(dz_data);
+
+	// printf("########---CPU dW\n");
+	// TensorObject<float> dw_data_cpu = ((LayerDense *)(layers[0]))->getDW();
+	// printTensor(dw_data_cpu);
+	// //
+	// printf("########   GPU dW\n");
+	// TensorObject<float> dw_data = ((LayerDense *)(layers[0]))->getDWFromGPU();
+	// printTensor(dw_data);
+
+	// printf("########---CPU dB\n");
+	// TensorObject<float> db_data_cpu = ((LayerDense *)(layers[0]))->getDB();
+	// printTensor(db_data_cpu);
+	//
+	// printf("########   GPU dB\n");
+	// TensorObject<float> db_data = ((LayerDense *)(layers[0]))->getDBFromGPU();
+	// printTensor(db_data);
+	//
+	// printf("########---CPU dz_in\n");
+	// printTensor(layers[0]->dz_in);
+	//
+	// printf("########   GPU dz_in\n");
+	// TensorObject<float> dz_in_data = ((LayerDense *)(layers[0]))->getDzInFromGPU();
+	// printTensor(dz_in_data);
 
 	for ( unsigned int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );
 	}
+
+	// printf("########---CPU Weights\n");
+	// TensorObject<float> w_data_cpu = ((LayerDense *)(layers[0]))->getWeights();
+	// printTensor(w_data_cpu);
+
+	// printf("########   GPU Weights\n");
+	// TensorObject<float> w_data = ((LayerDense *)(layers[0]))->getWeightsFromGPU();
+	// printTensor(w_data);
+
+	// printf("########---CPU biases\n");
+	// TensorObject<float> b_data_cpu = ((LayerDense *)(layers[0]))->getBiases();
+	// printTensor(b_data_cpu);
+	//
+	// printf("########   GPU biases\n");
+	// TensorObject<float> b_data = ((LayerDense *)(layers[0]))->getBiasesFromGPU();
+	// printTensor(b_data);
 
 	if(optimizer=="mse"){
 
@@ -369,14 +426,11 @@ static float testNetworkGPU(
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
 		}else{
-			forwardGPU( layers[i], layers[i-1]->gpu_out, outputArrays[i] );
+			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i] );
 		}
 	}
 
-	int out_size = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
-	TensorObject<float> output_data = TensorObject<float>(expected.size.b, expected.size.x, expected.size.y, expected.size.z);
-	gpu_cuda::cudaGetArray( output_data.data, layers.back()->gpu_out, out_size );
-
+  TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
 
 	if(optimizer=="mse"){
@@ -445,6 +499,7 @@ static void backward( LayerObject* layer, TensorObject<float>& dz_next_layer, Th
 			assert( false );
 	}
 }
+
 
 static void updateWeights( LayerObject* layer )
 {

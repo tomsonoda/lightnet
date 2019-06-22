@@ -44,6 +44,7 @@ struct LayerSoftmax
 	{
 		gpu_in = in;
 		gpu_out = out;
+		// forward();
 		forwardGPU();
 	}
 
@@ -60,6 +61,9 @@ struct LayerSoftmax
 	{
 		this->gpu_dz = dz;
 		backwardGPU( dz_next_layer );
+		// TensorObject<float> dz_next_layer_cpu = TensorObject<float>(out.size.b, out.size.x, out.size.y, out.size.z);
+		// gpu_cuda::cudaGetArray( dz_next_layer_cpu.data, dz_next_layer, dz_next_layer_cpu.size.b*dz_next_layer_cpu.size.x*dz_next_layer_cpu.size.y*dz_next_layer_cpu.size.z );
+		// backward( dz_next_layer_cpu );
 	}
 
 	void backwardGPU( float* dz_next_layer )
@@ -73,14 +77,21 @@ struct LayerSoftmax
 		return out;
 	}
 
+	TensorObject<float> getDzFromGPU(){
+		gpu_cuda::cudaGetArray( dz.data, gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
+		return dz;
+	}
+
 	void clearArrayGPU(float *dz_)
 	{
 		this->gpu_dz = dz_;
 		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
+		dz_in.clear();
+		dz.clear();
 	}
 
-#else
+#endif
 
 	void forward( TensorObject<float>& in )
 	{
@@ -129,6 +140,6 @@ struct LayerSoftmax
 			dz.data[i] += dz_in.data[i];
 		}
 	}
-#endif
+// #endif
 };
 #pragma pack(pop)

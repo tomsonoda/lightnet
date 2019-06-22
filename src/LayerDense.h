@@ -14,7 +14,7 @@ namespace gpu_cuda {
 	float *cudaMakeArray( float *cpu_array, int N );
 	void cudaClearArray( float *gpu_array, int N );
 	void denseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z );
-	void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, int momentum );
+	void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float learning_rate, float momentum );
 	void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float momentum, float decay );
 }
 #endif
@@ -115,8 +115,11 @@ struct LayerDense
 
 	void forwardGPU( float *in, float *out )
 	{
-		gpu_in = in;
-		gpu_out = out;
+		gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
+
+		this->gpu_in = in;
+		this->gpu_out = out;
+		forward();
 		forwardGPU();
 	}
 
@@ -127,11 +130,16 @@ struct LayerDense
 
 	void updateWeightsGPU()
 	{
+		updateWeights();
+		// printf("momentum = %lf\n", _momentum);
 		gpu_cuda::denseUpdateWeightsGPU( gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, lr, _momentum );
 	}
 
 	void backwardGPU( float* dz_next_layer, float *dz )
 	{
+		gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		backward();
+
 		this->gpu_dz = dz;
 		backwardGPU( dz_next_layer );
 	}
@@ -143,10 +151,65 @@ struct LayerDense
 		gpu_cuda::denseBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, _momentum, _decay );
 	}
 
+	TensorObject<float> getWeights()
+	{
+		return weights;
+	}
+
+	TensorObject<float> getWeightsFromGPU()
+	{
+		gpu_cuda::cudaGetArray( weights.data, gpu_weights, weights.size.b * weights.size.x * weights.size.y * weights.size.z );
+		return weights;
+	}
+
+	TensorObject<float> getBiases()
+	{
+		return biases;
+	}
+
+	TensorObject<float> getBiasesFromGPU()
+	{
+		gpu_cuda::cudaGetArray( biases.data, gpu_biases, biases.size.b * biases.size.x * biases.size.y * biases.size.z );
+		return biases;
+	}
+
+	TensorObject<float> getDW()
+	{
+		return dW;
+	}
+
+	TensorObject<float> getDWFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dW.data, gpu_dW, dW.size.b * dW.size.x * dW.size.y * dW.size.z );
+		return dW;
+	}
+
+	TensorObject<float> getDB()
+	{
+		return dB;
+	}
+
+	TensorObject<float> getDBFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dB.data, gpu_dB, dB.size.b * dB.size.x * dB.size.y * dB.size.z );
+		return dB;
+	}
+
+	TensorObject<float> getDzInFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dz_in.data, gpu_dz_in, dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z );
+		return dz_in;
+	}
+
 	TensorObject<float> getOutFromGPU()
 	{
 		gpu_cuda::cudaGetArray( out.data, gpu_out, out.size.b*out.size.x*out.size.y*out.size.z );
 		return out;
+	}
+
+	TensorObject<float> getDzFromGPU(){
+		gpu_cuda::cudaGetArray( dz.data, gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
+		return dz;
 	}
 
 	void clearArrayGPU(float *dz_)
@@ -156,7 +219,7 @@ struct LayerDense
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
-#else
+#endif
 // CPU
 	void forward( TensorObject<float>& in )
 	{
@@ -207,7 +270,7 @@ struct LayerDense
 		std::vector< std::future<int> > results;
 
 		memset( dW.data, 0, dw_data_size );
-		memset( dB.data, 0, out.size.x );
+		memset( dB.data, 0, out.size.x * sizeof(float) );
 		for ( int n = 0; n < out.size.x; ++n ){
 			results.emplace_back( thread_pool.enqueue([&, n] {
 
@@ -243,7 +306,45 @@ struct LayerDense
 		results.erase(results.begin(), results.end());
 	}
 
-#endif
+	void backward()
+	{
+		memset( dW.data, 0, dw_data_size );
+		memset( dB.data, 0, out.size.x * sizeof(float) );
+
+		// for ( int n = 0; n < out.size.x; ++n ){
+		// 	for( int b = 0; b < in.size.b; ++b ){
+		// 		GradientObject& grad = gradients[ n*in.size.b + b ];
+		// 		// printf("CPU: grad=%lf, prev_grad=%lf\n", grad.grad, grad.grad_prev);
+		// 	}
+		// }
+
+		for ( int n = 0; n < out.size.x; ++n ){
+
+				for ( int z = 0; z < in.size.z; ++z ){
+					for ( int j = 0; j < in.size.y; ++j ){
+						for ( int i = 0; i < in.size.x; ++i ){
+							int m = map( { 0, i, j, z } );
+
+							for( int b = 0; b < in.size.b; ++b ){
+								GradientObject& grad = gradients[ n*in.size.b + b ];
+								float dzin = dz_in( b, n, 0, 0 );
+								float w = weights(0, m, n, 0);
+								grad.grad = dzin;
+								dz( b, i, j, z ) += dzin * w;
+								dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * _momentum) + (_decay * w);
+							}
+						}
+					}
+				}
+
+				for( int b = 0; b < in.size.b; ++b ){
+					dB( 0, 0, n, 0 ) += dz_in( b, n, 0, 0 );
+					// printf("dB=%lf dz_in=%lf\n", dB( 0, 0, n, 0 ), dz_in( b, n, 0, 0 ));
+				}
+		}
+	}
+
+// #endif
 
 	void saveWeights( ofstream& fout )
 	{

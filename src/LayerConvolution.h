@@ -223,7 +223,7 @@ struct LayerConvolution
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
-#else
+#endif
 	// CPU
 
 	void forward( TensorObject<float>& in,  ThreadPool& thread_pool )
@@ -377,7 +377,7 @@ struct LayerConvolution
 
 	}
 
-#endif
+// #endif
 
 	void saveWeights( ofstream& fout )
 	{

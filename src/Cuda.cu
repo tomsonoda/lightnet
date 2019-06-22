@@ -47,16 +47,9 @@ void cudaFillGpuArray( float *array, float val, int N )
   cudaCheckError(cudaPeekAtLastError());
 }
 
-void cudaMakeArrayVoid( float*& gpu_array, int N )
-{
-  size_t size = N * sizeof(float);
-  cudaError_t status = cudaMalloc((void **)&gpu_array, size);
-  cudaCheckError(status);
-  cudaFillGpuArray( gpu_array,  0, N );
-}
-
 float *cudaMakeArray( float *cpu_array, int N )
 {
+  
   float *gpu_array;
   size_t size = N * sizeof(float);
   cudaError_t status = cudaMalloc((void **)&gpu_array, size);
