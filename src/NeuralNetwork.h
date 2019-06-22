@@ -300,16 +300,18 @@ static float trainNetworkGPU(
 		}
 	}
 
-	// printf("########---CPU out\n");
-	// printTensor(layers[0]->out);
-	//
-	// printf("########   GPU out\n");
-	// TensorObject<float> gpu_output_data = ((LayerDense *)layers[0])->getOutFromGPU();
-	// printTensor(gpu_output_data);
+#ifdef DEBUG
+
+	printf("########---CPU out\n");
+	printTensor(layers[1]->out);
+	printf("########   GPU out\n");
+	TensorObject<float> gpu_output_data = ((LayerDense *)layers[1])->getOutFromGPU();
+	printTensor(gpu_output_data);
+
+#endif
 
   TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
-
 
 	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
 	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
