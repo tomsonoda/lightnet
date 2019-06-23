@@ -302,11 +302,11 @@ static float trainNetworkGPU(
 
 #ifdef DEBUG
 
-	printf("########---CPU out\n");
-	printTensor(layers[1]->out);
-	printf("########   GPU out\n");
-	TensorObject<float> gpu_output_data = ((LayerDense *)layers[1])->getOutFromGPU();
-	printTensor(gpu_output_data);
+	// printf("########---CPU out\n");
+	// printTensor(layers[1]->out);
+	// printf("########   GPU out\n");
+	// TensorObject<float> gpu_output_data = ((LayerDense *)layers[1])->getOutFromGPU();
+	// printTensor(gpu_output_data);
 
 #endif
 
