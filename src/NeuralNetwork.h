@@ -43,7 +43,7 @@ static void printTensor( TensorObject<float>& data )
 		for ( int z = 0; z < mz; ++z ){
 			for ( int y = 0; y < my; y++ ){
 				for ( int x = 0; x < mx; x++ ){
-					printf( "%.4f \t", (float)data( b, x, y, z ) );
+					printf( "%.3f \t", (float)data( b, x, y, z ) );
 				}
 				printf( "\n" );
 			}
@@ -303,9 +303,9 @@ static float trainNetworkGPU(
 #ifdef DEBUG
 
 	// printf("########---CPU out\n");
-	// printTensor(layers[1]->out);
+	// printTensor(layers[0]->out);
 	// printf("########   GPU out\n");
-	// TensorObject<float> gpu_output_data = ((LayerDense *)layers[1])->getOutFromGPU();
+	// TensorObject<float> gpu_output_data = ((LayerConvolution *)layers[0])->getOutFromGPU();
 	// printTensor(gpu_output_data);
 
 #endif
@@ -329,10 +329,11 @@ static float trainNetworkGPU(
 		}
 	}
 
+#ifdef DEBUG
 	// printf("########---CPU dz\n");
 	// printTensor(layers[0]->dz);
 	//
-	// TensorObject<float> dz_data = getDzFromGPU(layers[0]);
+	// TensorObject<float> dz_data = ((LayerConvolution *)(layers[0]))->getDzFromGPU();
 	// printf("########   GPU dz\n");
 	// printTensor(dz_data);
 
@@ -358,6 +359,8 @@ static float trainNetworkGPU(
 	// printf("########   GPU dz_in\n");
 	// TensorObject<float> dz_in_data = ((LayerDense *)(layers[0]))->getDzInFromGPU();
 	// printTensor(dz_in_data);
+
+#endif
 
 	for ( unsigned int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );

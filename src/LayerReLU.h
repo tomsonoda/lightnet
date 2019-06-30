@@ -84,6 +84,21 @@ struct LayerReLU
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
+	#if DEBUG
+
+		TensorObject<float> getDzInFromGPU()
+		{
+			gpu_cuda::cudaGetArray( dz_in.data, gpu_dz_in, dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z );
+			return dz_in;
+		}
+
+		TensorObject<float> getDzFromGPU(){
+			gpu_cuda::cudaGetArray( dz.data, gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
+			return dz;
+		}
+
+	#endif
+
 #endif
 
 	void forward( TensorObject<float>& in )
