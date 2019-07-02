@@ -123,6 +123,9 @@ struct LayerMaxPool
 	{
 		gpu_in = in;
 		gpu_out = out;
+		// gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
+		// forward();
+
 		forwardGPU();
 	}
 
@@ -137,6 +140,9 @@ struct LayerMaxPool
 
 	void backwardGPU( float* dz_next_layer, float *dz )
 	{
+		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		// backward();
+
 		this->gpu_dz = dz;
 		backwardGPU( dz_next_layer );
 	}
@@ -153,10 +159,28 @@ struct LayerMaxPool
 
 	void clearArrayGPU(float *dz_)
 	{
+		// dz_in.clear();
+		// dz.clear();
+
 		this->gpu_dz = dz_;
 		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
+
+	#if DEBUG
+
+	TensorObject<float> getDzInFromGPU()
+	{
+		gpu_cuda::cudaGetArray( dz_in.data, gpu_dz_in, dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z );
+		return dz_in;
+	}
+
+	TensorObject<float> getDzFromGPU(){
+		gpu_cuda::cudaGetArray( dz.data, gpu_dz, dz.size.b * dz.size.x * dz.size.y * dz.size.z );
+		return dz;
+	}
+
+	#endif
 
 #endif
 // CPU
@@ -203,6 +227,7 @@ struct LayerMaxPool
 			for ( int y = 0; y < in.size.y; ++y ){
 				for ( int x = 0; x < in.size.x; ++x ){
 					range_t rn = map_to_output( x, y );
+
 					for ( int z = 0; z < in.size.z; ++z ){
 						float sum_error = 0;
 						float in_value = in( b, x, y, z );
@@ -218,6 +243,43 @@ struct LayerMaxPool
 			}
 		}
 	}
+
+
+	void backward()
+	{
+		for ( int b = 0; b < in.size.b; ++b ){
+			for ( int y = 0; y < in.size.y; ++y ){
+				for ( int x = 0; x < in.size.x; ++x ){
+					range_t rn = map_to_output( x, y );
+
+					// if(rn.min_y!=rn.max_y || rn.min_x!=rn.max_x){
+					// 	printf("*CPU (x,y)=(%d, %d), rn.min.y=%d, rn.max.y=%d, rn.min.x=%d, rn.max.x=%d\n", x, y, rn.min_y, rn.max_y, rn.min_x, rn.max_x);
+					// }
+
+					for ( int z = 0; z < in.size.z; ++z ){
+
+						float sum_error = 0;
+						float in_value = in( b, x, y, z );
+
+						for ( int j = rn.min_y; j <= rn.max_y; ++j ){
+							for ( int i = rn.min_x; i <= rn.max_x; ++i ){
+								// if(in_value == out( b, i, j, z ) && i==3 && j==13){
+								// 	printf("*CPU in_value=%f, i=%d, j=%d, z=%d\n", in_value, i, j, z);
+								// }
+								int is_max = in_value == out( b, i, j, z ) ? 1 : 0;
+								sum_error += is_max * dz_in( b, i, j, z );
+							}
+						}
+						dz( b, x, y, z ) += sum_error;
+						// if(x==22 && z==5 && y==3){
+						// 	printf("*CPU dz=%f, sum_error=%f, x=%d, y=%d, z=%d\n", dz( b, x, y, z ), sum_error, x, y, z);
+						// }
+					}
+				}
+			}
+		}
+	}
+
 
 // #endif
 

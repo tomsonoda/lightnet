@@ -26,14 +26,14 @@ __global__ void calcMaxPoolForwardGPU(
     int mapped_x = x * stride;
     int mapped_y = y * stride;
 
-    float mval = -100000.0;
+    float mval = -1000000.0;
     for ( int j = 0; j < kernel_size; ++j ){
       for ( int i = 0; i < kernel_size; ++i ){
 
         int id_in = b * (in_size_z * in_size_x * in_size_y) +
           z * (in_size_x * in_size_y) +
-          (mapped_x + i) * (in_size_x) +
-          (mapped_y + j);
+          (mapped_y + j) * (in_size_x) +
+          (mapped_x + i);
 
         float v = in[id_in];
         if ( v > mval ){
@@ -43,13 +43,38 @@ __global__ void calcMaxPoolForwardGPU(
     }
     out[id_out] = mval;
   }
+
+  /* original
+  for ( int b = 0; b < in.size.b; ++b ){
+    for ( int z = 0; z < out.size.z; ++z ){
+      for ( int y = 0; y < out.size.y; ++y ){
+        for ( int x = 0; x < out.size.x; ++x ){
+          TensorCoordinate mapped = map_to_input( { 0, (uint16_t)x, (uint16_t)y, 0 }, 0 );
+          float mval = -FLT_MAX;
+          for ( int j = 0; j < kernel_size; ++j ){
+            for ( int i = 0; i < kernel_size; ++i ){
+              float v = in( b, mapped.x + i, mapped.y + j, z );
+              if ( v > mval ){
+                mval = v;
+              }
+            }
+          }
+          out( b, x, y, z ) = mval;
+        }
+      }
+    }
+  }
+
+  */
 }
 
-__global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, float *out, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int kernel_size, int stride ){
+__global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, float *out, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int kernel_size, int stride )
+{
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-  int id_dz = id;
 
   if ( id < batch_size * dz_size_x * dz_size_y * dz_size_z ){
+    int id_dz = id;
+
     int x = id % dz_size_x;
     id /= dz_size_x;
     int y = id % dz_size_y;
@@ -62,19 +87,33 @@ __global__ void calcMaxPoolBackwardGPU( float *dz_in, float *dz, float *in, floa
 
     float sum_error = 0;
     float in_value = in[id_dz];
+
+    // if(rn.min_y!=rn.max_y || rn.min_x!=rn.max_x){
+    //   printf("#GPU (x,y)=(%d, %d), rn.min.y=%d, rn.max.y=%d, rn.min.x=%d, rn.max.x=%d\n", x, y, rn.min_y, rn.max_y, rn.min_x, rn.max_x);
+    // }
+
     for ( int j = rn.min_y; j <= rn.max_y; ++j ){
       for ( int i = rn.min_x; i <= rn.max_x; ++i ){
 
-        int out_index = (b * (dz_in_size_x * dz_in_size_y * dz_in_size_z) +
+        int out_index = b * (dz_in_size_x * dz_in_size_y * dz_in_size_z) +
           z * (dz_in_size_x * dz_in_size_y) +
           j * (dz_in_size_x) +
-          i );
+          i ;
 
-        int is_max = in_value == out[out_index] ? 1 : 0;
+        // if(in_value == out[out_index]  && i==3 && j==13){
+        //   printf("#GPU in_value=%f, i=%d, j=%d, z=%d\n", in_value, i, j, z);
+        // }
+        int is_max = (in_value == out[out_index] ? 1 : 0);
         sum_error += is_max * dz_in[out_index];
+
       }
     }
+    //   printf("#GPU sum_error=%f, x=%d, y=%d, z=%d\n", sum_error, x, y, z);
     dz[id_dz] += sum_error;
+    // if(x==22 && z==5 && y==3){
+    //   printf("#GPU dz=%f, sum_error=%f, x=%d, y=%d, z=%d\n", dz[id_dz], sum_error, x, y, z);
+    // }
+
   }
 
   /*

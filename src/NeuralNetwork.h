@@ -303,9 +303,9 @@ static float trainNetworkGPU(
 #ifdef DEBUG
 
 	// printf("########---CPU out\n");
-	// printTensor(layers[0]->out);
+	// printTensor(layers[2]->out);
 	// printf("########   GPU out\n");
-	// TensorObject<float> gpu_output_data = ((LayerConvolution *)layers[0])->getOutFromGPU();
+	// TensorObject<float> gpu_output_data = ((LayerMaxPool *)layers[2])->getOutFromGPU();
 	// printTensor(gpu_output_data);
 
 #endif
@@ -318,7 +318,7 @@ static float trainNetworkGPU(
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < (int)(layers.size()); ++i ){
-		clearArrayGPU( layers[i], dzArrays[i]  );
+		clearArrayGPU( layers[i], dzArrays[i] );
 	}
 
 	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
@@ -331,33 +331,17 @@ static float trainNetworkGPU(
 
 #ifdef DEBUG
 	// printf("########---CPU dz\n");
-	// printTensor(layers[0]->dz);
+	// printTensor(layers[2]->dz);
 	//
-	// TensorObject<float> dz_data = ((LayerConvolution *)(layers[0]))->getDzFromGPU();
+	// TensorObject<float> dz_data = ((LayerMaxPool *)(layers[2]))->getDzFromGPU();
 	// printf("########   GPU dz\n");
 	// printTensor(dz_data);
 
-	// printf("########---CPU dW\n");
-	// TensorObject<float> dw_data_cpu = ((LayerDense *)(layers[0]))->getDW();
-	// printTensor(dw_data_cpu);
-	// //
-	// printf("########   GPU dW\n");
-	// TensorObject<float> dw_data = ((LayerDense *)(layers[0]))->getDWFromGPU();
-	// printTensor(dw_data);
-
-	// printf("########---CPU dB\n");
-	// TensorObject<float> db_data_cpu = ((LayerDense *)(layers[0]))->getDB();
-	// printTensor(db_data_cpu);
-	//
-	// printf("########   GPU dB\n");
-	// TensorObject<float> db_data = ((LayerDense *)(layers[0]))->getDBFromGPU();
-	// printTensor(db_data);
-	//
 	// printf("########---CPU dz_in\n");
-	// printTensor(layers[0]->dz_in);
+	// printTensor(layers[2]->dz_in);
 	//
+	// TensorObject<float> dz_in_data = ((LayerMaxPool *)(layers[2]))->getDzInFromGPU();
 	// printf("########   GPU dz_in\n");
-	// TensorObject<float> dz_in_data = ((LayerDense *)(layers[0]))->getDzInFromGPU();
 	// printTensor(dz_in_data);
 
 #endif
@@ -366,13 +350,6 @@ static float trainNetworkGPU(
 		updateWeightsGPU( layers[i] );
 	}
 
-	// printf("########---CPU Weights\n");
-	// TensorObject<float> w_data_cpu = ((LayerDense *)(layers[0]))->getWeights();
-	// printTensor(w_data_cpu);
-
-	// printf("########   GPU Weights\n");
-	// TensorObject<float> w_data = ((LayerDense *)(layers[0]))->getWeightsFromGPU();
-	// printTensor(w_data);
 
 	// printf("########---CPU biases\n");
 	// TensorObject<float> b_data_cpu = ((LayerDense *)(layers[0]))->getBiases();

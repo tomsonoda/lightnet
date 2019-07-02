@@ -68,7 +68,7 @@ __global__ void calcConvolutionForwardGPU( float *out, float *padded_in, float *
 
           int padded_in_index = b * (padded_in_size_x * padded_in_size_y * padded_in_size_z) + z * (padded_in_size_x * padded_in_size_y) + (mapped_y + j) * (padded_in_size_x) + (mapped_x + i);
           int filter_index = z * (kernel_size * kernel_size) + j * kernel_size + i;
-          
+
           sum += filters[filter * filter_size + filter_index] * padded_in[padded_in_index];
         }
       }
@@ -206,7 +206,7 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
             int dz_in_index = b * (dz_in_size_z * dz_in_size_x * dz_in_size_y) + k * (dz_in_size_x * dz_in_size_y) + j * dz_in_size_x + i ;
             float d = dz_in[ dz_in_index ];
 
-            int filter_index = k * filter_size + (z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx);
+            int filter_index = k * (padded_in_size_z * kernel_size * kernel_size ) + (z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx);
             sum_error += filters[filter_index] * d;
 
             int filter_grad_index = (k * filter_size + z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx ) * 2; // grad=0, grad_prev=1
@@ -225,36 +225,53 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
   }
 
   /* original code
-  for ( int b = 0; b < in.size.b; b++ ){
-    for ( int x = 0; x < padded_in.size.x; x++ ){
-      for ( int y = 0; y < padded_in.size.y; y++ ){
+  int z_max = (int)filters.size();
+
+  for ( int b = 0; b < in.size.b; ++b ){
+    // code optimization.
+    int dz_in_xy = dz_in.size.y * dz_in.size.x;
+    int b_dz_in_xyz = b * dz_in.size.z * dz_in_xy;
+    int padded_in_xy = padded_in.size.y * padded_in.size.x;
+    int b_padded_in_xyz = b * padded_in.size.z * padded_in_xy;
+
+    for ( int y = 0; y < (padded_in.size.y - padding); ++y ){
+      for ( int x = 0; x < (padded_in.size.x - padding); ++x ){
+
         tensor_range_t rn = map_to_output( x, y );
 
-        for ( int z = 0; z < in.size.z; z++ ){
+        for ( int z = 0; z < in.size.z; ++z ){
 
-          float sum_error = 0;
-          for ( int i = rn.min_x; i <= rn.max_x; i++ ){
-            int minx = i * stride;
-            for ( int j = rn.min_y; j <= rn.max_y; j++ ){
-              int miny = j * stride;
-              int x_minx = x - minx;
-              int y_miny = y - miny;
-              for ( int k = rn.min_z; k <= rn.max_z; k++ ){
-                float d = dz_in( b, i, j, k );
-                sum_error += filters[k].get( 0, x_minx, y_miny, z ) * d;
-                filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in( b, x, y, z ) * d;
+          float sum = 0;
+          // float padded_in_value = padded_in( b, x, y, z );
+          float padded_in_value = padded_in.data[( b_padded_in_xyz ) + (z * padded_in_xy) + (y * padded_in.size.x) + x];
+
+          for ( int j = rn.min_y; j <= rn.max_y; ++j ){
+            int y_miny = y - j * stride;
+
+            for ( int i = rn.min_x; i <= rn.max_x; ++i ){
+              int x_minx = x - i * stride;
+
+              int xyz = z * kernel_size_2 + y_miny * kernel_size + x_minx; // ( 0, x_minx, y_miny, z )
+
+              for ( int k = 0; k < z_max; ++k ){
+                // float d = dz_in( b, i, j, k );
+                float d = dz_in.data[ b_dz_in_xyz + (k * dz_in_xy) + (j * dz_in.size.x) + i];
+                // sum += filters[k].get( 0, x_minx, y_miny, z ) * d;
+                sum += filters[k].data[xyz] * d;
+                // filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
+                filter_grads[k].data[xyz].grad += padded_in_value * d;
               }
             }
           }
 
-          if(x>=padding && y>=padding && x-padding<in.size.x && y-padding<in.size.y ){
-            dz( b, x-padding, y-padding, z ) += sum_error;
+          if( x>=padding && y>=padding ){
+            dz( b, x - padding, y - padding, z ) += sum;
           }
-
         }
 
       }
     }
+
   }
   */
 }
