@@ -138,6 +138,21 @@ struct LayerConvolution
 		gpu_filters = gpu_cuda::cudaMakeArray( filters_temp.data, filter_size * number_filters );
 		gpu_filter_grads = gpu_cuda::cudaMakeArray( NULL, filter_size * number_filters * 2 );
 
+		// OK
+		// TensorObject<float> gpu_filters_temp( number_filters, kernel_size, kernel_size, in.size.z );
+		// gpu_cuda::cudaGetArray( gpu_filters_temp.data, gpu_filters, gpu_filters_temp.size.b*gpu_filters_temp.size.x*gpu_filters_temp.size.y*gpu_filters_temp.size.z );
+		// for ( int a = 0; a < number_filters; ++a ){
+		// 	for ( int i = 0; i < kernel_size; ++i ){
+		// 		for ( int j = 0; j < kernel_size; ++j ){
+		// 			for ( int z = 0; z < in.size.z; ++z ){
+		// 				if(gpu_filters_temp( a, i, j, z ) != filters[a].get( 0, i, j, z )){
+		// 					printf("gpu_filters_temp and filters are not equal. %lf %lf\n", gpu_filters_temp( a, i, j, z ), filters[a].get( 0, i, j, z ));
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
 #endif
 
 	}
@@ -164,6 +179,7 @@ struct LayerConvolution
 					}
 				}
 			}
+
 #endif
 
 	TensorCoordinate map_to_input( TensorCoordinate out, int z )
@@ -251,7 +267,7 @@ struct LayerConvolution
 
 		#ifdef DEBUG
 
-		// OK padded_in
+		// OK padded_in, dz_in are equal between CPU and GPU
 		// TensorObject<float> padded_in_temp( padded_in.size.b, padded_in.size.x, padded_in.size.y, padded_in.size.z );
 		// gpu_cuda::cudaGetArray( padded_in_temp.data, gpu_padded_in, padded_in_temp.size.b*padded_in_temp.size.x*padded_in_temp.size.y*padded_in_temp.size.z );
 		// for ( int b = 0; b < padded_in.size.b; ++b ){
@@ -283,7 +299,10 @@ struct LayerConvolution
 		// 	}
 		// }
 
-		// OK grads
+		// NG grads: almost OK.
+		// TensorObject<float> grads_temp( number_filters, kernel_size, kernel_size, in.size.z*2 );
+		// gpu_cuda::cudaGetArray( grads_temp.data, gpu_filter_grads, grads_temp.size.b*grads_temp.size.x*grads_temp.size.y*grads_temp.size.z );
+		//
 		// TensorObject<float> grads_cpu_temp( number_filters, kernel_size, kernel_size, in.size.z*2 );
 		// for ( int a = 0; a < number_filters; a++ ){
 		// 	for ( int i = 0; i < kernel_size; ++i ){
@@ -293,40 +312,36 @@ struct LayerConvolution
 		// 				int index = (a * (in.size.z * kernel_size * kernel_size) + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
 		// 				grads_cpu_temp.data[index] = grad.grad;
 		// 				grads_cpu_temp.data[index+1] = grad.grad_prev;
+		//
+		// 				if( grad.grad != grads_temp.data[index] ){
+		// 					printf("gpu_grads are not equal. %lf %lf\n", grad.grad, grads_temp.data[index] );
+		// 				}
 		// 			}
 		// 		}
 		// 	}
 		// }
+
 		// printf("CPU grads ----\n");
 		// convPrintTensor(grads_cpu_temp);
 		//
-		// TensorObject<float> grads_temp( number_filters, kernel_size, kernel_size, in.size.z*2 );
-		// gpu_cuda::cudaGetArray( grads_temp.data, gpu_filter_grads, grads_temp.size.b*grads_temp.size.x*grads_temp.size.y*grads_temp.size.z );
 		// printf("GPU grads ####\n");
 		// convPrintTensor(grads_temp);
 
 		// NG
-		// TensorObject<float> filters_temp( number_filters, kernel_size, kernel_size, in.size.z );
-		TensorObject<float> gpu_filters_temp( number_filters, kernel_size, kernel_size, in.size.z );
-		gpu_cuda::cudaGetArray( gpu_filters_temp.data, gpu_filters, gpu_filters_temp.size.b*gpu_filters_temp.size.x*gpu_filters_temp.size.y*gpu_filters_temp.size.z );
-		for ( int a = 0; a < number_filters; ++a ){
-			for ( int i = 0; i < kernel_size; ++i ){
-				for ( int j = 0; j < kernel_size; ++j ){
-					for ( int z = 0; z < in.size.z; ++z ){
-						if(gpu_filters_temp( a, i, j, z ) != filters[a].get( 0, i, j, z )){
-							printf("gpu_filters_temp and filters are not equal. %lf %lf\n", gpu_filters_temp( a, i, j, z ), filters[a].get( 0, i, j, z ));
-							break;
-						}
-						// filters_temp( a, i, j, z ) = filters[a].get( 0, i, j, z );
-					}
-				}
-			}
-		}
-		// printf("CPU filters ----\n");
-		// convPrintTensor(filters_temp);
-		//
-		// printf("GPU filters ####\n");
-		// convPrintTensor(gpu_filters_temp);
+		// TensorObject<float> gpu_filters_temp( number_filters, kernel_size, kernel_size, in.size.z );
+		// gpu_cuda::cudaGetArray( gpu_filters_temp.data, gpu_filters, gpu_filters_temp.size.b*gpu_filters_temp.size.x*gpu_filters_temp.size.y*gpu_filters_temp.size.z );
+		// for ( int a = 0; a < number_filters; ++a ){
+		// 	for ( int i = 0; i < kernel_size; ++i ){
+		// 		for ( int j = 0; j < kernel_size; ++j ){
+		// 			for ( int z = 0; z < in.size.z; ++z ){
+		// 				if(gpu_filters_temp( a, i, j, z ) != filters[a].get( 0, i, j, z )){
+		// 					printf("gpu_filters_temp and filters are not equal. %lf %lf\n", gpu_filters_temp( a, i, j, z ), filters[a].get( 0, i, j, z ));
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		#endif
 

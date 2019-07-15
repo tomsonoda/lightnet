@@ -284,14 +284,6 @@ static float trainNetworkGPU(
 	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
-	// printf("########---CPU in data\n");
-	// printTensor(data);
-	//
-	// printf("########---GPU in data\n");
-	// TensorObject<float> array( data.size.b, data.size.x, data.size.y, data.size.z );
-	// gpu_cuda::cudaGetArray( array.data, gpu_in_array, in_size );
-	// printTensor(array);
-
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
@@ -299,23 +291,6 @@ static float trainNetworkGPU(
 			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i] );
 		}
 	}
-
-#ifdef DEBUG
-
-	// printf("########---CPU out\n");
-	// printTensor(layers[0]->out);
-	// printf("########   GPU out\n");
-	// TensorObject<float> gpu_output_data = ((LayerConvolution *)layers[0])->getOutFromGPU();
-	// printTensor(gpu_output_data);
-
-	// printf("########---CPU padded_in\n");
-	// TensorObject<float> padded_in_data = ((LayerConvolution *)layers[0])->getPaddedIn();
-	// printTensor( padded_in_data );
-	// printf("########   GPU padded_in\n");
-	// TensorObject<float> gpu_padded_in_data = ((LayerConvolution *)layers[0])->getPaddedInFromGPU();
-	// printTensor(gpu_padded_in_data);
-
-#endif
 
   TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
@@ -328,17 +303,6 @@ static float trainNetworkGPU(
 		clearArrayGPU( layers[i], dzArrays[i] );
 	}
 
-#ifdef DEBUG
-	// OK
-	// printf("########---CPU dz\n");
-	// printTensor(layers[0]->dz);
-	//
-	// TensorObject<float> dz_data = ((LayerConvolution *)(layers[0]))->getDzFromGPU();
-	// printf("########   GPU dz\n");
-	// printTensor(dz_data);
-
-#endif
-
 	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
 		if ( i == (int)(layers.size()) - 1 ){
 			backwardGPU( layers[i], gpu_out_array, dzArrays[i] );
@@ -346,18 +310,6 @@ static float trainNetworkGPU(
 			backwardGPU( layers[i], dzArrays[i+1], dzArrays[i] );
 		}
 	}
-
-#ifdef DEBUG
-
-	// NG
-	// printf("########---CPU dz\n");
-	// printTensor(layers[0]->dz);
-	//
-	// TensorObject<float> dz_data = ((LayerConvolution *)(layers[0]))->getDzFromGPU();
-	// printf("########   GPU dz\n");
-	// printTensor(dz_data);
-
-#endif
 
 	for ( unsigned int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );

@@ -161,7 +161,6 @@ struct LayerMaxPool
 	{
 		// dz_in.clear();
 		// dz.clear();
-
 		this->gpu_dz = dz_;
 		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
