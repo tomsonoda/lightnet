@@ -303,10 +303,17 @@ static float trainNetworkGPU(
 #ifdef DEBUG
 
 	// printf("########---CPU out\n");
-	// printTensor(layers[2]->out);
+	// printTensor(layers[0]->out);
 	// printf("########   GPU out\n");
-	// TensorObject<float> gpu_output_data = ((LayerMaxPool *)layers[2])->getOutFromGPU();
+	// TensorObject<float> gpu_output_data = ((LayerConvolution *)layers[0])->getOutFromGPU();
 	// printTensor(gpu_output_data);
+
+	// printf("########---CPU padded_in\n");
+	// TensorObject<float> padded_in_data = ((LayerConvolution *)layers[0])->getPaddedIn();
+	// printTensor( padded_in_data );
+	// printf("########   GPU padded_in\n");
+	// TensorObject<float> gpu_padded_in_data = ((LayerConvolution *)layers[0])->getPaddedInFromGPU();
+	// printTensor(gpu_padded_in_data);
 
 #endif
 
@@ -321,6 +328,17 @@ static float trainNetworkGPU(
 		clearArrayGPU( layers[i], dzArrays[i] );
 	}
 
+#ifdef DEBUG
+	// OK
+	// printf("########---CPU dz\n");
+	// printTensor(layers[0]->dz);
+	//
+	// TensorObject<float> dz_data = ((LayerConvolution *)(layers[0]))->getDzFromGPU();
+	// printf("########   GPU dz\n");
+	// printTensor(dz_data);
+
+#endif
+
 	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
 		if ( i == (int)(layers.size()) - 1 ){
 			backwardGPU( layers[i], gpu_out_array, dzArrays[i] );
@@ -330,34 +348,20 @@ static float trainNetworkGPU(
 	}
 
 #ifdef DEBUG
+
+	// NG
 	// printf("########---CPU dz\n");
-	// printTensor(layers[2]->dz);
+	// printTensor(layers[0]->dz);
 	//
-	// TensorObject<float> dz_data = ((LayerMaxPool *)(layers[2]))->getDzFromGPU();
+	// TensorObject<float> dz_data = ((LayerConvolution *)(layers[0]))->getDzFromGPU();
 	// printf("########   GPU dz\n");
 	// printTensor(dz_data);
-
-	// printf("########---CPU dz_in\n");
-	// printTensor(layers[2]->dz_in);
-	//
-	// TensorObject<float> dz_in_data = ((LayerMaxPool *)(layers[2]))->getDzInFromGPU();
-	// printf("########   GPU dz_in\n");
-	// printTensor(dz_in_data);
 
 #endif
 
 	for ( unsigned int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );
 	}
-
-
-	// printf("########---CPU biases\n");
-	// TensorObject<float> b_data_cpu = ((LayerDense *)(layers[0]))->getBiases();
-	// printTensor(b_data_cpu);
-	//
-	// printf("########   GPU biases\n");
-	// TensorObject<float> b_data = ((LayerDense *)(layers[0]))->getBiasesFromGPU();
-	// printTensor(b_data);
 
 	if(optimizer=="mse"){
 

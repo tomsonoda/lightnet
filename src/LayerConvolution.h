@@ -106,6 +106,7 @@ struct LayerConvolution
 		memset( padded_in.data, 0, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
 
 #ifdef GPU_CUDA
+
 		TensorObject<float> filters_temp( number_filters, kernel_size, kernel_size, in_size.z );
 		filter_size = 1 * kernel_size * kernel_size * in_size.z;
 		for ( int a = 0; a < number_filters; a++ ){
@@ -135,11 +136,35 @@ struct LayerConvolution
 		gpu_padded_in = gpu_cuda::cudaMakeArray( padded_in.data, padded_in_size );
 
 		gpu_filters = gpu_cuda::cudaMakeArray( filters_temp.data, filter_size * number_filters );
-		gpu_filter_grads = gpu_cuda::cudaMakeArray( NULL, filter_size * 2 * number_filters );
+		gpu_filter_grads = gpu_cuda::cudaMakeArray( NULL, filter_size * number_filters * 2 );
 
 #endif
 
 	}
+
+#ifdef DEBUG
+
+			void convPrintTensor( TensorObject<float>& data )
+			{
+				int mx = data.size.x;
+				int my = data.size.y;
+				int mz = data.size.z;
+				int mb = data.size.b;
+
+				for ( int b = 0; b < mb; ++b ){
+					printf( "[Batch %d]\n", b );
+					for ( int z = 0; z < mz; ++z ){
+						for ( int y = 0; y < my; y++ ){
+							for ( int x = 0; x < mx; x++ ){
+								printf( "%.3f \t", (float)data( b, x, y, z ) );
+							}
+							printf( "\n" );
+						}
+						printf( "\n" );
+					}
+				}
+			}
+#endif
 
 	TensorCoordinate map_to_input( TensorCoordinate out, int z )
 	{
@@ -194,11 +219,12 @@ struct LayerConvolution
 
 	void forwardGPU( float *in, float *out )
 	{
-		// gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
-		// forward();
-
 		gpu_in = in;
 		gpu_out = out;
+
+		gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
+		forward();
+
 		forwardGPU();
 	}
 
@@ -209,18 +235,101 @@ struct LayerConvolution
 
 	void updateWeightsGPU()
 	{
-		// updateWeights();
+		updateWeights();
 
 		gpu_cuda::convolutionUpdateWeightsGPU( gpu_filters, gpu_filter_grads, in.size.z, number_filters, kernel_size, momentum, decay, lr);
+
 	}
 
 	void backwardGPU( float* dz_next_layer, float *dz )
 	{
-		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
-		// backward();
+		gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		backward();
 
 		this->gpu_dz = dz;
 		backwardGPU( dz_next_layer );
+
+		#ifdef DEBUG
+
+		// OK padded_in
+		// TensorObject<float> padded_in_temp( padded_in.size.b, padded_in.size.x, padded_in.size.y, padded_in.size.z );
+		// gpu_cuda::cudaGetArray( padded_in_temp.data, gpu_padded_in, padded_in_temp.size.b*padded_in_temp.size.x*padded_in_temp.size.y*padded_in_temp.size.z );
+		// for ( int b = 0; b < padded_in.size.b; ++b ){
+		// 	for ( int x = 0; x < padded_in.size.x; ++x ){
+		// 		for ( int y = 0; y < padded_in.size.y; ++y ){
+		// 			for ( int z = 0; z < padded_in.size.z; ++z ){
+		// 				if(padded_in_temp( b, x, y, z ) != padded_in.get( b, x, y, z )){
+		// 					printf("gpu_padded_in_temp and padded_in_temp are not equal.\n");
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		// OK. dz_in is equal
+		// TensorObject<float> dzin_temp( dz_in.size.b, dz_in.size.x, dz_in.size.y, dz_in.size.z );
+		// gpu_cuda::cudaGetArray( dzin_temp.data, gpu_dz_in, dzin_temp.size.b*dzin_temp.size.x*dzin_temp.size.y*dzin_temp.size.z );
+		// for ( int b = 0; b < dz_in.size.b; ++b ){
+		// 	for ( int i = 0; i < dz_in.size.x; ++i ){
+		// 		for ( int j = 0; j < dz_in.size.y; ++j ){
+		// 			for ( int z = 0; z < dz_in.size.z; ++z ){
+		// 				if(dzin_temp( b, i, j, z ) != dz_in.get( b, i, j, z )){
+		// 					printf("dzin_temp and dz_in are not equal.\n");
+		// 					break;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		// OK grads
+		// TensorObject<float> grads_cpu_temp( number_filters, kernel_size, kernel_size, in.size.z*2 );
+		// for ( int a = 0; a < number_filters; a++ ){
+		// 	for ( int i = 0; i < kernel_size; ++i ){
+		// 		for ( int j = 0; j < kernel_size; ++j ){
+		// 			for ( int z = 0; z < in.size.z; ++z ){
+		// 				GradientObject grad = filter_grads[a].get( 0, i, j, z );
+		// 				int index = (a * (in.size.z * kernel_size * kernel_size) + z * (kernel_size * kernel_size) + j * kernel_size + i) * 2;
+		// 				grads_cpu_temp.data[index] = grad.grad;
+		// 				grads_cpu_temp.data[index+1] = grad.grad_prev;
+		// 			}
+		// 		}
+		// 	}
+		// }
+		// printf("CPU grads ----\n");
+		// convPrintTensor(grads_cpu_temp);
+		//
+		// TensorObject<float> grads_temp( number_filters, kernel_size, kernel_size, in.size.z*2 );
+		// gpu_cuda::cudaGetArray( grads_temp.data, gpu_filter_grads, grads_temp.size.b*grads_temp.size.x*grads_temp.size.y*grads_temp.size.z );
+		// printf("GPU grads ####\n");
+		// convPrintTensor(grads_temp);
+
+		// NG
+		// TensorObject<float> filters_temp( number_filters, kernel_size, kernel_size, in.size.z );
+		TensorObject<float> gpu_filters_temp( number_filters, kernel_size, kernel_size, in.size.z );
+		gpu_cuda::cudaGetArray( gpu_filters_temp.data, gpu_filters, gpu_filters_temp.size.b*gpu_filters_temp.size.x*gpu_filters_temp.size.y*gpu_filters_temp.size.z );
+		for ( int a = 0; a < number_filters; ++a ){
+			for ( int i = 0; i < kernel_size; ++i ){
+				for ( int j = 0; j < kernel_size; ++j ){
+					for ( int z = 0; z < in.size.z; ++z ){
+						if(gpu_filters_temp( a, i, j, z ) != filters[a].get( 0, i, j, z )){
+							printf("gpu_filters_temp and filters are not equal. %lf %lf\n", gpu_filters_temp( a, i, j, z ), filters[a].get( 0, i, j, z ));
+							break;
+						}
+						// filters_temp( a, i, j, z ) = filters[a].get( 0, i, j, z );
+					}
+				}
+			}
+		}
+		// printf("CPU filters ----\n");
+		// convPrintTensor(filters_temp);
+		//
+		// printf("GPU filters ####\n");
+		// convPrintTensor(gpu_filters_temp);
+
+		#endif
+
 	}
 
 	void backwardGPU( float *dz_next_layer )
@@ -235,12 +344,26 @@ struct LayerConvolution
 
 	void clearArrayGPU(float *dz_)
 	{
+		dz_in.clear();
+		dz.clear();
+
 		this->gpu_dz = dz_;
 		gpu_cuda::cudaClearArray( gpu_dz_in, dz_in.size.b*dz_in.size.x*dz_in.size.y*dz_in.size.z );
 		gpu_cuda::cudaClearArray( gpu_dz, dz.size.b*dz.size.x*dz.size.y*dz.size.z );
 	}
 
-	#if DEBUG
+	#ifdef DEBUG
+
+	TensorObject<float> getPaddedIn()
+	{
+		return padded_in;
+	}
+
+	TensorObject<float> getPaddedInFromGPU()
+	{
+		gpu_cuda::cudaGetArray( padded_in.data, gpu_padded_in, padded_in.size.b * padded_in.size.x * padded_in.size.y * padded_in.size.z );
+		return padded_in;
+	}
 
 	TensorObject<float> getDzInFromGPU()
 	{
@@ -313,8 +436,6 @@ struct LayerConvolution
 
 	void forward()
 	{
-		std::vector< std::future<int> > results;
-
 		for ( int b = 0; b < in.size.b; ++b ){
 			for ( int z = 0; z < in.size.z; ++z ){
 				for ( int y = 0; y < in.size.y; ++y ){
@@ -359,6 +480,7 @@ struct LayerConvolution
 						GradientObject& grad = filter_grads[a].get( 0, i, j, z );
 						float m = (grad.grad + grad.grad_prev * momentum);
 						grad.grad_prev = m;
+
 						float& w = filters[a].get( 0, i, j, z );
 						w -= lr * ( m + (decay * w));
 					}
@@ -396,10 +518,10 @@ struct LayerConvolution
 				int b_padded_in_xyz = b * padded_in.size.z * padded_in_xy;
 
 				int y_end = padded_in.size.y - padding;
-				for ( int y = 0; y < y_end; ++y ){
+				for ( int y = padding; y < y_end; ++y ){
 
 					int x_end = padded_in.size.x - padding;
-					for ( int x = 0; x < x_end; ++x ){
+					for ( int x = padding; x < x_end; ++x ){
 
 						tensor_range_t rn = map_to_output( x, y );
 
@@ -428,9 +550,9 @@ struct LayerConvolution
 								}
 							}
 
-							if( x>=padding && y>=padding ){
+							// if( x>=padding && y>=padding ){
 								dz( b, x - padding, y - padding, z ) += sum;
-							}
+							// }
 						}
 
 					}
@@ -465,11 +587,12 @@ struct LayerConvolution
 			// code optimization.
 			int dz_in_xy = dz_in.size.y * dz_in.size.x;
 			int b_dz_in_xyz = b * dz_in.size.z * dz_in_xy;
+
 			int padded_in_xy = padded_in.size.y * padded_in.size.x;
 			int b_padded_in_xyz = b * padded_in.size.z * padded_in_xy;
 
-			for ( int y = 0; y < (padded_in.size.y - padding); ++y ){
-				for ( int x = 0; x < (padded_in.size.x - padding); ++x ){
+			for ( int y = padding; y < (padded_in.size.y - padding); ++y ){
+				for ( int x = padding; x < (padded_in.size.x - padding); ++x ){
 
 					tensor_range_t rn = map_to_output( x, y );
 
@@ -498,9 +621,7 @@ struct LayerConvolution
 							}
 						}
 
-						if( x>=padding && y>=padding ){
-							dz( b, x - padding, y - padding, z ) += sum;
-						}
+						dz( b, x - padding, y - padding, z ) += sum;
 					}
 
 				}
