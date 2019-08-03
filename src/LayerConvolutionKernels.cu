@@ -294,10 +294,6 @@ __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padd
 
             int filter_index = k * (padded_in_size_z * kernel_size * kernel_size ) + (z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx);
             sum_error += filters[filter_index] * d;
-
-            // int filter_grad_index = filter_index * 2; // grad=0, grad_prev=1
-            // int padded_in_index = b * (padded_in_size_z * padded_in_size_x * padded_in_size_y) + z * (padded_in_size_x * padded_in_size_y) + y * padded_in_size_x + x;
-            // filter_grads[filter_grad_index] += padded_in[padded_in_index] * d;
           }
         }
       }
