@@ -9,18 +9,6 @@
 
 extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
-float trainClassification( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays )
-{
-	float value = 0.0;
-#ifdef GPU_CUDA
-	value = trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays, dzArrays );
-// #endif
-#else
-	value = trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
-#endif
-	return value;
-}
-
 float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, vector<float *>& outputArrays, vector<float *>& dzArrays ){
 #ifdef GPU_CUDA
 	return testNetworkGPU( layers, data, expected, optimizer, outputArrays, dzArrays);
@@ -101,10 +89,10 @@ void classification(int argc, char **argv)
 		dzArrays.push_back(gpu_layer_dz_array);
 	}
 
+	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, data_size );
+	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
+
 #endif
-
-
-
 
 	while( step < 10000 ){
 
@@ -117,7 +105,12 @@ void classification(int argc, char **argv)
 			memcpy( &(batch_cases.out.data[batch_index_out]), tt.out.data, out_float_size );
 		}
 
-		float train_err = trainClassification( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays, dzArrays );
+		float train_err = 0.0;
+#ifdef GPU_CUDA
+		train_err = trainNetworkGPU( step, layers, batch_cases.data, batch_cases.out, parameter_object, outputArrays, dzArrays, gpu_in_array, gpu_out_array );
+#else
+		train_err = trainNetwork( step, layers, batch_cases.data, batch_cases.out, parameter_object, thread_pool );
+#endif
 		step++;
 
 		if (step % parameter_object->save_span == 0){

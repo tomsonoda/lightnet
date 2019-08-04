@@ -273,15 +273,16 @@ static float trainNetworkGPU(
 	vector<LayerObject*>& layers,
 	TensorObject<float>& data,
 	TensorObject<float>& expected,
-	string optimizer,
 	ParameterObject *parameter_object,
 	vector<float *>& outputArrays,
-	vector<float *>& dzArrays
+	vector<float *>& dzArrays,
+	float *gpu_in_array,
+	float *gpu_out_array
 	)
 {
 
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
-	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
+	// float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
@@ -296,7 +297,7 @@ static float trainNetworkGPU(
 	TensorObject<float> grads = output_data - expected;
 
 	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
-	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
+	// float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < (int)(layers.size()); ++i ){
@@ -315,7 +316,7 @@ static float trainNetworkGPU(
 		updateWeightsGPU( layers[i] );
 	}
 
-	if(optimizer=="mse"){
+	if(parameter_object->optimizer=="mse"){
 
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
@@ -530,9 +531,8 @@ static float trainNetwork(
 	vector<LayerObject*>& layers,
 	TensorObject<float>& data,
 	TensorObject<float>& expected,
-	string optimizer,
-	ThreadPool& thread_pool,
-	ParameterObject *parameter_object
+	ParameterObject *parameter_object,
+	ThreadPool& thread_pool
 	)
 {
 	for( unsigned i = 0; i < layers.size(); ++i ){
@@ -561,7 +561,7 @@ static float trainNetwork(
 		updateWeights( layers[i] );
 	}
 
-	if(optimizer=="mse"){
+	if(parameter_object->optimizer=="mse"){
 
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){

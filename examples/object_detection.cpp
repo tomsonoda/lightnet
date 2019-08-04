@@ -14,15 +14,6 @@ extern vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<
 extern CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens );
 extern float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens );
 
-float trainObjectDetection( int step, vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays )
-{
-#ifdef GPU_CUDA
-	return trainNetworkGPU( step, layers, data, expected, optimizer, parameter_object, outputArrays, dzArrays );
-#else
-	return trainNetwork( step, layers, data, expected, optimizer, thread_pool, parameter_object);
-#endif
-}
-
 float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays ){
 	float loss_value = 0.0;
 #ifdef GPU_CUDA
@@ -124,6 +115,9 @@ void objectDetection(int argc, char **argv)
 		dzArrays.push_back(gpu_layer_dz_array);
 	}
 
+	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, data_size );
+	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
+
 #endif
 
 	while( step < 1000000 ){
@@ -141,16 +135,23 @@ void objectDetection(int argc, char **argv)
 
 		// printTensor(batch_cases.out);
 
-		float train_err = trainObjectDetection( step, layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, parameter_object, outputArrays, dzArrays );
+		float train_err = 0.0;
+#ifdef GPU_CUDA
+		train_err = trainNetworkGPU( step, layers, batch_cases.data, batch_cases.out, parameter_object, outputArrays, dzArrays, gpu_in_array, gpu_out_array );
+#else
+		train_err = trainNetwork( step, layers, batch_cases.data, batch_cases.out, parameter_object, thread_pool );
+#endif
+
 		step++;
 
 		if (step % parameter_object->save_span == 0){
-			string filename        = "checkpoints/" + data_model_name + "_" + to_string(step) + ".model";
+			string filename = "checkpoints/" + data_model_name + "_" + to_string(step) + ".model";
 			cout << "Saving weights to " << filename << " ..." << endl;
 			saveLayersWeights(step, layers, filename);
 		}
+
 		if (step % parameter_object->save_latest_span == 0){
-			string filename        = "checkpoints/" + data_model_name + "_latest.model";
+			string filename = "checkpoints/" + data_model_name + "_latest.model";
 			saveLayersWeights(step, layers, filename);
 		}
 
@@ -166,6 +167,7 @@ void objectDetection(int argc, char **argv)
 			}else{
 				randi = rand();
 			}
+
 			for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
 				CaseObject tt = readImageLabelCase( test_case_paths[j], model_json, model_tokens );
 
