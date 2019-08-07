@@ -170,10 +170,10 @@ __global__ void calcConvolutionBackwardResetGradGPU( float *filter_grads, int in
   */
 }
 
+
 __global__ void calcConvolutionBackwardFilterGradsGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size, int elements )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-
   if ( id < elements ) {
     int i = id % kernel_size;
     id /= kernel_size;
@@ -186,37 +186,34 @@ __global__ void calcConvolutionBackwardFilterGradsGPU( float *dz_in, float *dz, 
     for ( int b = 0; b < batch_size; ++b ){
       for ( int y = padding; y < (padded_in_size_y - padding); ++y ){
         for ( int x = padding; x < (padded_in_size_x - padding); ++x ){
-
           range_t rn = map_to_output( x, y, dz_in_size_x, dz_in_size_y, kernel_size, stride );
 
-          for ( int jj = rn.min_y; jj <= rn.max_y; jj++ ){
-            int y_miny = y - jj * stride;
+          // if( j>=(y-rn.max_y*stride) && j<=(y-rn.min_y*stride) ){
+            int jj = ( y - j ) / stride;
 
-            for ( int ii = rn.min_x; ii <= rn.max_x; ii++ ){
-              int x_minx = x - ii * stride;
+            // if( i>=(x-rn.max_x*stride) && i<=(x-rn.min_x*stride) ){
+              int ii = ( x - i ) / stride;
 
-              if(i==x_minx && j==y_miny){
-                int dz_in_index = b * (dz_in_size_z * dz_in_size_x * dz_in_size_y) + k * (dz_in_size_x * dz_in_size_y) + jj * dz_in_size_x + ii ;
-                float d = dz_in[ dz_in_index ];
+              int dz_in_index = b * (dz_in_size_z * dz_in_size_x * dz_in_size_y) + k * (dz_in_size_x * dz_in_size_y) + jj * dz_in_size_x + ii ;
+              float d = dz_in[ dz_in_index ];
 
-                int padded_in_index = b * (padded_in_size_z * padded_in_size_x * padded_in_size_y) + z * (padded_in_size_x * padded_in_size_y) + y * padded_in_size_x + x;
-                int filter_index = k * (padded_in_size_z * kernel_size * kernel_size ) + (z * (kernel_size * kernel_size) + y_miny * kernel_size + x_minx);
-                int filter_grad_index = filter_index * 2; // grad=0, grad_prev=1
+              int padded_in_index = b * (padded_in_size_z * padded_in_size_x * padded_in_size_y) + z * (padded_in_size_x * padded_in_size_y) + y * padded_in_size_x + x;
+              int filter_index = k * (padded_in_size_z * kernel_size * kernel_size ) + (z * (kernel_size * kernel_size) + j * kernel_size + i);
+              int filter_grad_index = filter_index << 1; // grad=0, grad_prev=1
 
-                // filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
-                filter_grads[filter_grad_index] += padded_in[padded_in_index] * d;
-              }
+              // filter_grads[k].get( 0, x_minx, y_miny, z ).grad += padded_in_value * d;
+              filter_grads[filter_grad_index] += padded_in[padded_in_index] * d;
+            // }
 
-            }
-          }
+          // }
 
         }
       }
     }
   }
+
   /* original code
   int z_max = (int)filters.size();
-
   for ( int b = 0; b < in.size.b; ++b ){
     // code optimization.
     int dz_in_xy = dz_in.size.y * dz_in.size.x;
@@ -231,7 +228,6 @@ __global__ void calcConvolutionBackwardFilterGradsGPU( float *dz_in, float *dz, 
 
         for ( int z = 0; z < in.size.z; ++z ){
 
-          float sum = 0;
           // float padded_in_value = padded_in( b, x, y, z );
           float padded_in_value = padded_in.data[( b_padded_in_xyz ) + (z * padded_in_xy) + (y * padded_in.size.x) + x];
 
@@ -240,7 +236,6 @@ __global__ void calcConvolutionBackwardFilterGradsGPU( float *dz_in, float *dz, 
 
             for ( int i = rn.min_x; i <= rn.max_x; ++i ){
               int x_minx = x - i * stride;
-
               int xyz = z * kernel_size_2 + y_miny * kernel_size + x_minx; // ( 0, x_minx, y_miny, z )
 
               for ( int k = 0; k < z_max; ++k ){
@@ -250,21 +245,20 @@ __global__ void calcConvolutionBackwardFilterGradsGPU( float *dz_in, float *dz, 
                 filter_grads[k].data[xyz].grad += padded_in_value * d;
               }
             }
+
           }
         }
-
       }
     }
-
   }
   */
+
 }
 
 
 __global__ void calcConvolutionBackwardGPU( float *dz_in, float *dz, float *padded_in, float *filters, float *filter_grads, int batch_size, int dz_size_x, int dz_size_y, int dz_size_z, int dz_in_size_x, int dz_in_size_y, int dz_in_size_z, int padded_in_size_x, int padded_in_size_y, int padded_in_size_z, int padding, int kernel_size, int stride, int number_filters, int filter_size )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-
   // int N = batch_size * padded_in_size_x * padded_in_size_y * dz_size_z;
 
   if ( id <  batch_size * padded_in_size_x * padded_in_size_y * dz_size_z ){
@@ -385,7 +379,13 @@ void convolutionBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, floa
   int gN = number_filters * kernel_size * kernel_size * padded_in_size_z;
   dim3 grid = cuda.cudaGridSize(gN);
   calcConvolutionBackwardResetGradGPU<<<grid, BLOCK>>>( filter_grads, padded_in_size_z, kernel_size, filter_size, gN );
+
   calcConvolutionBackwardFilterGradsGPU<<<grid, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, batch_size, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size, gN );
+
+  // note: filter_size = 1 * kernel_size * kernel_size * in_size.z;
+  // int gradN = number_filters * padded_in_size_x * padded_in_size_y * padded_in_size_z;
+  // dim3 grid_grad = cuda.cudaGridSize(gradN);
+  // calcConvolutionBackwardFilterGradsGPU<<<grid_grad, BLOCK>>>( dz_in, dz, padded_in, filters, filter_grads, batch_size, dz_size_x, dz_size_y, dz_size_z, dz_in_size_x, dz_in_size_y, dz_in_size_z, padded_in_size_x, padded_in_size_y, padded_in_size_z, padding, kernel_size, stride, number_filters, filter_size, gradN );
 
   int N = batch_size * padded_in_size_x * padded_in_size_y * dz_size_z;
   dim3 grid_dz = cuda.cudaGridSize(N);

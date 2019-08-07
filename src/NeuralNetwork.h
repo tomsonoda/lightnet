@@ -282,7 +282,6 @@ static float trainNetworkGPU(
 {
 
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
-	// float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, in_size );
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
@@ -297,7 +296,6 @@ static float trainNetworkGPU(
 	TensorObject<float> grads = output_data - expected;
 
 	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
-	// float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
 	for( int i = 0; i < (int)(layers.size()); ++i ){

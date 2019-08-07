@@ -296,7 +296,7 @@ struct LayerConvolution
 	#endif
 
 
-#endif
+#else
 	// CPU
 
 	void forward( TensorObject<float>& in,  ThreadPool& thread_pool )
@@ -421,7 +421,7 @@ struct LayerConvolution
 			}
 		}
 
-		int z_max = (int)filters.size();
+		int z_max = (int)filters.size(); // = number_filters
 		std::vector< std::future<int> > thread_results;
 
 		for ( int b = 0; b < in.size.b; ++b ){
@@ -547,7 +547,7 @@ struct LayerConvolution
 		}
 	}
 
-// #endif
+#endif
 
 	void saveWeights( ofstream& fout )
 	{

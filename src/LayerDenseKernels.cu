@@ -63,17 +63,14 @@ __global__ void calcDenseUpdateWeightsGPU( float *weights, float *biases, float 
     for( int h = 0; h < w_size_x; ++h ){
         // int index = id * (w_size_x * w_size_y) + h;
         int index = h * out_size_x + id;
-        // printf("index=%d, id=%d, w_size_x=%d, w_size_y=%d\n", index, id, w_size_x, w_size_y);
-        weights[index] = weights[index] - learning_rate * 	dW[index];
+        weights[index] = weights[index] - learning_rate * dW[index];
     }
 
     biases[id] = biases[id] - learning_rate * dB[id];
 
     for( int b = 0; b < batch_size; ++b ){
       int index = (b * out_size_x + id) * 2;
-      // printf("GPU0: grad=%lf, prev_grad=%lf n=%d index=%d momentum=%lf\n", gradients[ index ], gradients[ index +1 ], id, index, momentum);
       gradients[index+1] = gradients[index] + gradients[index+1] * momentum;
-      // printf("GPU1: grad=%lf, prev_grad=%lf n=%d index=%d\n", gradients[ index ], gradients[ index +1 ], id, index);
     }
   }
 

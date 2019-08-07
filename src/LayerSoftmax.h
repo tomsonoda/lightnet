@@ -91,7 +91,7 @@ struct LayerSoftmax
 		dz.clear();
 	}
 
-#endif
+#else
 
 	void forward( TensorObject<float>& in )
 	{
@@ -140,6 +140,6 @@ struct LayerSoftmax
 			dz.data[i] += dz_in.data[i];
 		}
 	}
-// #endif
+#endif
 };
 #pragma pack(pop)

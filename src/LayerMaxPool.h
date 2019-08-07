@@ -181,7 +181,7 @@ struct LayerMaxPool
 
 	#endif
 
-#endif
+#else
 // CPU
 
 	void forward( TensorObject<float>& in )
@@ -280,7 +280,7 @@ struct LayerMaxPool
 	}
 
 
-// #endif
+#endif
 
 };
 #pragma pack(pop)

@@ -219,7 +219,7 @@ struct LayerDense
 		}
 
 	#endif
-#endif
+#else
 // CPU
 	void forward( TensorObject<float>& in )
 	{
@@ -337,7 +337,7 @@ struct LayerDense
 		}
 	}
 
-// #endif
+#endif
 
 	void saveWeights( ofstream& fout )
 	{

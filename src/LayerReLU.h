@@ -99,7 +99,7 @@ struct LayerReLU
 
 	#endif
 
-#endif
+#else
 
 	void forward( TensorObject<float>& in )
 	{
@@ -130,7 +130,7 @@ struct LayerReLU
 		}
 	}
 
-// #endif
+#endif
 
 };
 
