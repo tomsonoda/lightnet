@@ -52,8 +52,8 @@ __global__ void calcRouteBackwardGPU( float *dz_in, float *dz, int in_size_x, in
   /*
   for ( int b = 0; b < layer_dz.size.b; ++b ){
     for ( int z = 0; z < layer_dz.size.z; ++z ){
-      for ( int y = 0; y < layer_dz.size.y; y++ ){
-        for ( int x = 0; x < layer_dz.size.x; x++ ){
+      for ( int y = 0; y < layer_dz.size.y; ++y ){
+        for ( int x = 0; x < layer_dz.size.x; ++x ){
           layer_dz( b, x, y, z ) += dz_in( b, x, y, z_offset+z );
         }
       }

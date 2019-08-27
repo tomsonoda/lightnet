@@ -123,8 +123,8 @@ struct LayerRoute
 			TensorObject<float> layer_in = layers[ref_layers[i]]->out;
 			for ( int b = 0; b < layer_in.size.b; ++b ){
 				for ( int z = 0; z < layer_in.size.z; ++z ){
-					for ( int y = 0; y < layer_in.size.y; y++ ){
-						for ( int x = 0; x < layer_in.size.x; x++ ){
+					for ( int y = 0; y < layer_in.size.y; ++y ){
+						for ( int x = 0; x < layer_in.size.x; ++x ){
 							out( b, x, y, z_offset+z ) = layer_in( b, x, y, z );
 						}
 					}
@@ -149,8 +149,8 @@ struct LayerRoute
 			TensorObject<float>& layer_dz = layers[ref_layers[i]]->dz_in;
 			for ( int b = 0; b < layer_dz.size.b; ++b ){
 				for ( int z = 0; z < layer_dz.size.z; ++z ){
-					for ( int y = 0; y < layer_dz.size.y; y++ ){
-						for ( int x = 0; x < layer_dz.size.x; x++ ){
+					for ( int y = 0; y < layer_dz.size.y; ++y ){
+						for ( int x = 0; x < layer_dz.size.x; ++x ){
 							layer_dz( b, x, y, z ) += dz_in( b, x, y, z_offset+z );
 						}
 					}
