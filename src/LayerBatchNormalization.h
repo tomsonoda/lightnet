@@ -89,10 +89,11 @@ struct LayerBatchNormalization
 		gpu_out = gpu_cuda::cudaMakeArray( out.data, data_size );
 		gpu_dz_in = gpu_cuda::cudaMakeArray( dz_in.data, data_size );
 
-		gpu_gamma = gpu_cuda::cudaMakeArray( NULL, in_size.z );
+		gpu_gamma = gpu_cuda::cudaMakeArray( gamma.data, in_size.z );
 		gpu_dgamma = gpu_cuda::cudaMakeArray( NULL, in_size.z );
-		gpu_beta = gpu_cuda::cudaMakeArray( NULL, in_size.z );
+		gpu_beta = gpu_cuda::cudaMakeArray( beta.data, in_size.z );
 		gpu_dbeta = gpu_cuda::cudaMakeArray( NULL, in_size.z );
+
 		gpu_mean = gpu_cuda::cudaMakeArray( NULL, in_size.z );
 		gpu_xmu = gpu_cuda::cudaMakeArray( NULL, data_size );
 		gpu_variance = gpu_cuda::cudaMakeArray( NULL, in_size.z );
@@ -104,29 +105,64 @@ struct LayerBatchNormalization
 
 	}
 
+#ifdef DEBUG
+
+	void batchNormalizationPrintTensor( TensorObject<float>& data )
+	{
+		int mx = data.size.x;
+		int my = data.size.y;
+		int mz = data.size.z;
+		int mb = data.size.b;
+
+		for ( int b = 0; b < mb; ++b ){
+			printf( "[Batch %d]\n", b );
+			for ( int z = 0; z < mz; ++z ){
+				for ( int y = 0; y < my; y++ ){
+					for ( int x = 0; x < mx; x++ ){
+						printf( "%.3f \t", (float)data( b, x, y, z ) );
+					}
+					printf( "\n" );
+				}
+				printf( "\n" );
+			}
+		}
+	}
+
+#endif
+
+
 #ifdef GPU_CUDA
 
 	void forwardGPU( float *in, float *out )
 	{
 		gpu_in = in;
 		gpu_out = out;
+
+		// gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
+		// forward();
 		forwardGPU();
 	}
 
 	void forwardGPU()
 	{
-		gpu_cuda::batchNormalizationForwardGPU( gpu_in, gpu_out, gpu_mean, gpu_xmu, gpu_xhat, gpu_variance, gpu_inv_variance, gpu_dgamma, gpu_dbeta, in.size.b, in.size.x, in.size.y, in.size.z );
+		gpu_cuda::batchNormalizationForwardGPU( gpu_in, gpu_out, gpu_mean, gpu_xmu, gpu_variance, gpu_inv_variance, gpu_xhat, gpu_gamma, gpu_beta, in.size.b, in.size.x, in.size.y, in.size.z );
 	}
 
 	void updateWeightsGPU()
 	{
+		// updateWeights();
+
 		gpu_cuda::batchNormalizationUpdateWeightsGPU( gpu_gamma, gpu_beta, gpu_dgamma, gpu_dbeta, lr, in.size.z );
 	}
 
 	void backwardGPU( float* dz_next_layer, float *dz )
 	{
+		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		// backward();
+
 		this->gpu_dz = dz;
 		backwardGPU( dz_next_layer );
+
 	}
 
 	void backwardGPU( float* dz_next_layer )
@@ -159,124 +195,193 @@ struct LayerBatchNormalization
 		scale = 1.0f / (in.size.b * in.size.x * in.size.y);
 
 		for ( int z = 0; z < filters; ++z ){
+
 			float sum = 0;
 			for ( int b = 0; b < in.size.b; ++b ){
 				for ( int j = 0; j < in.size.y; ++j ){
 					for ( int i = 0; i < in.size.x; ++i ){
-							sum += in(b, i, j, z);
-						}
+						sum += in(b, i, j, z);
 					}
 				}
-				mean(0, 0, 0, z) = sum * scale;
-
-				sum = 0;
-				for ( int b = 0; b < in.size.b; ++b ){
-					for ( int j = 0; j < in.size.y; ++j ){
-						for ( int i = 0; i < in.size.x; ++i ){
-							xmu( b, i, j, z ) = in(b, i, j, z) - mean(0, 0, 0, z);
-							sum += pow( xmu( b, i, j, z ), 2 );
-						}
-					}
-				}
-				variance(0, 0, 0, z) = sum * scale;
-				float invvar = 1.0f / sqrt(variance( 0, 0, 0, z )+0.00001f);
-				float gmm = gamma( 0, 0, 0, z );
-				float bt = beta( 0, 0, 0, z );
-				inv_variance(0, 0, 0, z ) = invvar;
-
-				for ( int b = 0; b < in.size.b; ++b ){
-					for (int j = 0; j < in.size.y; ++j ){
-						for (int i = 0; i < in.size.x; ++i ){
-							float v = xmu( b, i, j, z ) * invvar;
-							xhat( b, i, j, z ) = v;
-							out( b, i, j, z ) = gmm * v + bt;
-						}
-					}
-				}
-
 			}
+			mean(0, 0, 0, z) = sum * scale;
+
+			sum = 0;
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						xmu( b, i, j, z ) = in(b, i, j, z) - mean(0, 0, 0, z);
+						sum += pow( xmu( b, i, j, z ), 2 );
+					}
+				}
+			}
+
+			variance(0, 0, 0, z) = sum * scale;
+			float invvar = 1.0f / sqrt(variance( 0, 0, 0, z )+0.00001f);
+			float gmm = gamma( 0, 0, 0, z );
+			float bt = beta( 0, 0, 0, z );
+			inv_variance(0, 0, 0, z ) = invvar;
+
+			for ( int b = 0; b < in.size.b; ++b ){
+				for (int j = 0; j < in.size.y; ++j ){
+					for (int i = 0; i < in.size.x; ++i ){
+						float v = xmu( b, i, j, z ) * invvar;
+						xhat( b, i, j, z ) = v;
+						out( b, i, j, z ) = gmm * v + bt;
+					}
+				}
+			}
+
+		}
+	}
+
+	void updateWeights()
+	{
+		for( int i=0; i < in.size.z; ++i ){
+			gamma.data[i] -= lr * dgamma.data[i];
+			beta.data[i] -= lr * dbeta.data[i];
+		}
+	}
+
+	void backward( TensorObject<float>& dz_next_layer )
+	{
+		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
+			dz_in.data[i] += dz_next_layer.data[i];
 		}
 
-		void updateWeights()
-		{
-			for( int i=0; i < in.size.z; ++i ){
-				gamma.data[i] -= lr * dgamma.data[i];
-				beta.data[i] -= lr * dbeta.data[i];
+		float bxy_inv = 1.0f / (float)(in.size.b * in.size.x * in.size.y);
+
+		for ( int z = 0; z < in.size.z; ++z ){
+			float dbeta_sum = 0.0;
+			float dgamma_sum = 0.0;
+			float dvariance_sum = 0.0;
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						float delta = dz_in( b, i, j, z );
+						dbeta_sum += delta;
+						dgamma_sum += xhat( b, i, j, z ) * delta;
+						dvariance_sum += delta * xmu( b, i, j, z );
+					}
+				}
 			}
+
+			dbeta( 0, 0, 0, z ) = dbeta_sum;
+			dgamma( 0, 0, 0, z ) = dgamma_sum;
+
+			float divar = 0.0;
+			float gmm = gamma( 0, 0, 0, z );
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						float v = dz_in( b, i, j, z ) * gmm;
+						dxhat( b, i, j, z ) = v;
+						divar += v * xmu( b, i, j, z );
+					}
+				}
+			}
+
+			float dmu = 0.0;
+			float invvar = inv_variance( 0, 0, 0, z );
+			float invvar_sqrt2 = -1. /(variance( 0, 0, 0, z )+0.00001f);
+
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						// float dxmu1 = dxhat( b, i, j, z ) * invvar;
+						float dxmu1 = dxhat( b, i, j, z );
+						float dsqrtvar =  invvar_sqrt2 * divar;
+						// float dvar = 0.5 * invvar * dsqrtvar;
+						// float dxmu2 = 2 * xmu( b, i, j, z ) * bxy_inv * dvar;
+						// float dxmu2 = xmu( b, i, j, z ) * bxy_inv * invvar * dsqrtvar;
+						float dxmu2 = xmu( b, i, j, z ) * bxy_inv * dsqrtvar;
+						float sum_dxmu = (dxmu1 + dxmu2) * invvar;
+						dx1( b, i, j, z ) = sum_dxmu;
+						dmu += -sum_dxmu;
+					}
+				}
+			}
+
+			float dx2 = dmu * bxy_inv;
+
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						dz( b, i, j, z ) =  dx1( b, i, j, z ) + dx2;
+					}
+				}
+			}
+
 		}
+	}
 
-		void backward( TensorObject<float>& dz_next_layer )
-		{
+	void backward()
+	{
+		float bxy_inv = 1.0f / (float)(in.size.b * in.size.x * in.size.y);
 
-			for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-				dz_in.data[i] += dz_next_layer.data[i];
+		for ( int z = 0; z < in.size.z; ++z ){
+			float dbeta_sum = 0.0;
+			float dgamma_sum = 0.0;
+			float dvariance_sum = 0.0;
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						float delta = dz_in( b, i, j, z );
+						dbeta_sum += delta;
+						dgamma_sum += xhat( b, i, j, z ) * delta;
+						dvariance_sum += delta * xmu( b, i, j, z );
+					}
+				}
 			}
 
-			float bxy_inv = 1.0f / (float)(in.size.b * in.size.x * in.size.y);
+			dbeta( 0, 0, 0, z ) = dbeta_sum;
+			dgamma( 0, 0, 0, z ) = dgamma_sum;
 
-			for ( int z = 0; z < in.size.z; ++z ){
-				float dbeta_sum = 0.0;
-				float dgamma_sum = 0.0;
-				float dvariance_sum = 0.0;
-				for ( int b = 0; b < in.size.b; ++b ){
-					for ( int j = 0; j < in.size.y; ++j ){
-						for ( int i = 0; i < in.size.x; ++i ){
-							float delta = dz_in( b, i, j, z );
-							dbeta_sum += delta;
-							dgamma_sum += xhat( b, i, j, z ) * delta;
-							dvariance_sum += delta * xmu( b, i, j, z );
-						}
+			float divar = 0.0;
+			float gmm = gamma( 0, 0, 0, z );
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						float v = dz_in( b, i, j, z ) * gmm;
+						dxhat( b, i, j, z ) = v;
+						divar += v * xmu( b, i, j, z );
 					}
 				}
-
-				dbeta( 0, 0, 0, z ) = dbeta_sum;
-				dgamma( 0, 0, 0, z ) = dgamma_sum;
-
-				float divar = 0.0;
-				float gmm = gamma( 0, 0, 0, z );
-				for ( int b = 0; b < in.size.b; ++b ){
-					for ( int j = 0; j < in.size.y; ++j ){
-						for ( int i = 0; i < in.size.x; ++i ){
-							float v = dz_in( b, i, j, z ) * gmm;
-							dxhat( b, i, j, z ) = v;
-							divar += v * xmu( b, i, j, z );
-						}
-					}
-				}
-
-				float dmu = 0.0;
-				float invvar = inv_variance( 0, 0, 0, z );
-				float invvar_sqrt2 = -1. /(variance( 0, 0, 0, z )+0.00001f);
-
-				for ( int b = 0; b < in.size.b; ++b ){
-					for ( int j = 0; j < in.size.y; ++j ){
-						for ( int i = 0; i < in.size.x; ++i ){
-							// float dxmu1 = dxhat( b, i, j, z ) * invvar;
-							float dxmu1 = dxhat( b, i, j, z );
-							float dsqrtvar =  invvar_sqrt2 * divar;
-							// float dvar = 0.5 * invvar * dsqrtvar;
-							// float dxmu2 = 2 * xmu( b, i, j, z ) * bxy_inv * dvar;
-							// float dxmu2 = xmu( b, i, j, z ) * bxy_inv * invvar * dsqrtvar;
-							float dxmu2 = xmu( b, i, j, z ) * bxy_inv * dsqrtvar;
-							float sum_dxmu = (dxmu1 + dxmu2) * invvar;
-							dx1( b, i, j, z ) = sum_dxmu;
-							dmu += -sum_dxmu;
-						}
-					}
-				}
-
-				float dx2 = dmu * bxy_inv;
-
-				for ( int b = 0; b < in.size.b; ++b ){
-					for ( int j = 0; j < in.size.y; ++j ){
-						for ( int i = 0; i < in.size.x; ++i ){
-							dz( b, i, j, z ) =  dx1( b, i, j, z ) + dx2;
-						}
-					}
-				}
-
 			}
+
+			float dmu = 0.0;
+			float invvar = inv_variance( 0, 0, 0, z );
+			float invvar_sqrt2 = -1. /(variance( 0, 0, 0, z )+0.00001f);
+
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						// float dxmu1 = dxhat( b, i, j, z ) * invvar;
+						float dxmu1 = dxhat( b, i, j, z );
+						float dsqrtvar =  invvar_sqrt2 * divar;
+						// float dvar = 0.5 * invvar * dsqrtvar;
+						// float dxmu2 = 2 * xmu( b, i, j, z ) * bxy_inv * dvar;
+						// float dxmu2 = xmu( b, i, j, z ) * bxy_inv * invvar * dsqrtvar;
+						float dxmu2 = xmu( b, i, j, z ) * bxy_inv * dsqrtvar;
+						float sum_dxmu = (dxmu1 + dxmu2) * invvar;
+						dx1( b, i, j, z ) = sum_dxmu;
+						dmu += -sum_dxmu;
+					}
+				}
+			}
+
+			float dx2 = dmu * bxy_inv;
+
+			for ( int b = 0; b < in.size.b; ++b ){
+				for ( int j = 0; j < in.size.y; ++j ){
+					for ( int i = 0; i < in.size.x; ++i ){
+						dz( b, i, j, z ) =  dx1( b, i, j, z ) + dx2;
+					}
+				}
+			}
+
 		}
+	}
 
 // #endif
 

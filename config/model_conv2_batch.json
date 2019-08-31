@@ -1,15 +1,16 @@
 {
   "net" : {
-    "batch_size":1,
+    "batch_size":4,
     "threads":1,
     "learning_rate":0.01,
     "momentum":0.6,
     "decay":0.001,
-    "optimization":"cross_entropy"
+    "optimization":"mse"
   },
 
   "layers":[
     {"type":"convolutional", "filters":8, "size":5, "stride":1, "padding":2},
+    {"type":"batch_normalization"},
     {"type":"relu"},
     {"type":"maxpool", "size":2, "stride":2},
     {"type":"convolutional", "filters":8, "size":3, "stride":1, "padding":2},
