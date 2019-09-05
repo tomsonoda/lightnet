@@ -102,6 +102,7 @@ void objectDetection(int argc, char **argv)
 	std::vector<float *> dzArrays;
 
 #ifdef GPU_CUDA
+	std::vector<float *> dzInArrays;
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
@@ -113,6 +114,11 @@ void objectDetection(int argc, char **argv)
 		float *gpu_layer_dz_array = gpu_cuda::cudaMakeArray( NULL, dz_size );
 		layers[i]->gpu_dz = gpu_layer_dz_array;
 		dzArrays.push_back(gpu_layer_dz_array);
+
+		int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
+		float *gpu_layer_dz_in_array = gpu_cuda::cudaMakeArray( NULL, dz_in_size );
+		layers[i]->gpu_dz_in = gpu_layer_dz_in_array;
+		dzInArrays.push_back(gpu_layer_dz_in_array);
 	}
 
 	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, data_size );
@@ -137,7 +143,7 @@ void objectDetection(int argc, char **argv)
 
 		float train_err = 0.0;
 #ifdef GPU_CUDA
-		train_err = trainNetworkGPU( step, layers, batch_cases.data, batch_cases.out, parameter_object, outputArrays, dzArrays, gpu_in_array, gpu_out_array );
+		train_err = trainNetworkGPU( step, layers, batch_cases.data, batch_cases.out, parameter_object, outputArrays, dzArrays, dzInArrays, gpu_in_array, gpu_out_array );
 #else
 		train_err = trainNetwork( step, layers, batch_cases.data, batch_cases.out, parameter_object, thread_pool );
 #endif

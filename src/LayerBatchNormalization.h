@@ -155,12 +155,13 @@ struct LayerBatchNormalization
 		gpu_cuda::batchNormalizationUpdateWeightsGPU( gpu_gamma, gpu_beta, gpu_dgamma, gpu_dbeta, lr, in.size.z );
 	}
 
-	void backwardGPU( float* dz_next_layer, float *dz )
+	void backwardGPU( float* dz_next_layer, float *dz, float *dz_in )
 	{
 		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
 		// backward();
 
 		this->gpu_dz = dz;
+		this->gpu_dz_in = dz_in;
 		backwardGPU( dz_next_layer );
 
 	}

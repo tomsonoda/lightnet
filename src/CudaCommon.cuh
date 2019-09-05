@@ -6,6 +6,7 @@ __global__ inline void cudaAddFirstArrayToSecondArray( float *dz_next_layer, flo
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
   if( id < N ){
     dz_in[id] += dz_next_layer[id];
+    // printf("dz_next_layer[%d]=%lf, dz_in=%lf\n", id, dz_next_layer[id], dz_in[id]);
   }
 }
 

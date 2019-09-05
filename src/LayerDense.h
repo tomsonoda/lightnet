@@ -113,6 +113,28 @@ struct LayerDense
 
 #ifdef GPU_CUDA
 
+	void densePrintTensor( TensorObject<float>& data )
+	{
+	printf("dense print\n");
+	int mx = data.size.x;
+	int my = data.size.y;
+	int mz = data.size.z;
+	int mb = data.size.b;
+
+	for ( int b = 0; b < mb; ++b ){
+		printf( "[Batch %d]\n", b );
+		for ( int z = 0; z < mz; ++z ){
+			for ( int y = 0; y < my; y++ ){
+				for ( int x = 0; x < mx; x++ ){
+					printf( "%.3f \t", (float)data( b, x, y, z ) );
+				}
+				printf( "\n" );
+			}
+			printf( "\n" );
+		}
+	}
+	}
+
 	void forwardGPU( float *in, float *out )
 	{
 		// gpu_cuda::cudaGetArray( this->in.data, in, this->in.size.b * this->in.size.x * this->in.size.y * this->in.size.z );
@@ -133,11 +155,15 @@ struct LayerDense
 		gpu_cuda::denseUpdateWeightsGPU( gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, lr, _momentum );
 	}
 
-	void backwardGPU( float* dz_next_layer, float *dz )
+	void backwardGPU( float* dz_next_layer, float *dz, float *dz_in )
 	{
 		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		gpu_cuda::cudaGetArray( this->dz_in.data, gpu_dz_in, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
+		//densePrintTensor( this->dz_in );
 		// backward();
+
 		this->gpu_dz = dz;
+		this->gpu_dz_in = dz_in;
 		backwardGPU( dz_next_layer );
 	}
 

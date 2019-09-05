@@ -61,9 +61,10 @@ struct LayerReLU
 	{
 	}
 
-	void backwardGPU( float* dz_next_layer, float *dz )
+	void backwardGPU( float* dz_next_layer, float *dz, float *dz_in )
 	{
 		this->gpu_dz = dz;
+		this->gpu_dz_in = dz_in;
 		backwardGPU( dz_next_layer );
 	}
 

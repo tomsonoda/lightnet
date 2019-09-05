@@ -57,9 +57,10 @@ struct LayerSoftmax
 	{
 	}
 
-	void backwardGPU( float* dz_next_layer, float *dz )
+	void backwardGPU( float* dz_next_layer, float *dz, float *dz_in )
 	{
 		this->gpu_dz = dz;
+		this->gpu_dz_in = dz_in;
 		backwardGPU( dz_next_layer );
 		// TensorObject<float> dz_next_layer_cpu = TensorObject<float>(out.size.b, out.size.x, out.size.y, out.size.z);
 		// gpu_cuda::cudaGetArray( dz_next_layer_cpu.data, dz_next_layer, dz_next_layer_cpu.size.b*dz_next_layer_cpu.size.x*dz_next_layer_cpu.size.y*dz_next_layer_cpu.size.z );

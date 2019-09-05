@@ -54,52 +54,42 @@ static void printTensor( TensorObject<float>& data )
 
 #ifdef GPU_CUDA
 
-// static void printGPUArray(float *gpu_array, int n)
-// {
-// 	float *array = (float *)malloc(n*sizeof(float));
-// 	gpu_cuda::cudaGetArray( array, gpu_array, n );
-// 	for( int i=0; i<n; ++i ){
-// 		printf("array[%d]=%.3f\n", i, array[i]);
-// 	}
-// 	free(array);
-// }
-
-static void backwardGPU( LayerObject* layer, float* dz_next_layer, float* dz )
+static void backwardGPU( LayerObject* layer, float* dz_next_layer, float* dz, float* dz_in, vector<float *>& dzInArrays )
 {
 	switch ( layer->type )
 	{
 		case LayerType::batch_normalization:
-			((LayerBatchNormalization*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerBatchNormalization*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::conv:
-			((LayerConvolution*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerConvolution*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::dense:
-			((LayerDense*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerDense*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::detect_objects:
-			((LayerDetectObjects*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerDetectObjects*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::dropout:
-			((LayerDropout*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerDropout*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::leaky_relu:
-			((LayerLeakyReLU*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerLeakyReLU*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::max_pool:
-			((LayerMaxPool*)layer)->backwardGPU( dz_next_layer, dz);
+			((LayerMaxPool*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::relu:
-			((LayerReLU*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerReLU*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::route:
-			((LayerRoute*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerRoute*)layer)->backwardGPU( dz_next_layer, dz, dz_in, dzInArrays );
 			return;
 		case LayerType::sigmoid:
-			((LayerSigmoid*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerSigmoid*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		case LayerType::softmax:
-			((LayerSoftmax*)layer)->backwardGPU( dz_next_layer, dz );
+			((LayerSoftmax*)layer)->backwardGPU( dz_next_layer, dz, dz_in );
 			return;
 		default:
 			assert( false );
@@ -148,7 +138,7 @@ static void updateWeightsGPU( LayerObject* layer )
 	}
 }
 
-static void forwardGPU( LayerObject* layer, float* in, float *out )
+static void forwardGPU( LayerObject* layer, float* in, float *out, vector<float *>& outputArrays )
 {
 	switch ( layer->type )
 	{
@@ -177,7 +167,7 @@ static void forwardGPU( LayerObject* layer, float* in, float *out )
 			((LayerReLU*)layer)->forwardGPU( in, out );
 			return;
 		case LayerType::route:
-			((LayerRoute*)layer)->forwardGPU( in, out );
+			((LayerRoute*)layer)->forwardGPU( in, out, outputArrays );
 			return;
 		case LayerType::sigmoid:
 			((LayerSigmoid*)layer)->forwardGPU( in, out );
@@ -276,6 +266,7 @@ static float trainNetworkGPU(
 	ParameterObject *parameter_object,
 	vector<float *>& outputArrays,
 	vector<float *>& dzArrays,
+	vector<float *>& dzInArrays,
 	float *gpu_in_array,
 	float *gpu_out_array
 	)
@@ -286,12 +277,11 @@ static float trainNetworkGPU(
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
+			forwardGPU( layers[i], gpu_in_array, outputArrays[i], outputArrays );
 		}else{
-			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i] );
+			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i], outputArrays );
 		}
 	}
-
   TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
 
@@ -304,9 +294,9 @@ static float trainNetworkGPU(
 
 	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
 		if ( i == (int)(layers.size()) - 1 ){
-			backwardGPU( layers[i], gpu_out_array, dzArrays[i] );
+			backwardGPU( layers[i], gpu_out_array, dzArrays[i], dzInArrays[i], dzInArrays );
 		}else{
-			backwardGPU( layers[i], dzArrays[i+1], dzArrays[i] );
+			backwardGPU( layers[i], dzArrays[i+1], dzArrays[i], dzInArrays[i], dzInArrays );
 		}
 	}
 
@@ -361,9 +351,9 @@ static float testNetworkGPU(
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
-			forwardGPU( layers[i], gpu_in_array, outputArrays[i] );
+			forwardGPU( layers[i], gpu_in_array, outputArrays[i], outputArrays );
 		}else{
-			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i] );
+			forwardGPU( layers[i], outputArrays[i-1], outputArrays[i], outputArrays );
 		}
 	}
 
