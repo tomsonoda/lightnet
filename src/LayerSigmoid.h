@@ -4,6 +4,8 @@
 #ifdef GPU_CUDA
 namespace gpu_cuda {
 	float *cudaMakeArray( float *cpu_array, int N );
+	void sigmoidForwardGPU( float *gpu_in, float *gpu_out, int N);
+	void sigmoidBackwardGPU( float *dz_next_layer, float *gpu_dz_in, float *gpu_dz, float *in, int N );
 }
 #endif
 
@@ -43,11 +45,7 @@ struct LayerSigmoid
 
 	void forwardGPU()
 	{
-		/*
-		for ( int i = 0; i < in_total_size; ++i ){
-			out.data[i] = activator_function(in.data[i]);
-		}
-		*/
+		gpu_cuda::sigmoidForwardGPU( gpu_in, gpu_out, in_total_size );
 	}
 
 	void updateWeightsGPU()
@@ -63,15 +61,7 @@ struct LayerSigmoid
 
 	void backwardGPU( float* dz_next_layer )
 	{
-		/*
-		for( int i = 0; i < dz_in.size.b * dz_in.size.x * dz_in.size.y * dz_in.size.z; ++i ){
-			dz_in.data[i] += dz_next_layer.data[i];
-		}
-
-		for ( int i = 0; i < in_total_size; ++i ){
-			dz.data[i] += activator_derivative( in.data[i] ) * dz_in.data[i];
-		}
-		*/
+		gpu_cuda::sigmoidBackwardGPU( dz_next_layer, gpu_dz_in, gpu_dz, gpu_in, in_total_size );
 	}
 
 	TensorObject<float> getOutFromGPU(){

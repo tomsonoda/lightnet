@@ -1,5 +1,5 @@
 # GPU_METAL=1
-GPU_CUDA=0
+GPU_CUDA=1
 DEBUG=0
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -31,7 +31,7 @@ endif
 ifeq ($(GPU_CUDA), 1)
 COMMON+= -DGPU_CUDA -I/usr/local/cuda/include/
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand -lstdc++
-EXECOBJA+= Cuda.o LayerBatchNormalizationKernels.o LayerConvolutionKernels.o LayerDenseKernels.o LayerDetectObjectsKernels.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o LayerReLUKernels.o LayerRouteKernels.o LayerSoftmaxKernels.o
+EXECOBJA+= Cuda.o LayerBatchNormalizationKernels.o LayerConvolutionKernels.o LayerDenseKernels.o LayerDetectObjectsKernels.o LayerLeakyReLUKernels.o LayerMaxPoolKernels.o LayerReLUKernels.o LayerRouteKernels.o LayerSigmoidKernels.o LayerSoftmaxKernels.o
 endif
 
 EXECOBJ  = $(addprefix $(OBJDIR)/, $(EXECOBJA))
