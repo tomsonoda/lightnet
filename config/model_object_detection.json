@@ -2,7 +2,7 @@
   "net" : {
     "batch_size":6,
     "threads":6,
-    "optimization":"mse",
+    "loss_function":"mse",
     "learning_rate":0.01,
     "momentum":0.9,
     "decay":0.0005,

@@ -937,7 +937,7 @@ static void loadModelParameters(JSONObject *model_json, vector <json_token_t*> m
 	if(tmp.length()>0){
 		parameter_object->weights_decay = std::stof( tmp );
 	}
-	tmp = model_json->getChildValueForToken(nueral_network, "optimization");
+	tmp = model_json->getChildValueForToken(nueral_network, "loss_function");
 	if(tmp.length()>0){
 		parameter_object->optimizer = tmp;
 	}
