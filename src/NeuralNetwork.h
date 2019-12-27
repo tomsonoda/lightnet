@@ -650,7 +650,7 @@ static void saveLayersWeights( long step, vector<LayerObject*>& layers, string f
 {
 	std::ofstream fout( filename.c_str(), std::ios::binary );
 	if (fout.fail()){
-		std::cerr << "No weights file to save:" << filename << std::endl;
+		std::cout << "No weights file to save:" << filename << std::endl;
 		return;
 	}
 	char ver_major    = (char)VERSION_MAJOR;
@@ -900,7 +900,7 @@ static vector<LayerObject*> loadModel(
 		}else if(type=="softmax"){
 
 			TensorSize in_size = layers[layers.size()-1]->out.size;
-			printf("%d: softmax            : ( %d ) -> ( %d )\n",i, (in_size.x * in_size.y * in_size.z), (in_size.x * in_size.y * in_size.z));
+			printf("%d: softmax            : ( %d x %d x %d ) -> ( %d x %d x %d )\n",i, in_size.x, in_size.y,  in_size.z, in_size.x, in_size.y, in_size.z);
 			LayerSoftmax *layer = new LayerSoftmax(in_size);
 			layers.push_back( (LayerObject*)layer );
 
