@@ -14,7 +14,7 @@ struct ParameterObject
   float learning_rate;
   float momentum;
   float weights_decay;
-  string optimizer;
+  string loss_function;
   int train_output_span;
   int threads;
   int max_classes;
@@ -28,7 +28,7 @@ struct ParameterObject
     learning_rate = 0.01;
     momentum = 0.6;
     weights_decay = 0.01;
-    optimizer = "mse";
+    loss_function = "mse";
     train_output_span = 1000;
     threads = 1;
     max_classes = 1;
@@ -46,7 +46,7 @@ struct ParameterObject
   	printf("learning_rate      : %f\n", learning_rate);
   	printf("momentum           : %f\n", momentum);
   	printf("weights_decay      : %f\n", weights_decay);
-  	printf("optimizer          : %s\n\n", optimizer.c_str());
+  	printf("loss_function          : %s\n\n", loss_function.c_str());
     printf("max_classes        : %d\n", max_classes);
   	printf("max_bounding_boxes : %d\n\n", max_bounding_boxes);
   }

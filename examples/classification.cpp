@@ -9,15 +9,6 @@
 
 extern vector<CaseObject> readCases(string data_json_path, string model_json_path, string mode); // dataset.cpp
 
-// float testClassification( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, vector<float *>& outputArrays, vector<float *>& dzArrays )
-// {
-// #ifdef GPU_CUDA
-// 	return testNetworkGPU( layers, data, expected, optimizer, outputArrays, dzArrays);
-// #else
-// 	return testNetwork( layers, data, expected, optimizer, thread_pool );
-// #endif
-// }
-
 void classification(int argc, char **argv)
 {
 	string data_json_path = argv[2];
@@ -82,23 +73,19 @@ void classification(int argc, char **argv)
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;
 		float *gpu_layer_output_array = gpu_cuda::cudaMakeArray( NULL, o_size );
-		// layers[i]->gpu_out = gpu_layer_output_array;
-		// ((LayerDense*)layers[0])->printParams();
 		outputArrays.push_back(gpu_layer_output_array);
 
 		int dz_size = layers[i]->dz.size.b * layers[i]->dz.size.x * layers[i]->dz.size.y * layers[i]->dz.size.z;
 		float *gpu_layer_dz_array = gpu_cuda::cudaMakeArray( NULL, dz_size );
-		// layers[i]->gpu_dz = gpu_layer_dz_array;
 		dzArrays.push_back(gpu_layer_dz_array);
 
 		int dz_in_size = layers[i]->dz_in.size.b * layers[i]->dz_in.size.x * layers[i]->dz_in.size.y * layers[i]->dz_in.size.z;
 		float *gpu_layer_dz_in_array = gpu_cuda::cudaMakeArray( NULL, dz_in_size );
-		// layers[i]->gpu_dz_in = gpu_layer_dz_in_array;
 		dzInArrays.push_back(gpu_layer_dz_in_array);
 	}
 
-	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, data_size );
-	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, out_size );
+	float *gpu_in_array = gpu_cuda::cudaMakeArray( NULL, parameter_object->batch_size * data_size );
+	float *gpu_out_array = gpu_cuda::cudaMakeArray( NULL, parameter_object->batch_size * out_size );
 
 #endif
 
@@ -148,11 +135,11 @@ void classification(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
 			}
 
-			// float test_err = testClassification( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, outputArrays, dzArrays );
+			// float test_err = testClassification( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool, outputArrays, dzArrays );
 			#ifdef GPU_CUDA
-				float test_err = testNetworkGPU( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, outputArrays, dzArrays);
+				float test_err = testNetworkGPU( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, outputArrays, dzArrays);
 			#else
-				float test_err = testNetwork( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool);
+				float test_err = testNetwork( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool);
 			#endif
 
 			cout << "  test error =" << test_err << "\n";

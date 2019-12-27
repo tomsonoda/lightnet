@@ -271,10 +271,9 @@ static float trainNetworkGPU(
 	float *gpu_out_array
 	)
 {
-
 	size_t in_size  = data.size.b * data.size.x * data.size.y * data.size.z;
 	gpu_cuda::cudaPutArray( gpu_in_array, data.data, in_size );
-
+	// printf("forward\n");
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		if( i == 0 ){
 			forwardGPU( layers[i], gpu_in_array, outputArrays[i], outputArrays );
@@ -288,10 +287,12 @@ static float trainNetworkGPU(
 	size_t out_size  = expected.size.b * expected.size.x * expected.size.y * expected.size.z;
 	gpu_cuda::cudaPutArray( gpu_out_array, grads.data, out_size );
 
+	// printf("clear\n");
 	for( int i = 0; i < (int)(layers.size()); ++i ){
 		clearArrayGPU( layers[i], dzArrays[i] );
 	}
 
+	// printf("backward\n");
 	for ( int i = (int)(layers.size() - 1); i >= 0; --i ){
 		if ( i == (int)(layers.size()) - 1 ){
 			backwardGPU( layers[i], gpu_out_array, dzArrays[i], dzInArrays[i], dzInArrays );
@@ -304,7 +305,7 @@ static float trainNetworkGPU(
 		updateWeightsGPU( layers[i] );
 	}
 
-	if(parameter_object->optimizer=="mse"){
+	if(parameter_object->loss_function=="mse"){
 
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
@@ -340,7 +341,7 @@ static float testNetworkGPU(
 	vector<LayerObject*>& layers,
 	TensorObject<float>& data,
 	TensorObject<float>& expected,
-	string optimizer,
+	string loss_function,
 	vector<float *>& outputArrays,
 	vector<float *>& dzArrays
 	)
@@ -360,7 +361,7 @@ static float testNetworkGPU(
   TensorObject<float> output_data = getOutFromGPU(layers.back());
 	TensorObject<float> grads = output_data - expected;
 
-	if(optimizer=="mse"){
+	if(loss_function=="mse"){
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
@@ -549,7 +550,7 @@ static float trainNetwork(
 		updateWeights( layers[i] );
 	}
 
-	if(parameter_object->optimizer=="mse"){
+	if(parameter_object->loss_function=="mse"){
 
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
@@ -584,7 +585,7 @@ static float testNetwork(
 	vector<LayerObject*>& layers,
 	TensorObject<float>& data,
 	TensorObject<float>& expected,
-	string optimizer,
+	string loss_function,
 	ThreadPool& thread_pool
 	)
 	{
@@ -598,7 +599,7 @@ static float testNetwork(
 
 	TensorObject<float> grads = layers.back()->out - expected;
 
-	if(optimizer=="mse"){
+	if(loss_function=="mse"){
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
@@ -939,7 +940,7 @@ static void loadModelParameters(JSONObject *model_json, vector <json_token_t*> m
 	}
 	tmp = model_json->getChildValueForToken(nueral_network, "loss_function");
 	if(tmp.length()>0){
-		parameter_object->optimizer = tmp;
+		parameter_object->loss_function = tmp;
 	}
 	tmp = model_json->getChildValueForToken(nueral_network, "train_output_span");
 	if(tmp.length()>0){

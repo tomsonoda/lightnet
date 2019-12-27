@@ -14,12 +14,12 @@ extern vector<CasePaths> listImageLabelCasePaths( JSONObject *data_json, vector<
 extern CaseObject readImageLabelCase( CasePaths case_paths, JSONObject *model_json, vector<json_token_t*> model_tokens );
 extern float boxTensorIOU(TensorObject<float> &t_a, TensorObject<float> &t_b, JSONObject *model_json, vector<json_token_t*> model_tokens );
 
-float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string optimizer, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays ){
+float testObjectDetection( vector<LayerObject*>& layers, TensorObject<float>& data, TensorObject<float>& expected, string loss_function, ThreadPool& thread_pool, JSONObject *model_json, vector<json_token_t*> model_tokens, ParameterObject *parameter_object, vector<float *>& outputArrays, vector<float *>& dzArrays ){
 	float loss_value = 0.0;
 #ifdef GPU_CUDA
-	loss_value = testNetworkGPU( layers, data, expected, optimizer, outputArrays, dzArrays );
+	loss_value = testNetworkGPU( layers, data, expected, loss_function, outputArrays, dzArrays );
 #else
-	loss_value = testNetwork( layers, data, expected, optimizer, thread_pool );
+	loss_value = testNetwork( layers, data, expected, loss_function, thread_pool );
 #endif
 
 	float best_iou = 0.0;
@@ -183,7 +183,7 @@ void objectDetection(int argc, char **argv)
 				memcpy( &(batch_cases.out.data[batch_index_out]), tt.out.data, out_float_size );
 			}
 
-			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->optimizer, thread_pool, model_json, model_tokens, parameter_object, outputArrays, dzArrays);
+			float test_err = testObjectDetection( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool, model_json, model_tokens, parameter_object, outputArrays, dzArrays);
 			cout << "  test error =" << test_err << "\n";
 		}
 	}
