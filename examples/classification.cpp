@@ -106,6 +106,33 @@ void classification(int argc, char **argv)
 #else
 		train_err = trainNetwork( step, layers, batch_cases.data, batch_cases.out, parameter_object, thread_pool );
 #endif
+
+	if ( step % parameter_object->train_output_span == 0 ){
+		auto finish = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed = finish - start;
+		cout << "step " << step << endl;
+		cout << "  train error=" << train_err << ", Elapsed time: " << elapsed.count() << " s\n";
+		start = finish;
+
+		randi = rand() % (test_cases.size()-parameter_object->batch_size);
+		for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
+			CaseObject t = test_cases[j];
+			unsigned batch_index_in = (j-randi)*(data_size);
+			unsigned batch_index_out = (j-randi)*(out_size);
+			memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
+			memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
+		}
+
+		// float test_err = testClassification( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool, outputArrays, dzArrays );
+	#ifdef GPU_CUDA
+		float test_err = testNetworkGPU( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, outputArrays, dzArrays);
+	#else
+		float test_err = testNetwork( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool);
+	#endif
+
+		cout << "  test error =" << test_err << "\n";
+	}
+
 		step++;
 
 		if (step % parameter_object->save_span == 0){
@@ -119,31 +146,6 @@ void classification(int argc, char **argv)
 			saveLayersWeights(step, layers, filename);
 		}
 
-		if ( step % parameter_object->train_output_span == 0 ){
-			auto finish = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double> elapsed = finish - start;
-			cout << "step " << step << endl;
-			cout << "  train error=" << train_err << ", Elapsed time: " << elapsed.count() << " s\n";
-			start = finish;
-
-			randi = rand() % (test_cases.size()-parameter_object->batch_size);
-			for( unsigned j = randi; j < (randi+parameter_object->batch_size); ++j ){
-				CaseObject t = test_cases[j];
-				unsigned batch_index_in = (j-randi)*(data_size);
-				unsigned batch_index_out = (j-randi)*(out_size);
-				memcpy( &(batch_cases.data.data[batch_index_in]), t.data.data, data_float_size );
-				memcpy( &(batch_cases.out.data[batch_index_out]), t.out.data, out_float_size );
-			}
-
-			// float test_err = testClassification( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool, outputArrays, dzArrays );
-			#ifdef GPU_CUDA
-				float test_err = testNetworkGPU( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, outputArrays, dzArrays);
-			#else
-				float test_err = testNetwork( layers, batch_cases.data, batch_cases.out, parameter_object->loss_function, thread_pool);
-			#endif
-
-			cout << "  test error =" << test_err << "\n";
-		}
 	}
 
 }

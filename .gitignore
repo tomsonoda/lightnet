@@ -7,7 +7,7 @@ lightnet
 *.so
 ._*
 .DS_Store
-log.txt
+log*.txt
 
 /instrumentscli*
 /dataset/*

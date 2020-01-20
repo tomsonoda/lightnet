@@ -151,17 +151,12 @@ struct LayerDense
 
 	void updateWeightsGPU()
 	{
-		// updateWeights();
 		gpu_cuda::denseUpdateWeightsGPU( gpu_weights, gpu_biases, gpu_gradients, gpu_dW, gpu_dB, in.size.b, in.size.x, in.size.y, in.size.z, out.size.x, out.size.y, out.size.z, lr, _momentum );
 	}
 
 	void backwardGPU( float* dz_next_layer, float *dz, float *dz_in )
 	{
-		// gpu_cuda::cudaGetArray( this->dz_in.data, dz_next_layer, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
 		gpu_cuda::cudaGetArray( this->dz_in.data, gpu_dz_in, this->dz_in.size.b * this->dz_in.size.x * this->dz_in.size.y * this->dz_in.size.z );
-		//densePrintTensor( this->dz_in );
-		// backward();
-
 		this->gpu_dz = dz;
 		this->gpu_dz_in = dz_in;
 		backwardGPU( dz_next_layer );

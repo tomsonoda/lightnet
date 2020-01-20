@@ -8,12 +8,17 @@ git clone https://github.com/tomsonoda/lightnet.git
 
 Setup dataset.
 
+Make output dir
+```
+mkdir checkpoints
+```
+
 # For cuda programming
 
 ## Overview
 https://www.nvidia.com/docs/IO/116711/sc11-cuda-c-basics.pdf
 
-## Device code tips.
+## Device code note.
 
 Device code format.
 ```
@@ -26,7 +31,7 @@ Ns ... byte size of shared memory
 
 Execute N times in parallel blocks.
 ```
-add<<< N, 1 >>>();
+add<<< N, 1 >>>();            while( atomicCAS(mutex, 0, 1) != 0 );
 ```
 Execute N times in parallel threads.
 ```

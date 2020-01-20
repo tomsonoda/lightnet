@@ -6,7 +6,7 @@ namespace gpu_cuda {
 
 __global__ void calcDenseForwardGPU( float *in, float *out, float *weights, float *biases, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z )
 {
-  int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  int id = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
   int id_out = id;
   if ( id_out < batch_size * out_size_x * out_size_y * out_size_z ){
     int n = id % out_size_x;
@@ -134,14 +134,17 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
     int m = z * (in_size_x * in_size_y) + j * (in_size_x) + i;
 
     for ( int n = 0; n < out_size_x; ++n ){
-      float dzin = dz_in[b * (in_size_x * in_size_y * in_size_z) + n];
+      float dzin = dz_in[b * (out_size_x * out_size_y * out_size_z) + n];
 
       int w_index = n * w_size_x + m;
+
       float w = weights[w_index];
-      gradients[ (n*batch_size + b)*2 ] = dzin;
+//      gradients[ (n*batch_size + b) * 2 ] = dzin;
       dz[id_in] += dzin * w;
-      dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
+
+//      dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
     }
+
   }
 
   /* original
@@ -156,6 +159,7 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
               float dzin = dz_in( b, n, 0, 0 );
               float w = weights(0, m, n, 0);
               grad.grad = dzin;
+
               dz( b, i, j, z ) += dzin * w;
               dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * _momentum) + (_decay * w);
             }
@@ -163,8 +167,72 @@ __global__ void calcDenseBackwardGPU( float *dz_in, float *dz, float *in, float 
         }
       }
   }
-  */
+   // original to here
+   */
 }
+
+__global__ void calcDenseBackwardWeightsGPU( float *dz_in, float *dz, float *in, float *weights, float *biases, float *gradients, float *dW, float *dB, int batch_size, int in_size_x, int in_size_y, int in_size_z, int out_size_x, int out_size_y, int out_size_z, float momentum, float decay )
+{
+  int id = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
+  int id_out = id;
+  int id_in  = id / out_size_x;
+
+  if( id_out < batch_size * in_size_x * in_size_y * in_size_z * out_size_x ){
+
+    int n = id % out_size_x;
+    id /= out_size_x;
+    int i = id % in_size_x;
+    id /= in_size_x;
+    int j = id % in_size_y;
+    id /= in_size_y;
+    int z = id % in_size_z;
+    id /= in_size_z;
+    int b = id;
+
+    int w_size_x = in_size_x * in_size_y * in_size_z;
+    // int w_size_y = out_size_x;
+
+    int m = z * (in_size_x * in_size_y) + j * (in_size_x) + i;
+
+//    for ( int n = 0; n < out_size_x; ++n ){
+      float dzin = dz_in[b * (out_size_x * out_size_y * out_size_z) + n];
+
+      int w_index = n * w_size_x + m;
+
+      float w = weights[w_index];
+      gradients[ (n*batch_size + b) * 2 ] = dzin;
+//      dz[id_in] += dzin * w;
+
+      dW[w_index] += in[id_in] * (gradients[ (n*batch_size + b) * 2 ] + gradients[ (n*batch_size + b) * 2 + 1 ] * momentum) + (decay * w);
+//    }
+
+  }
+
+  /* original
+  for ( int n = 0; n < out.size.x; ++n ){
+      for ( int z = 0; z < in.size.z; ++z ){
+        for ( int j = 0; j < in.size.y; ++j ){
+          for ( int i = 0; i < in.size.x; ++i ){
+            int m = map( { 0, i, j, z } );
+
+            for( int b = 0; b < in.size.b; ++b ){
+              GradientObject& grad = gradients[ n*in.size.b + b ];
+              float dzin = dz_in( b, n, 0, 0 );
+              float w = weights(0, m, n, 0);
+              grad.grad = dzin;
+
+              dz( b, i, j, z ) += dzin * w;
+              dW( 0, m, n, 0 ) += in( b, i, j, z ) * (grad.grad + grad.grad_prev * _momentum) + (_decay * w);
+            }
+          }
+        }
+      }
+  }
+   // original to here
+   */
+}
+
+
 
 __global__ void calcDenseBarckwardNabraBGPU( float *dz_in, float *dB, int batch_size, int out_size_x ){
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -196,7 +264,6 @@ void denseUpdateWeightsGPU( float *weights, float *biases, float *gradients, flo
   int N = out_size_x;
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  // printf("GPU...momentum = %lf\n", momentum);
   calcDenseUpdateWeightsGPU<<<grid, BLOCK>>>( weights, biases, gradients, dW, dB, batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, learning_rate, momentum );
 }
 
@@ -207,15 +274,23 @@ void denseBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in,
   dim3 grid_in = cuda.cudaGridSize(out_N);
   cudaAddFirstArrayToSecondArray<<<grid_in, BLOCK>>>( dz_next_layer, dz_in, out_N );
 
+  int *d_mutex;
+  cudaMalloc( (void**)&d_mutex, sizeof(int) );
+  cudaMemset(d_mutex, 0, sizeof(int)); // 0 means unlocked.
+
+
   int in_N = batch_size * in_size_x * in_size_y * in_size_z;
   dim3 grid = cuda.cudaGridSize(in_N);
-
-  // calcDenseBackwardShowGPU<<<grid, BLOCK>>>( dz_in, dz, in, weights, biases, gradients, dW, dB, batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, momentum, decay );
   calcDenseBackwardGPU<<<grid, BLOCK>>>( dz_in, dz, in, weights, biases, gradients, dW, dB, batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, momentum, decay );
+
+  int in_W = batch_size * in_size_x * in_size_y * in_size_z * out_size_x;
+  dim3 grid_W = cuda.cudaGridSize(in_W);
+  calcDenseBackwardWeightsGPU<<<grid_W, BLOCK>>>( dz_in, dz, in, weights, biases, gradients, dW, dB, batch_size, in_size_x, in_size_y, in_size_z, out_size_x, out_size_y, out_size_z, momentum, decay );
 
   int in_B = out_size_x;
   dim3 grid_B = cuda.cudaGridSize(in_B);
   calcDenseBarckwardNabraBGPU<<<grid_B, BLOCK>>>( dz_in, dB, batch_size, out_size_x );
+  cudaFree(d_mutex);
 }
 
 } // namespace gpu

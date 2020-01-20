@@ -39,10 +39,10 @@ __global__ void calcSoftmaxMaxForwardGPU(float *array, float *max, int *mutex, i
   }
 
   if( threadIdx.x == 0 ){
-    while( atomicCAS(mutex, 0, 1) != 0 );
+    while( atomicCAS(mutex, 0, 1) != 0 ); // atomic compare and swap.
     // *max = fmaxf(*max, cache[0]);
     *(max+blockIdx.x) = fmaxf(*(max+blockIdx.x), cache[blockIdx.x * blockDim.x + 0]);
-    atomicExch(mutex, 0);
+    atomicExch(mutex, 0); // atomic exchange.
   }
 
   /* original
@@ -166,10 +166,10 @@ void softmaxForwardGPU( float *in, float *out, int batch_size, int in_size_x )
 
   cudaMemset( d_max, 0, sizeof(float)*batch_size );
   cudaMemset( d_sum, 0, sizeof(float)*batch_size );
-
   cudaMemset(d_mutex, 0, sizeof(int));              // 0 means unlocked.
   // calcSoftmaxMaxForwardGPU<<< 1, elements, elements * sizeof(float) >>>( in, d_max, d_mutex, batch_size, in_size_x, elements );
   calcSoftmaxMaxForwardGPU<<< batch_size, in_size_x, elements * sizeof(float) >>>( in, d_max, d_mutex, batch_size, in_size_x, elements );
+
   cudaMemset(d_mutex, 0, sizeof(int));              // 0 means unlocked.
   // calcSoftmaxSumForwardGPU<<< 1, elements, elements * sizeof(float) >>>( in, out, d_max, d_sum, d_mutex, batch_size, in_size_x, elements );
   calcSoftmaxSumForwardGPU<<< batch_size, in_size_x, elements * sizeof(float) >>>( in, out, d_max, d_sum, d_mutex, batch_size, in_size_x, elements );

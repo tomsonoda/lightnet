@@ -301,6 +301,14 @@ static float trainNetworkGPU(
 		}
 	}
 
+	/*
+	TensorObject<float> db_data = ( (LayerDense*)(layers.front()) )->getDBFromGPU();
+	TensorObject<float> dz_data = ( (LayerDense*)(layers.front()) )->getDzFromGPU();
+	TensorObject<float> dz1_data = ( (LayerSoftmax*)(layers.back()) )->getDzFromGPU();
+	TensorObject<float> dw_data = ( (LayerDense*)(layers.front()) )->getDWFromGPU();
+	*/
+
+	// TensorObject<float> dz_data = ( (LayerDense*)(layers.front()) )->getDzFromGPU();
 	for ( unsigned int i = 0; i < layers.size(); ++i ){
 		updateWeightsGPU( layers[i] );
 	}
@@ -330,6 +338,16 @@ static float trainNetworkGPU(
 			printTensor(expected);
 			printf("----output----\n");
 			printTensor(output_data);
+			/*
+			printf("----dz----\n");
+			printTensor(dz_data);
+			printf("----dz1----\n");
+			printTensor(dz1_data);
+			printf("----db----\n");
+			printTensor(db_data);
+			printf("----dw----\n");
+			printTensor(dw_data);
+			*/
 		}
 
 		return loss;
@@ -362,6 +380,7 @@ static float testNetworkGPU(
 	TensorObject<float> grads = output_data - expected;
 
 	if(loss_function=="mse"){
+
 		float err = 0;
 		for ( int i = 0; i < grads.size.b * grads.size.x * grads.size.y * grads.size.z; ++i ){
 			float f = expected.data[i];
@@ -574,6 +593,16 @@ static float trainNetwork(
 			printTensor(expected);
 			printf("train: ----output----\n");
 			printTensor(layers[layers.size()-1]->out);
+			/*
+			printf("train: ----dz----\n");
+			printTensor(layers[0]->dz);
+			printf("train: ----dz1----\n");
+			printTensor(layers[1]->dz);
+			printf("train: ----dB----\n");
+			printTensor( ((LayerDense *)(layers[0]) )->dB);
+			printf("train: ----dW----\n");
+			printTensor( ((LayerDense *)(layers[0]) )->dW);
+			*/
 		}
 
 		return loss;
