@@ -1,0 +1,18 @@
+{
+  "net" : {
+    "batch_size":1,
+    "threads":1,
+    "momentum":0.6,
+    "decay":0.001,
+    "learning_rate":0.01,
+    "loss_function":"cross_entropy",
+    "save_span":10000,
+    "train_output_span":100
+  },
+
+  "layers":[
+    { "type":"dense", "out_size":10 },
+    { "type":"relu" },
+    { "type":"softmax" }
+  ]
+}

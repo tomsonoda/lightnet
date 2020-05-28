@@ -119,6 +119,10 @@ vector<CaseObject> readCasesMNIST( JSONObject *data_json, vector <json_token_t*>
 		}
 		images = readFileToBuffer( (train_dir + "train-images-idx3-ubyte").c_str() );
 		labels = readFileToBuffer( (train_dir + "train-labels-idx1-ubyte").c_str() );
+    if ( images==NULL || labels==NULL ){
+      printf("Train dataset is incorrect or not found. Please check.\n");
+      exit(-1);
+    }
 	}else{
 		string test_dir = data_json->getChildValueForToken(data_tokens[0], "test_dir");   // data_tokens[0] := json root
 		if (utils->stringEndsWith(test_dir, "/")==0){
@@ -126,6 +130,10 @@ vector<CaseObject> readCasesMNIST( JSONObject *data_json, vector <json_token_t*>
 		}
 		images = readFileToBuffer( (test_dir + "t10k-images-idx3-ubyte").c_str() );
 		labels = readFileToBuffer( (test_dir + "t10k-labels-idx1-ubyte").c_str() );
+    if ( images==NULL || labels==NULL ){
+      printf("Test dataset is incorrect or not found. Please check.\n");
+      exit(-1);
+    }
 	}
 
 	uint32_t case_count = reverseUint32( *(uint32_t*)(images + 4) );

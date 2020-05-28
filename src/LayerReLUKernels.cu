@@ -28,7 +28,6 @@ __global__ void calcReluForwardGPU(float *in, float *out, int elements)
 __global__ void calcReluBackwardGPU( float *dz_next_layer, float *dz_in, float *dz, float *in, int elements )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
-
   if( id < elements ){
     dz_in[id] += dz_next_layer[id];
     dz[id] += (in[id] < 0) ? (0) : (1.0 * dz_in[id]);

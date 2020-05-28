@@ -40,7 +40,12 @@ void classification(int argc, char **argv)
 	loadModelParameters(model_json, model_tokens, parameter_object);
 	parameter_object->printParameters();
 
+#ifdef GPU_CUDA
+	printf("Start training [GPU]\n\n");
+#else
 	printf("Start training\n\n");
+#endif
+
 	CaseObject batch_cases {TensorObject<float>( parameter_object->batch_size, train_cases[0].data.size.x,  train_cases[0].data.size.y,  train_cases[0].data.size.z ), TensorObject<float>( parameter_object->batch_size, 10, 1, 1 )};
 
 	vector<LayerObject*> layers = loadModel(model_json, model_tokens, batch_cases, parameter_object->learning_rate, parameter_object->weights_decay, parameter_object->momentum);
@@ -67,8 +72,6 @@ void classification(int argc, char **argv)
 	std::vector<float *> outputArrays;
 	std::vector<float *> dzArrays;
 	std::vector<float *> dzInArrays;
-
-	printf("Preparing for GPU_CUDA...\n");
 
 	for( unsigned int i = 0; i < (layers.size()); ++i ){
 		int o_size = layers[i]->out.size.b * layers[i]->out.size.x * layers[i]->out.size.y * layers[i]->out.size.z;

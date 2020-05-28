@@ -7,6 +7,12 @@ git clone https://github.com/tomsonoda/lightnet.git
 ```
 
 Setup dataset.
+```
+(for MNIST)
+chmod 755 scripts/setup_mnist_dataset.sh
+bash scripts/setup_mnist_dataset.sh
+```
+
 
 Make output dir
 ```
@@ -53,3 +59,9 @@ https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#built-in-variab
 
  For compute capability 2.x and newer GPUs, they support up to 48kb of shared memory.
  For compute capability 1.x devices, the shared memory limit is 16kb (and up to 256 bytes of that can be consumed by kernel arguments).
+
+
+
+ # References
+
+http://yann.lecun.com/exdb/mnist/
