@@ -11,12 +11,8 @@ Setup dataset.
 (for MNIST)
 chmod 755 scripts/setup_mnist_dataset.sh
 bash scripts/setup_mnist_dataset.sh
-```
-
-
-Make output dir
-```
 mkdir checkpoints
+bash scripts/run_mnist_conv2.sh
 ```
 
 # For cuda programming
