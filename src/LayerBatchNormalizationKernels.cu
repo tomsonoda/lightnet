@@ -4,6 +4,94 @@
 
 namespace gpu_cuda {
 
+__global__ void batchNormalizationMeanGPU(float *x, int batch, int filters, int spatial, float *mean)
+{
+    const int threads = BLOCK;
+    __shared__ float local[threads];
+
+    int id = threadIdx.x;
+    local[id] = 0;
+
+    int filter = blockIdx.x;
+    for(int j = 0; j < batch; ++j){
+        for(int i = 0; i < spatial; i += threads){
+            int index = j*spatial*filters + filter*spatial + i + id;
+            local[id] += (i+id < spatial) ? x[index] : 0;
+        }
+    }
+
+    __syncthreads();
+
+    if(id == 0){
+        mean[filter] = 0;
+        for(int i = 0; i < threads; ++i){
+            mean[filter] += local[i];
+        }
+        mean[filter] /= spatial * batch;
+    }
+}
+
+__global__ void batchNormalizationVarianceGPU(float *x, float *mean, int batch, int filters, int spatial, float *variance, float *xmu)
+{
+  const int threads = BLOCK;
+  __shared__ float local[threads];
+
+  int id = threadIdx.x;
+  local[id] = 0;
+
+  int filter = blockIdx.x;
+
+  for(int j = 0; j < batch; ++j){
+      for(int i = 0; i < spatial; i += threads){
+          int index = j*spatial*filters + filter*spatial + i + id;
+          xmu[index] = x[index] - mean[filter];
+          local[id] += (i+id < spatial) ? powf(xmu[index], 2) : 0;
+      }
+  }
+
+  __syncthreads();
+
+  if(id == 0){
+      variance[filter] = 0;
+      for(int i = 0; i < threads; ++i){
+          variance[filter] += local[i];
+      }
+      variance[filter] /= (spatial * batch - 1);
+  }
+}
+
+/*
+__global__ void batchNormalizationNormalizeGPU(int N, float *x, float *mean, float *variance, int batch, int filters, int spatial)
+{
+  int index = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+  if (index >= N) return;
+  int f = (index/spatial)%filters;
+  x[index] = (x[index] - mean[f])/(sqrtf(variance[f] + .00001f));
+}
+*/
+
+__global__ void calcBatchNormalizationNormalizeGPU(int N, float *in, float *out, float *mean, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
+{
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(id>=in_size_z){
+      return;
+    }
+
+    float invvar = 1.0f / sqrt(variance[id] + 0.00001f);
+    float gmm = gamma[id];
+    float bt = beta[id];
+    inv_variance[id] = invvar;
+    int spatial = in_size_y * in_size_x;
+    for ( int b = 0; b < batch_size; ++b ){
+      for (int j = 0; j < spatial; ++j ){
+        int in_index = b * (spatial * in_size_z) + id * spatial + j ;
+        float v = xmu[in_index] * invvar;
+        xhat[in_index] = v;
+        out[in_index] = gmm * v + bt;
+      }
+    }
+}
+
 __global__ void calcBatchNormalizationForwardGPU( float *in, float *out, float *mean, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
 {
   int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
@@ -36,6 +124,7 @@ __global__ void calcBatchNormalizationForwardGPU( float *in, float *out, float *
   }
 
   variance[id] = sum * scale;
+
   float invvar = 1.0f / sqrt(variance[id] + 0.00001f);
   float gmm = gamma[id];
   float bt = beta[id];
@@ -56,6 +145,53 @@ __global__ void calcBatchNormalizationForwardGPU( float *in, float *out, float *
   scale = 1.0f / (in_size_b * in_size_x * in_size_y);
 
   for ( int z = 0; z < filters; ++z ){
+  __global__ void calcBatchNormalizationForwardGPU( float *in, float *out, float *mean, float *xmu, float *variance, float *inv_variance, float *xhat, float *gamma, float *beta, int batch_size, int in_size_x, int in_size_y, int in_size_z )
+  {
+    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if(id>=in_size_z){
+      return;
+    }
+
+    float scale = 1.0f / (batch_size * in_size_x * in_size_y);
+
+    float sum = 0;
+    for ( int b = 0; b < batch_size; ++b ){
+      for ( int j = 0; j < in_size_y; ++j ){
+        for ( int i = 0; i < in_size_x; ++i ){
+          int in_index = b * (in_size_x * in_size_y * in_size_z) + id * (in_size_x * in_size_y) + j * (in_size_x) + i;
+          sum += in[in_index];
+        }
+      }
+    }
+    mean[id] = sum * scale;
+
+    sum = 0;
+    for ( int b = 0; b < batch_size; ++b ){
+      for ( int j = 0; j < in_size_y; ++j ){
+        for ( int i = 0; i < in_size_x; ++i ){
+          int in_index = b * (in_size_x * in_size_y * in_size_z) + id * (in_size_x * in_size_y) + j * (in_size_x) + i;
+          xmu[in_index] = in[in_index] - mean[id];
+          sum += pow( xmu[in_index], 2 );
+        }
+      }
+    }
+
+    variance[id] = sum * scale;
+
+    float invvar = 1.0f / sqrt(variance[id] + 0.00001f);
+    float gmm = gamma[id];
+    float bt = beta[id];
+    inv_variance[id] = invvar;
+    for ( int b = 0; b < batch_size; ++b ){
+      for (int j = 0; j < in_size_y; ++j ){
+        for (int i = 0; i < in_size_x; ++i ){
+          int in_index = b * (in_size_x * in_size_y * in_size_z) + id * (in_size_x * in_size_y) + j * (in_size_x) + i;
+          float v = xmu[in_index] * invvar;
+          xhat[in_index] = v;
+          out[in_index] = gmm * v + bt;
+        }
+      }
+    }
 
     float sum = 0;
     for ( int b = 0; b < in_size_b; ++b ){
@@ -184,9 +320,6 @@ __global__ void calcBatchNormalizationBackwardGPU( float *dz_in, float *dz, floa
     }
   }
 
-
-
-
   /* // original code
   float bxy_inv = 1.0f / (float)(in_size_b * in_size_x * in_size_y);
 
@@ -260,7 +393,15 @@ void batchNormalizationForwardGPU( float *in, float *out, float *mean, float *xm
   int N = in_size_z;
   CudaObject cuda = CudaObject();
   dim3 grid = cuda.cudaGridSize(N);
-  calcBatchNormalizationForwardGPU<<<grid, BLOCK>>>( in, out, mean, xmu, variance, inv_variance, xhat, gamma, beta, batch_size, in_size_x, in_size_y, in_size_z );
+
+  //calcBatchNormalizationForwardGPU<<<grid, BLOCK>>>( in, out, mean, xmu, variance, inv_variance, xhat, gamma, beta, batch_size, in_size_x, in_size_y, in_size_z );
+
+  batchNormalizationMeanGPU<<<in_size_z, BLOCK>>>(in, batch_size, in_size_z, in_size_x * in_size_y, mean);
+  batchNormalizationVarianceGPU<<<in_size_z, BLOCK>>>(in, mean, batch_size, in_size_z, in_size_x * in_size_y, variance, xmu);
+  N = batch_size * in_size_x * in_size_y * in_size_z;
+  grid = cuda.cudaGridSize(N);
+  //batchNormalizationNormalizeGPU<<<grid, BLOCK>>>(N, out, mean, variance, batch_size, in_size_z, in_size_x * in_size_y);
+  calcBatchNormalizationNormalizeGPU<<<grid, BLOCK>>>(N, in, out, mean, xmu, variance, inv_variance, xhat, gamma, beta, batch_size, in_size_x, in_size_y, in_size_z );
 }
 
 void batchNormalizationUpdateWeightsGPU( float *gamma, float *beta, float *dgamma, float *dbeta, float learning_rate, int in_size_z )
